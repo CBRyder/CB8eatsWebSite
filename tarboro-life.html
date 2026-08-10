@@ -111,6 +111,14 @@
       margin-bottom: 18px;
     }
     .res-inv .auth-note { color: var(--ri-faint); font-size: 12px; }
+    .res-inv .signin-form { display: flex; gap: 8px; flex-wrap: wrap; }
+    .res-inv .signin-input {
+      font-family: var(--ri-mono); font-size: 12px;
+      background: var(--ri-surface); border: 1px solid var(--ri-border); border-radius: 6px;
+      padding: 6px 10px; color: var(--ri-text); width: 150px;
+    }
+    .res-inv .signin-input::placeholder { color: var(--ri-faint); }
+    .res-inv .signin-input:focus { border-color: var(--ri-accent-dim); }
     .res-inv .tested-check:disabled { opacity: 0.35; cursor: not-allowed; }
 
     .res-inv .category { margin-bottom: 8px; }
@@ -270,8 +278,13 @@
 
           <div class="banner" id="ri-banner">Loading…</div>
 
-          <div class="auth-row">
-            <button class="filter-btn" id="ri-signin-btn">Sign in to check off items</button>
+          <div class="auth-row" id="ri-auth-row">
+            <form id="ri-signin-form" class="signin-form">
+              <input type="email" id="ri-email" class="signin-input" placeholder="Email" autocomplete="username" required>
+              <input type="password" id="ri-password" class="signin-input" placeholder="Password" autocomplete="current-password" required>
+              <button type="submit" class="filter-btn" id="ri-signin-btn">Sign in</button>
+            </form>
+            <button type="button" class="filter-btn" id="ri-signout-btn" style="display:none;">Sign out</button>
             <span class="auth-note" id="ri-auth-note">Anyone can view this checklist — only the site owner can check items off.</span>
           </div>
 
@@ -308,7 +321,7 @@
       getFirestore, doc, updateDoc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
+      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -328,7 +341,6 @@
     const db = getFirestore(firebaseApp);
     const testedDocRef = doc(db, 'tarboroLife', 'testedResources');
     const auth = getAuth(firebaseApp);
-    const googleProvider = new GoogleAuthProvider();
 
     let riIsAuthorized = false;
 
@@ -339,30 +351,25 @@
     }
 
     function riUpdateSignInUI(user) {
-      const btn = document.getElementById('ri-signin-btn');
+      const form = document.getElementById('ri-signin-form');
+      const signOutBtn = document.getElementById('ri-signout-btn');
       const note = document.getElementById('ri-auth-note');
-      if (!btn) return;
+      if (!form || !signOutBtn) return;
 
       if (user && user.email === RI_AUTHORIZED_EMAIL) {
         riIsAuthorized = true;
-        btn.textContent = `Signed in as ${user.email} — Sign out`;
-        btn.onclick = () => signOut(auth);
-        if (note) note.textContent = 'Checkboxes unlocked.';
+        form.style.display = 'none';
+        signOutBtn.style.display = '';
+        if (note) note.textContent = `Signed in as ${user.email} — checkboxes unlocked.`;
       } else if (user) {
         riIsAuthorized = false;
-        btn.textContent = `Signed in as ${user.email} (not authorized) — Sign out`;
-        btn.onclick = () => signOut(auth);
-        if (note) note.textContent = "That Google account isn't authorized to check items off.";
+        form.style.display = 'none';
+        signOutBtn.style.display = '';
+        if (note) note.textContent = `Signed in as ${user.email}, but that account isn't authorized.`;
       } else {
         riIsAuthorized = false;
-        btn.textContent = 'Sign in to check off items';
-        btn.onclick = () => {
-          if (note) note.textContent = 'Redirecting to Google…';
-          signInWithRedirect(auth, googleProvider).catch(err => {
-            console.error('Sign-in failed:', err);
-            if (note) note.textContent = `Sign-in error: ${err.code || err.message}`;
-          });
-        };
+        form.style.display = '';
+        signOutBtn.style.display = 'none';
         if (note) note.textContent = 'Anyone can view this checklist — only the site owner can check items off.';
       }
 
@@ -371,15 +378,22 @@
 
     onAuthStateChanged(auth, (user) => riUpdateSignInUI(user));
 
-    // Picks up the result when the page reloads after signInWithRedirect
-    // sends the browser to Google and back. onAuthStateChanged above will
-    // also fire with the signed-in user, so this is really just here to
-    // surface a clear error if the redirect itself failed.
-    getRedirectResult(auth).catch(err => {
-      console.error('Sign-in redirect failed:', err);
+    document.getElementById('ri-signin-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('ri-email').value.trim();
+      const password = document.getElementById('ri-password').value;
       const note = document.getElementById('ri-auth-note');
-      if (note) note.textContent = `Sign-in error: ${err.code || err.message}`;
+      if (note) note.textContent = 'Signing in…';
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('ri-password').value = '';
+      } catch (err) {
+        console.error('Sign-in failed:', err);
+        if (note) note.textContent = `Sign-in error: ${err.code || err.message}`;
+      }
     });
+
+    document.getElementById('ri-signout-btn').addEventListener('click', () => signOut(auth));
 
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resource Inventory — Tarboro Life — CB8eats</title>
+  <meta name="description" content="Tarboro Life resource inventory and testing checklist.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ===== Resource Inventory (scoped) ===== */
+    .res-inv {
+      --ri-bg: #10141c;
+      --ri-surface: #171d28;
+      --ri-surface2: #1e2530;
+      --ri-border: #2a3242;
+      --ri-border-soft: #232a38;
+      --ri-text: #e7ebf2;
+      --ri-muted: #8993a8;
+      --ri-faint: #5c6478;
+      --ri-accent: #e8823a;
+      --ri-accent-dim: #a85f2c;
+      --ri-good: #55b98a;
+      --ri-good-bg: rgba(85, 185, 138, 0.12);
+      --ri-warn: #e0b83f;
+      --ri-warn-bg: rgba(224, 184, 63, 0.12);
+      --ri-crit: #e2574f;
+      --ri-crit-bg: rgba(226, 87, 79, 0.14);
+      --ri-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+
+      background: var(--ri-bg);
+      color: var(--ri-text);
+      font-family: var(--ri-mono);
+      font-weight: 400;
+      font-size: 14.5px;
+      line-height: 1.55;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .res-inv ::selection { background: var(--ri-accent); color: var(--ri-bg); }
+    .res-inv a { color: var(--ri-accent); }
+    .res-inv :focus-visible { outline: 2px solid var(--ri-accent); outline-offset: 2px; }
+
+    .res-inv .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 28px 56px; }
+
+    .res-inv header.top {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 24px;
+      border-bottom: 1px solid var(--ri-border); padding-bottom: 22px; margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .res-inv .prompt { color: var(--ri-faint); font-size: 13px; letter-spacing: 0.02em; }
+    .res-inv .prompt .accent { color: var(--ri-accent); }
+    .res-inv h1 {
+      font-family: var(--ri-mono); font-weight: 700; font-size: clamp(22px, 3.4vw, 30px);
+      margin: 6px 0 0; letter-spacing: -0.01em; color: var(--ri-text);
+    }
+    .res-inv .subtitle { color: var(--ri-muted); font-size: 14px; margin-top: 6px; max-width: 62ch; }
+    .res-inv .timestamp { color: var(--ri-faint); font-size: 12.5px; text-align: right; white-space: nowrap; }
+
+    .res-inv .stats {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+      background: var(--ri-border); border: 1px solid var(--ri-border); border-radius: 6px;
+      overflow: hidden; margin-bottom: 26px;
+    }
+    .res-inv .stat { background: var(--ri-surface); padding: 16px 14px; }
+    .res-inv .stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+    .res-inv .stat .lbl { color: var(--ri-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 7px; }
+    .res-inv .stat.crit .num { color: var(--ri-crit); }
+    .res-inv .stat.warn .num { color: var(--ri-warn); }
+    .res-inv .stat.good .num { color: var(--ri-good); }
+    .res-inv .stat.neutral .num { color: var(--ri-text); }
+    .res-inv .stat.accent .num { color: var(--ri-accent); }
+
+    .res-inv .findings {
+      background: var(--ri-surface); border: 1px solid var(--ri-border); border-left: 3px solid var(--ri-crit);
+      border-radius: 4px; padding: 18px 20px; margin-bottom: 30px;
+    }
+    .res-inv .findings h2 {
+      font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ri-crit);
+      margin: 0 0 12px; font-weight: 700; font-family: var(--ri-mono);
+    }
+    .res-inv .findings ul { margin: 0; padding-left: 20px; }
+    .res-inv .findings li { margin-bottom: 9px; color: var(--ri-text); font-size: 13.8px; }
+    .res-inv .findings li:last-child { margin-bottom: 0; }
+    .res-inv .findings code { background: var(--ri-surface2); padding: 1px 6px; border-radius: 3px; font-size: 0.93em; color: var(--ri-accent); }
+    .res-inv .findings .why { color: var(--ri-muted); }
+
+    .res-inv .banner {
+      background: var(--ri-surface2); border: 1px solid var(--ri-border-soft); border-radius: 4px;
+      padding: 13px 18px; margin-bottom: 30px; font-size: 13.2px; color: var(--ri-muted);
+    }
+    .res-inv .banner strong { color: var(--ri-text); }
+
+    .res-inv .controls {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--ri-border-soft);
+    }
+    .res-inv .filter-btn {
+      font-family: var(--ri-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.03em;
+      background: var(--ri-surface); color: var(--ri-muted); border: 1px solid var(--ri-border);
+      border-radius: 20px; padding: 6px 13px; cursor: pointer; transition: all 0.12s ease;
+      text-transform: uppercase;
+    }
+    .res-inv .filter-btn:hover { border-color: var(--ri-accent-dim); color: var(--ri-text); }
+    .res-inv .filter-btn.active { background: var(--ri-accent); border-color: var(--ri-accent); color: #16110a; }
+    .res-inv .search {
+      margin-left: auto; font-family: var(--ri-mono); font-size: 13px;
+      background: var(--ri-surface); border: 1px solid var(--ri-border); border-radius: 6px;
+      padding: 7px 12px; color: var(--ri-text); min-width: 200px;
+    }
+    .res-inv .search::placeholder { color: var(--ri-faint); }
+    .res-inv .search:focus { border-color: var(--ri-accent-dim); }
+
+    .res-inv .category { margin-bottom: 8px; }
+    .res-inv .category-head { display: flex; align-items: baseline; gap: 10px; padding: 22px 0 10px; }
+    .res-inv .category-head h3 {
+      font-family: var(--ri-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--ri-accent); font-weight: 700; margin: 0;
+    }
+    .res-inv .category-head .count { color: var(--ri-faint); font-size: 12px; }
+
+    .res-inv .res-table { width: 100%; border-collapse: collapse; }
+    .res-inv .res-row { border-top: 1px solid var(--ri-border-soft); transition: background 0.1s ease; }
+    .res-inv .res-row:hover { background: var(--ri-surface); }
+    .res-inv .res-row td { padding: 12px 10px; vertical-align: top; }
+    .res-inv .res-row td:first-child { padding-left: 4px; }
+    .res-inv .res-row td:last-child { padding-right: 4px; }
+
+    .res-inv .res-name { font-weight: 600; font-size: 13.5px; color: var(--ri-text); white-space: nowrap; }
+    .res-inv .res-name .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; position: relative; top: -1px; }
+    .res-inv .res-desc { color: var(--ri-muted); font-size: 13px; line-height: 1.5; max-width: 46ch; }
+    .res-inv .res-note { color: var(--ri-faint); font-size: 12px; line-height: 1.5; margin-top: 5px; max-width: 44ch; }
+
+    .res-inv .chip {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.03em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
+      white-space: nowrap;
+    }
+    .res-inv .chip.crit { background: var(--ri-crit-bg); color: var(--ri-crit); }
+    .res-inv .chip.warn { background: var(--ri-warn-bg); color: var(--ri-warn); }
+    .res-inv .chip.good { background: var(--ri-good-bg); color: var(--ri-good); }
+
+    .res-inv .res-row[data-status="hidden"] { display: none; }
+
+    .res-inv footer {
+      margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--ri-border);
+      color: var(--ri-faint); font-size: 12px; line-height: 1.7; text-align: left;
+    }
+
+    @media (max-width: 720px) {
+      .res-inv .stats { grid-template-columns: repeat(2, 1fr); }
+      .res-inv .res-table, .res-inv .res-table tbody, .res-inv .res-table tr, .res-inv .res-table td { display: block; width: 100%; }
+      .res-inv .res-row td { padding: 3px 0; }
+      .res-inv .res-row { padding: 12px 4px; }
+      .res-inv .res-desc, .res-inv .res-note { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand"><a href="index.html">CB8eats</a></div>
+
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="designs.html">Designs</a></li>
+        <li><a href="music.html">Music</a></li>
+        <li><a href="coa.html">COA: Vampire Knights</a></li>
+        <li><a href="tarboro-life.html" class="active">Tarboro Life</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" style="padding-top: 0; border-bottom: none;">
+      <p class="eyebrow">Tarboro Life</p>
+      <h1>Resource Inventory &amp; Testing</h1>
+      <p class="lede">A live audit of every server resource, cross-checked against server.cfg and build memory — what's built, what's documented, and what's never actually been tested by a real player.</p>
+    </section>
+
+    <section style="margin-bottom: 2rem;">
+      <div class="res-inv">
+        <div class="wrap">
+
+          <header class="top">
+            <div>
+              <div class="prompt">tarboro-admin<span class="accent">@</span>server <span class="accent">~$</span> ls resources/[tarboro]/ --audit</div>
+              <h1>Resource Inventory</h1>
+              <div class="subtitle">Every resource on the Tarboro Life server, cross-checked against server.cfg and build memory — not just what's been discussed in chat.</div>
+            </div>
+            <div class="timestamp">compiled 2026-08-10<br>from a live boot + server.cfg diff</div>
+          </header>
+
+          <div class="stats">
+            <div class="stat neutral"><div class="num">44</div><div class="lbl">Resources on disk</div></div>
+            <div class="stat crit"><div class="num">1</div><div class="lbl">Not running at all</div></div>
+            <div class="stat warn"><div class="num">7</div><div class="lbl">Thin / no record</div></div>
+            <div class="stat good"><div class="num">36</div><div class="lbl">Documented</div></div>
+            <div class="stat accent"><div class="num">0</div><div class="lbl">Live-tested by a player</div></div>
+          </div>
+
+          <div class="findings">
+            <h2>⚠ What this audit actually found</h2>
+            <ul>
+              <li><code>tarboro-injuries</code> — bleeding / broken limbs / concussion / sickness, fully built, extends <code>tarboro-death</code> — <strong>is not in server.cfg at all.</strong> It's never loaded, ever. <span class="why">Confirmed by diffing every folder on disk against every `ensure` line — this was the only mismatch.</span></li>
+              <li><code>tarboro-arrival</code> — a genuinely substantial 8-beat cinematic new-player intake sequence (establishing shot, voice narration, walk-to-intake objective, an admin interview window with a Discord webhook, skip/release/reset admin commands) — <strong>had zero record anywhere in memory</strong> until this pass, despite running live on every fresh character.</li>
+              <li><code>tarboro-tutorial</code> — the soft "Guided Start" onboarding tracker — same story, built and running, previously undocumented.</li>
+              <li>Five more resources (<code>tarboro-interact</code>, <code>tarboro-hud</code>, <code>tarboro-death</code>, <code>tarboro-requests</code>, <code>tarboro-clothing</code>) are only known indirectly — referenced constantly as integration points by other systems, but with no dedicated build record of their own.</li>
+            </ul>
+          </div>
+
+          <div class="banner"><strong>Every single resource below, including the ones marked Documented, has never been run by a real connected player.</strong> "Documented" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors, confirmed twice this session) — it does not mean anyone has clicked the prompt, opened the menu, or walked through the flow in-game.</div>
+
+          <div class="controls">
+            <button class="filter-btn active" data-filter="all">All 44</button>
+            <button class="filter-btn" data-filter="crit">Not Running (1)</button>
+            <button class="filter-btn" data-filter="warn">Thin / Undocumented (7)</button>
+            <button class="filter-btn" data-filter="good">Documented (36)</button>
+            <input class="search" type="text" placeholder="Search resource or description…" id="ri-search">
+          </div>
+
+          <div id="ri-categories"></div>
+
+          <footer>
+            Status reflects documentation + boot-test depth only, not a full code review — resources marked "Documented" still carry the same live-testing gap as everything else. Re-run this diff (folders on disk vs. server.cfg `ensure` lines) any time a resource is added or removed to catch future drift immediately.
+          </footer>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script>
+    const RI_DATA = [
+      { cat: "Not Running", items: [
+        { name: "tarboro-injuries", status: "crit", desc: "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", note: "Fully implemented on disk. Missing from server.cfg entirely — never boots. The admin /injury:inflict, /injury:cure, /injury:clear commands in tarboro-admin are non-functional orphans until this is added." },
+      ]},
+      { cat: "Core Framework", items: [
+        { name: "tarboro-interact", status: "warn", desc: "Shared proximity-interaction UI — the right-side prompt panel with arrow-key navigation used by nearly every other resource.", note: "No dedicated build record — only known by how constantly it's relied on." },
+        { name: "tarboro-config", status: "good", desc: "Shared config table and admin toggles — the single source of truth for every tunable value in the project." },
+        { name: "tarboro-inventory", status: "good", desc: "Typed-slot layer on top of ox_inventory — the F2 panel (primary ×2, sidearm, melee, tool ×2, bag expansion)." },
+        { name: "tarboro-banking", status: "good", desc: "Card-first money: cash / bank / dirty, medical liens, garnishment, society funds, ATM network." },
+        { name: "tarboro-hud", status: "warn", desc: "The on-screen HUD.", note: "Only known as an integration point (setVisible export called by other resources) — no dedicated build record." },
+        { name: "tarboro-loading", status: "good", desc: "Custom branded loading screen." },
+      ]},
+      { cat: "Character & Onboarding", items: [
+        { name: "tarboro-character", status: "good", desc: "Character creation, appearance, spawn locations, ID/driver/firearm/business licensing, new-player protection." },
+        { name: "tarboro-arrival", status: "warn", desc: "8-beat cinematic new-player intake: black screen, establishing shot, voice narration, camera finds player, walk to an intake objective, an admin interview window (Discord webhook + self-release timeout), release into the world.", note: "Genuinely substantial and previously undocumented. Admin commands exist to skip/release/reset it for testing." },
+        { name: "tarboro-tutorial", status: "warn", desc: "Soft, fully-skippable \"Guided Start\" tracker: earn cash → bank it → install an app. Metadata-driven, no DB table.", note: "Previously undocumented; hooks into banking, phone, and tarboro-arrival's completion event." },
+        { name: "tarboro-death", status: "warn", desc: "Death / downed state, EMS response, hospital respawn.", note: "Only known via its NPCRevive export integration — no dedicated build record of the resource itself." },
+        { name: "tarboro-needs", status: "good", desc: "Hunger and thirst depletion with consumable items to restore them." },
+      ]},
+      { cat: "Property & Vehicles", items: [
+        { name: "tarboro-property", status: "good", desc: "Real estate: browse/buy/rent, house interiors (16 of 31 assigned), player-named signs, vacant land + object placement, commercial storefronts." },
+        { name: "tarboro-garage", status: "good", desc: "Take-out/store at 9 public garages, plus physical driveway vehicle slots on owned properties — parked cars are real, stealable, persistent entities." },
+        { name: "tarboro-fuel", status: "good", desc: "Fuel consumption and vehicle wear over time, refuel at pumps." },
+        { name: "tarboro-seatbelt", status: "good", desc: "Seatbelt toggle plus a harness item for ejection resistance." },
+        { name: "tarboro-mechanic", status: "good", desc: "Mechanic job: diagnose, repair, customize, and bill a customer's vehicle." },
+      ]},
+      { cat: "Work & Economy", items: [
+        { name: "tarboro-gathering", status: "good", desc: "World gathering nodes: mining, lumberjacking, stripping scrap cars — 48 nodes, admin-movable/deletable." },
+        { name: "tarboro-fabrication", status: "good", desc: "Welding minigame (9 variants across 3 tiers, 12 recipes), vehicle fabrication, 3-tier crafting mastery, Welder's Hood safety-gear requirement." },
+        { name: "tarboro-industry", status: "good", desc: "Industrial production lines — smelter, lumber mill, stamping press, machine shop — tick autonomously once loaded with inputs." },
+        { name: "tarboro-drugs", status: "good", desc: "5-tier legal weed economy (cash payout), acid (replaces meth), coke, and crack verticals; baggie-gated packaging." },
+        { name: "tarboro-laundering", status: "good", desc: "Converts dirty money to clean at a loss, four NPC laundromat locations." },
+        { name: "tarboro-stocks", status: "good", desc: "Player-facing stock market — 8 tickers, insider tips, portfolio tracking." },
+        { name: "tarboro-business", status: "good", desc: "Player-owned legal orgs: payroll, shared funds, LinkedUp job postings — plus commercial-property business types (9, including a Mining depot) and a nested illegal/front picker." },
+        { name: "tarboro-shops", status: "good", desc: "Player-facing storefronts — Electronics, 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer." },
+        { name: "tl_plants", status: "good", desc: "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", note: "The rare exception actually confirmed working in-game — owner screenshots showed full plants and correct harvest behavior." },
+      ]},
+      { cat: "Crime & Law", items: [
+        { name: "tarboro-crime", status: "good", desc: "Cuffing, arrest, jail sentences, illegal-item confiscation on arrest." },
+        { name: "tarboro-theft", status: "good", desc: "Permanent vehicle theft (real ownership transfer), security cameras, 4-tier insurance — extended this session to cover physically-parked garage vehicles." },
+        { name: "tarboro-hacking", status: "good", desc: "Tiered hacking skill pillar — ATM skims, vehicle camera disables, player theater hacks, and the Vault (a bespoke NUI codebreaker minigame).", note: "The Vault's real-CEF behavior is repeatedly flagged as the single highest-risk untested piece in the whole project." },
+        { name: "tarboro-prison", status: "good", desc: "Daily inmate schedule, prison jobs, contraband, dual-layer (player + NPC) guards.", note: "Built solo while the owner was unavailable — extra care was taken and explicitly noted at the time." },
+        { name: "tarboro-npcfallback", status: "good", desc: "Spawns NPC police/EMS when too few players are on duty, plus ambient population density tuning." },
+      ]},
+      { cat: "Social Systems", items: [
+        { name: "tarboro-phone", status: "good", desc: "The phone itself and most of its app suite — Bank, Messages, Radio/Music, Bills, Real Estate, Garage, Biz Manager, LinkedUp, Darkweb, Insurance, Services, personalizable home screen.", note: "The one system with the deepest verification on this list — its icon-editing drag interactions were validated in a real disposable browser test harness, though it's still never run inside the actual game client." },
+        { name: "tarboro-allies", status: "good", desc: "Mutual accept/reject ally requests, lightweight crews, bail, lien payoff, ally revive, garage vehicle access." },
+        { name: "tarboro-gangs", status: "good", desc: "Player-registered gangs with a fixed 4-grade ladder, gang funds, 7-zone turf claiming (Downtown locked to the government)." },
+        { name: "tarboro-racing", status: "good", desc: "Ad-hoc street challenges, pink-slip wagers with double lock-in confirmation, car meets, organized circuit racing." },
+        { name: "tarboro-heists", status: "good", desc: "3-tier heists (small/medium/marquee) — a shared gear-up safehouse, real-cop-or-NPC-fallback response, one attempt per gear-up." },
+        { name: "tarboro-midgame", status: "good", desc: "Progression nudges (property/fabrication/stocks) and an open-world delivery-crate event." },
+        { name: "tarboro-darkweb", status: "good", desc: "Anonymous gig/bounty board with escrowed cash." },
+        { name: "tarboro-socialmedia", status: "good", desc: "Clout-to-income social feed — profiles, posts, follower thresholds, a sponsor-economy payout." },
+        { name: "tarboro-news", status: "good", desc: "Tarboro Tribune — player-authored news articles, phone-only, admin moderation." },
+        { name: "tarboro-requests", status: "warn", desc: "Player request board — clothing, vehicle liveries, vehicle upgrades, admin-fulfilled.", note: "Only a one-line cross-reference exists in memory, no dedicated build record." },
+        { name: "tarboro-radio", status: "good", desc: "Installable vehicle radio item, GTA native station tuning (music playback itself now lives in the Phone's Music app)." },
+        { name: "tarboro-clothing", status: "warn", desc: "Clothing store interactions.", note: "Description only — no build narrative found anywhere in memory." },
+      ]},
+      { cat: "Admin Tools", items: [
+        { name: "tarboro-admin", status: "good", desc: "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands (orphaned — see tarboro-injuries).", note: "Extended repeatedly across this whole project." },
+      ]},
+    ];
+
+    const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
+
+    const riRoot = document.getElementById('ri-categories');
+    RI_DATA.forEach(group => {
+      const section = document.createElement('div');
+      section.className = 'category';
+      section.innerHTML = `
+        <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
+        <table class="res-table"><tbody>
+          ${group.items.map(it => `
+            <tr class="res-row" data-status-val="${it.status}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
+              <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good'})"></span>${it.name}</span></td>
+              <td>
+                <div class="res-desc">${it.desc}</div>
+                ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
+              </td>
+              <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
+            </tr>
+          `).join('')}
+        </tbody></table>
+      `;
+      riRoot.appendChild(section);
+    });
+
+    let riActiveFilter = 'all';
+    let riSearchTerm = '';
+
+    function riApplyFilters() {
+      document.querySelectorAll('.res-inv .res-row').forEach(row => {
+        const status = row.getAttribute('data-status-val');
+        const text = row.getAttribute('data-search');
+        const matchesFilter = riActiveFilter === 'all' || status === riActiveFilter;
+        const matchesSearch = !riSearchTerm || text.includes(riSearchTerm);
+        row.setAttribute('data-status', (matchesFilter && matchesSearch) ? '' : 'hidden');
+      });
+      document.querySelectorAll('.res-inv .category').forEach(cat => {
+        const visible = cat.querySelectorAll('.res-row:not([data-status="hidden"])').length;
+        cat.style.display = visible ? '' : 'none';
+      });
+    }
+
+    document.querySelectorAll('.res-inv .filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.res-inv .filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        riActiveFilter = btn.getAttribute('data-filter');
+        riApplyFilters();
+      });
+    });
+
+    document.getElementById('ri-search').addEventListener('input', (e) => {
+      riSearchTerm = e.target.value.toLowerCase();
+      riApplyFilters();
+    });
+  </script>
+
+</body>
+</html>

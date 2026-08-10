@@ -262,16 +262,16 @@
             <div>
               <div class="prompt">tarboro-admin<span class="accent">@</span>server <span class="accent">~$</span> ls resources/[tarboro]/ --audit</div>
               <h1>Resource Inventory</h1>
-              <div class="subtitle">Every resource on the Tarboro Life server, cross-checked against server.cfg and build memory — not just what's been discussed in chat.</div>
+              <div class="subtitle" id="ri-subtitle">Loading resource inventory…</div>
             </div>
-            <div class="timestamp">compiled 2026-08-10<br>from a live boot + server.cfg diff<br><span id="ri-sync-status">connecting…</span></div>
+            <div class="timestamp"><span id="ri-compiled">compiled —</span><br>from a live boot + server.cfg diff<br><span id="ri-sync-status">connecting…</span></div>
           </header>
 
           <div class="stats">
-            <div class="stat neutral"><div class="num">44</div><div class="lbl">Resources on disk</div></div>
-            <div class="stat crit"><div class="num">1</div><div class="lbl">Not running at all</div></div>
-            <div class="stat warn"><div class="num">7</div><div class="lbl">Thin / no record</div></div>
-            <div class="stat good"><div class="num">36</div><div class="lbl">Documented</div></div>
+            <div class="stat neutral"><div class="num" id="ri-stat-total">—</div><div class="lbl">Resources on disk</div></div>
+            <div class="stat crit"><div class="num" id="ri-stat-crit">—</div><div class="lbl">Not running at all</div></div>
+            <div class="stat warn"><div class="num" id="ri-stat-warn">—</div><div class="lbl">Thin / no record</div></div>
+            <div class="stat good"><div class="num" id="ri-stat-good">—</div><div class="lbl">Documented</div></div>
             <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Marked tested (synced)</div></div>
           </div>
 
@@ -285,13 +285,13 @@
             </ul>
           </div>
 
-          <div class="banner"><strong>Every single resource below, including the ones marked Documented, has never been run by a real connected player.</strong> "Documented" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors, confirmed twice this session) — it does not mean anyone has clicked the prompt, opened the menu, or walked through the flow in-game.</div>
+          <div class="banner" id="ri-banner">Loading…</div>
 
           <div class="controls">
-            <button class="filter-btn active" data-filter="all">All 44</button>
-            <button class="filter-btn" data-filter="crit">Not Running (1)</button>
-            <button class="filter-btn" data-filter="warn">Thin / Undocumented (7)</button>
-            <button class="filter-btn" data-filter="good">Documented (36)</button>
+            <button class="filter-btn active" data-filter="all" id="ri-filter-all">All —</button>
+            <button class="filter-btn" data-filter="crit" id="ri-filter-crit">Not Running (—)</button>
+            <button class="filter-btn" data-filter="warn" id="ri-filter-warn">Thin / Undocumented (—)</button>
+            <button class="filter-btn" data-filter="good" id="ri-filter-good">Documented (—)</button>
             <label class="tested-toggle">
               <input type="checkbox" id="ri-tested-filter">
               Untested only
@@ -299,7 +299,7 @@
             <input class="search" type="text" placeholder="Search resource or description…" id="ri-search">
           </div>
 
-          <div id="ri-categories"></div>
+          <div id="ri-categories">Loading resource inventory…</div>
 
           <footer>
             Status reflects documentation + boot-test depth only, not a full code review — resources marked "Documented" still carry the same live-testing gap as everything else. Re-run this diff (folders on disk vs. server.cfg `ensure` lines) any time a resource is added or removed to catch future drift immediately.
@@ -333,98 +333,9 @@
     const db = getFirestore(firebaseApp);
     const testedDocRef = doc(db, 'tarboroLife', 'testedResources');
 
-    const RI_DATA = [
-      { cat: "Not Running", items: [
-        { name: "tarboro-injuries", status: "crit", desc: "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", note: "Fully implemented on disk. Missing from server.cfg entirely — never boots. The admin /injury:inflict, /injury:cure, /injury:clear commands in tarboro-admin are non-functional orphans until this is added." },
-      ]},
-      { cat: "Core Framework", items: [
-        { name: "tarboro-interact", status: "warn", desc: "Shared proximity-interaction UI — the right-side prompt panel with arrow-key navigation used by nearly every other resource.", note: "No dedicated build record — only known by how constantly it's relied on." },
-        { name: "tarboro-config", status: "good", desc: "Shared config table and admin toggles — the single source of truth for every tunable value in the project." },
-        { name: "tarboro-inventory", status: "good", desc: "Typed-slot layer on top of ox_inventory — the F2 panel (primary ×2, sidearm, melee, tool ×2, bag expansion)." },
-        { name: "tarboro-banking", status: "good", desc: "Card-first money: cash / bank / dirty, medical liens, garnishment, society funds, ATM network." },
-        { name: "tarboro-hud", status: "warn", desc: "The on-screen HUD.", note: "Only known as an integration point (setVisible export called by other resources) — no dedicated build record." },
-        { name: "tarboro-loading", status: "good", desc: "Custom branded loading screen." },
-      ]},
-      { cat: "Character & Onboarding", items: [
-        { name: "tarboro-character", status: "good", desc: "Character creation, appearance, spawn locations, ID/driver/firearm/business licensing, new-player protection." },
-        { name: "tarboro-arrival", status: "warn", desc: "8-beat cinematic new-player intake: black screen, establishing shot, voice narration, camera finds player, walk to an intake objective, an admin interview window (Discord webhook + self-release timeout), release into the world.", note: "Genuinely substantial and previously undocumented. Admin commands exist to skip/release/reset it for testing." },
-        { name: "tarboro-tutorial", status: "warn", desc: "Soft, fully-skippable \"Guided Start\" tracker: earn cash → bank it → install an app. Metadata-driven, no DB table.", note: "Previously undocumented; hooks into banking, phone, and tarboro-arrival's completion event." },
-        { name: "tarboro-death", status: "warn", desc: "Death / downed state, EMS response, hospital respawn.", note: "Only known via its NPCRevive export integration — no dedicated build record of the resource itself." },
-        { name: "tarboro-needs", status: "good", desc: "Hunger and thirst depletion with consumable items to restore them." },
-      ]},
-      { cat: "Property & Vehicles", items: [
-        { name: "tarboro-property", status: "good", desc: "Real estate: browse/buy/rent, house interiors (16 of 31 assigned), player-named signs, vacant land + object placement, commercial storefronts." },
-        { name: "tarboro-garage", status: "good", desc: "Take-out/store at 9 public garages, plus physical driveway vehicle slots on owned properties — parked cars are real, stealable, persistent entities." },
-        { name: "tarboro-fuel", status: "good", desc: "Fuel consumption and vehicle wear over time, refuel at pumps." },
-        { name: "tarboro-seatbelt", status: "good", desc: "Seatbelt toggle plus a harness item for ejection resistance." },
-        { name: "tarboro-mechanic", status: "good", desc: "Mechanic job: diagnose, repair, customize, and bill a customer's vehicle." },
-      ]},
-      { cat: "Work & Economy", items: [
-        { name: "tarboro-gathering", status: "good", desc: "World gathering nodes: mining, lumberjacking, stripping scrap cars — 48 nodes, admin-movable/deletable." },
-        { name: "tarboro-fabrication", status: "good", desc: "Welding minigame (9 variants across 3 tiers, 12 recipes), vehicle fabrication, 3-tier crafting mastery, Welder's Hood safety-gear requirement." },
-        { name: "tarboro-industry", status: "good", desc: "Industrial production lines — smelter, lumber mill, stamping press, machine shop — tick autonomously once loaded with inputs." },
-        { name: "tarboro-drugs", status: "good", desc: "5-tier legal weed economy (cash payout), acid (replaces meth), coke, and crack verticals; baggie-gated packaging." },
-        { name: "tarboro-laundering", status: "good", desc: "Converts dirty money to clean at a loss, four NPC laundromat locations." },
-        { name: "tarboro-stocks", status: "good", desc: "Player-facing stock market — 8 tickers, insider tips, portfolio tracking." },
-        { name: "tarboro-business", status: "good", desc: "Player-owned legal orgs: payroll, shared funds, LinkedUp job postings — plus commercial-property business types (9, including a Mining depot) and a nested illegal/front picker." },
-        { name: "tarboro-shops", status: "good", desc: "Player-facing storefronts — Electronics, 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer." },
-        { name: "tl_plants", status: "good", desc: "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", note: "The rare exception actually confirmed working in-game — owner screenshots showed full plants and correct harvest behavior." },
-      ]},
-      { cat: "Crime & Law", items: [
-        { name: "tarboro-crime", status: "good", desc: "Cuffing, arrest, jail sentences, illegal-item confiscation on arrest." },
-        { name: "tarboro-theft", status: "good", desc: "Permanent vehicle theft (real ownership transfer), security cameras, 4-tier insurance — extended this session to cover physically-parked garage vehicles." },
-        { name: "tarboro-hacking", status: "good", desc: "Tiered hacking skill pillar — ATM skims, vehicle camera disables, player theater hacks, and the Vault (a bespoke NUI codebreaker minigame).", note: "The Vault's real-CEF behavior is repeatedly flagged as the single highest-risk untested piece in the whole project." },
-        { name: "tarboro-prison", status: "good", desc: "Daily inmate schedule, prison jobs, contraband, dual-layer (player + NPC) guards.", note: "Built solo while the owner was unavailable — extra care was taken and explicitly noted at the time." },
-        { name: "tarboro-npcfallback", status: "good", desc: "Spawns NPC police/EMS when too few players are on duty, plus ambient population density tuning." },
-      ]},
-      { cat: "Social Systems", items: [
-        { name: "tarboro-phone", status: "good", desc: "The phone itself and most of its app suite — Bank, Messages, Radio/Music, Bills, Real Estate, Garage, Biz Manager, LinkedUp, Darkweb, Insurance, Services, personalizable home screen.", note: "The one system with the deepest verification on this list — its icon-editing drag interactions were validated in a real disposable browser test harness, though it's still never run inside the actual game client." },
-        { name: "tarboro-allies", status: "good", desc: "Mutual accept/reject ally requests, lightweight crews, bail, lien payoff, ally revive, garage vehicle access." },
-        { name: "tarboro-gangs", status: "good", desc: "Player-registered gangs with a fixed 4-grade ladder, gang funds, 7-zone turf claiming (Downtown locked to the government)." },
-        { name: "tarboro-racing", status: "good", desc: "Ad-hoc street challenges, pink-slip wagers with double lock-in confirmation, car meets, organized circuit racing." },
-        { name: "tarboro-heists", status: "good", desc: "3-tier heists (small/medium/marquee) — a shared gear-up safehouse, real-cop-or-NPC-fallback response, one attempt per gear-up." },
-        { name: "tarboro-midgame", status: "good", desc: "Progression nudges (property/fabrication/stocks) and an open-world delivery-crate event." },
-        { name: "tarboro-darkweb", status: "good", desc: "Anonymous gig/bounty board with escrowed cash." },
-        { name: "tarboro-socialmedia", status: "good", desc: "Clout-to-income social feed — profiles, posts, follower thresholds, a sponsor-economy payout." },
-        { name: "tarboro-news", status: "good", desc: "Tarboro Tribune — player-authored news articles, phone-only, admin moderation." },
-        { name: "tarboro-requests", status: "warn", desc: "Player request board — clothing, vehicle liveries, vehicle upgrades, admin-fulfilled.", note: "Only a one-line cross-reference exists in memory, no dedicated build record." },
-        { name: "tarboro-radio", status: "good", desc: "Installable vehicle radio item, GTA native station tuning (music playback itself now lives in the Phone's Music app)." },
-        { name: "tarboro-clothing", status: "warn", desc: "Clothing store interactions.", note: "Description only — no build narrative found anywhere in memory." },
-      ]},
-      { cat: "Admin Tools", items: [
-        { name: "tarboro-admin", status: "good", desc: "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands (orphaned — see tarboro-injuries).", note: "Extended repeatedly across this whole project." },
-      ]},
-    ];
-
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 
     const riRoot = document.getElementById('ri-categories');
-
-    // Rows render once with an unchecked/untested default; Firestore's
-    // onSnapshot listener (below) fills in the real tested state for
-    // everyone the moment it connects, and again live whenever it changes
-    // on any device.
-    RI_DATA.forEach(group => {
-      const section = document.createElement('div');
-      section.className = 'category';
-      section.innerHTML = `
-        <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
-        <table class="res-table"><tbody>
-          ${group.items.map(it => `
-            <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
-              <td class="tested-cell"><input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested"></td>
-              <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good'})"></span>${it.name}</span></td>
-              <td>
-                <div class="res-desc">${it.desc}</div>
-                ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
-              </td>
-              <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
-            </tr>
-          `).join('')}
-        </tbody></table>
-      `;
-      riRoot.appendChild(section);
-    });
 
     function riUpdateTestedCount() {
       const el = document.getElementById('ri-tested-count');
@@ -491,35 +402,92 @@
       riApplyFilters();
     });
 
-    // Checking a box writes straight to Firestore (dot-path update touches
-    // only that one resource's key). The onSnapshot listener is what
-    // actually updates the UI, including for the browser that clicked —
-    // this just kicks off the write and shows an optimistic state while
-    // it's in flight.
-    document.querySelectorAll('.res-inv .tested-check').forEach(box => {
-      box.addEventListener('change', async () => {
-        const name = box.getAttribute('data-name');
-        const checked = box.checked;
-        box.closest('.res-row').classList.toggle('tested', checked);
-        riUpdateTestedCount();
-        riApplyFilters();
-        try {
-          await updateDoc(testedDocRef, { [`tested.${name}`]: checked });
-        } catch (err) {
-          console.error('Failed to save tested state to Firestore:', err);
-          riSetSyncStatus('⚠ sync failed — check console', true);
-        }
-      });
-    });
+    // Everything below needs the JSON loaded first: render rows, wire up
+    // the tested-checkbox listeners, then hook up Firestore. Swapping in a
+    // new resource-inventory.json is now the entire maintenance workflow —
+    // nothing in this HTML needs to change to add/update/remove a resource.
+    async function riInit() {
+      let data;
+      try {
+        const res = await fetch('resource-inventory.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data = await res.json();
+      } catch (err) {
+        console.error('Failed to load resource-inventory.json:', err);
+        riRoot.textContent = '⚠ Could not load resource-inventory.json — check the console.';
+        riSetSyncStatus('⚠ could not load inventory data', true);
+        return;
+      }
 
-    // Make sure the doc exists (first run ever), then listen for live
-    // updates from any device, including this one's own writes.
-    (async () => {
+      document.getElementById('ri-compiled').textContent = `compiled ${data.compiled}`;
+      document.getElementById('ri-subtitle').textContent = data.source;
+      document.getElementById('ri-banner').textContent = data.caveat;
+
+      let total = 0;
+      const counts = { crit: 0, warn: 0, good: 0 };
+
+      riRoot.innerHTML = '';
+      data.categories.forEach(group => {
+        group.items.forEach(it => { total++; counts[it.status] = (counts[it.status] || 0) + 1; });
+
+        const section = document.createElement('div');
+        section.className = 'category';
+        section.innerHTML = `
+          <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
+          <table class="res-table"><tbody>
+            ${group.items.map(it => `
+              <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
+                <td class="tested-cell"><input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested"></td>
+                <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good'})"></span>${it.name}</span></td>
+                <td>
+                  <div class="res-desc">${it.desc}</div>
+                  ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
+                </td>
+                <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
+              </tr>
+            `).join('')}
+          </tbody></table>
+        `;
+        riRoot.appendChild(section);
+      });
+
+      document.getElementById('ri-stat-total').textContent = total;
+      document.getElementById('ri-stat-crit').textContent = counts.crit || 0;
+      document.getElementById('ri-stat-warn').textContent = counts.warn || 0;
+      document.getElementById('ri-stat-good').textContent = counts.good || 0;
+      document.getElementById('ri-filter-all').textContent = `All ${total}`;
+      document.getElementById('ri-filter-crit').textContent = `Not Running (${counts.crit || 0})`;
+      document.getElementById('ri-filter-warn').textContent = `Thin / Undocumented (${counts.warn || 0})`;
+      document.getElementById('ri-filter-good').textContent = `Documented (${counts.good || 0})`;
+
+      // Checking a box writes straight to Firestore (dot-path update touches
+      // only that one resource's key). The onSnapshot listener is what
+      // actually updates the UI, including for the browser that clicked —
+      // this just kicks off the write and shows an optimistic state while
+      // it's in flight.
+      document.querySelectorAll('.res-inv .tested-check').forEach(box => {
+        box.addEventListener('change', async () => {
+          const name = box.getAttribute('data-name');
+          const checked = box.checked;
+          box.closest('.res-row').classList.toggle('tested', checked);
+          riUpdateTestedCount();
+          riApplyFilters();
+          try {
+            await updateDoc(testedDocRef, { [`tested.${name}`]: checked });
+          } catch (err) {
+            console.error('Failed to save tested state to Firestore:', err);
+            riSetSyncStatus('⚠ sync failed — check console', true);
+          }
+        });
+      });
+
+      // Make sure the doc exists (first run ever), then listen for live
+      // updates from any device, including this one's own writes.
       try {
         await setDoc(testedDocRef, { tested: {} }, { merge: true });
         onSnapshot(testedDocRef, (snap) => {
-          const data = snap.data() || {};
-          riApplyTestedState(data.tested || {});
+          const snapData = snap.data() || {};
+          riApplyTestedState(snapData.tested || {});
           riSetSyncStatus('☁ synced live');
         }, (err) => {
           console.error('Firestore listen error:', err);
@@ -529,7 +497,9 @@
         console.error('Firestore init error:', err);
         riSetSyncStatus('⚠ could not connect to sync backend', true);
       }
-    })();
+    }
+
+    riInit();
   </script>
 
 </body>

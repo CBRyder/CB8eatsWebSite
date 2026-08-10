@@ -192,6 +192,20 @@ p {
   background: var(--card);
 }
 
+/* ---------- Embeds ---------- */
+
+.spotify-embed {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.spotify-embed iframe {
+  display: block;
+  border-radius: var(--radius);
+}
+
 /* ---------- Cards / Grid ---------- */
 
 .grid {

@@ -329,7 +329,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, doc, setDoc, updateDoc, onSnapshot
+      getFirestore, doc, updateDoc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
       getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -545,15 +545,15 @@
         });
       });
 
-      // Make sure the doc exists (harmless no-op after the first run ever).
-      // Unauthorized visitors will fail this write under the Firestore
-      // rules — that's expected, so it's silenced rather than surfaced.
-      try {
-        await setDoc(testedDocRef, { tested: {} }, { merge: true });
-      } catch (err) {
-        // Expected for anyone but the authorized account once the doc
-        // already exists — not worth alarming the user over.
-      }
+      // NOTE: this used to also call setDoc(testedDocRef, { tested: {} },
+      // { merge: true }) here to "make sure the doc exists" on every load.
+      // That was a bug: merge: true only merges at the top level of the
+      // fields you pass, so specifying `tested: {}` REPLACES the entire
+      // tested map with an empty one rather than leaving it alone — every
+      // reload by the authorized (write-permitted) account was silently
+      // wiping every checked box. The doc already exists in Firestore, so
+      // this write was never actually needed after the first run; removed
+      // rather than papered over.
 
       // The read side stays open to everyone regardless of sign-in state.
       try {

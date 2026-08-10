@@ -4,12 +4,6 @@
   "caveat": "Every resource below, including ones marked \"good\", has never been run by a real connected player. \"good\" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors) — not that anyone has clicked the prompt, opened the menu, or walked the flow in-game. Status values: crit = not running at all, warn = thin or zero documentation, good = documented.",
   "categories": [
     {
-      "cat": "Not Running",
-      "items": [
-        { "name": "tarboro-injuries", "status": "crit", "desc": "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", "note": "Fully implemented on disk. Missing from server.cfg entirely — never boots. The admin /injury:inflict, /injury:cure, /injury:clear commands in tarboro-admin are non-functional orphans until this is added." }
-      ]
-    },
-    {
       "cat": "Core Framework",
       "items": [
         { "name": "tarboro-interact", "status": "warn", "desc": "Shared proximity-interaction UI — the right-side prompt panel with arrow-key navigation used by nearly every other resource.", "note": "No dedicated build record — only known by how constantly it's relied on." },
@@ -27,6 +21,7 @@
         { "name": "tarboro-arrival", "status": "warn", "desc": "8-beat cinematic new-player intake: black screen, establishing shot, voice narration, camera finds player, walk to an intake objective, an admin interview window (Discord webhook + self-release timeout), release into the world.", "note": "Genuinely substantial and previously undocumented. Admin commands exist to skip/release/reset it for testing." },
         { "name": "tarboro-tutorial", "status": "warn", "desc": "Soft, fully-skippable \"Guided Start\" tracker: earn cash → bank it → install an app. Metadata-driven, no DB table.", "note": "Previously undocumented; hooks into banking, phone, and tarboro-arrival's completion event." },
         { "name": "tarboro-death", "status": "warn", "desc": "Death / downed state, EMS response, hospital respawn.", "note": "Only known via its NPCRevive export integration — no dedicated build record of the resource itself." },
+        { "name": "tarboro-injuries", "status": "good", "desc": "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", "note": "FIXED 2026-08-10 — was fully built but missing from server.cfg, so it had never run a single time. Added and confirmed booting clean (first-ever successful start). Still needs real in-game testing: /injury:inflict, /injury:cure, /injury:clear, /injury:list, and confirming it doesn't conflict with tarboro-death's own downed/EMS flow." },
         { "name": "tarboro-needs", "status": "good", "desc": "Hunger and thirst depletion with consumable items to restore them." }
       ]
     },

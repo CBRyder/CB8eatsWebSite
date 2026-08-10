@@ -332,7 +332,7 @@
       getFirestore, doc, updateDoc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+      getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -380,7 +380,7 @@
       } else {
         riIsAuthorized = false;
         btn.textContent = 'Sign in to check off items';
-        btn.onclick = () => signInWithPopup(auth, googleProvider).catch(err => {
+        btn.onclick = () => signInWithRedirect(auth, googleProvider).catch(err => {
           console.error('Sign-in failed:', err);
         });
         if (note) note.textContent = 'Anyone can view this checklist — only the site owner can check items off.';
@@ -390,6 +390,14 @@
     }
 
     onAuthStateChanged(auth, (user) => riUpdateSignInUI(user));
+
+    // Picks up the result when the page reloads after signInWithRedirect
+    // sends the browser to Google and back. onAuthStateChanged above will
+    // also fire with the signed-in user, so this is really just here to
+    // surface a clear error if the redirect itself failed.
+    getRedirectResult(auth).catch(err => {
+      console.error('Sign-in redirect failed:', err);
+    });
 
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 

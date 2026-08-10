@@ -112,6 +112,14 @@
     .res-inv .search::placeholder { color: var(--ri-faint); }
     .res-inv .search:focus { border-color: var(--ri-accent-dim); }
 
+    .res-inv .tested-toggle {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--ri-mono); font-size: 12px; color: var(--ri-muted);
+      cursor: pointer; user-select: none;
+    }
+    .res-inv .tested-toggle input { accent-color: var(--ri-accent); width: 14px; height: 14px; cursor: pointer; }
+    .res-inv .tested-toggle:hover { color: var(--ri-text); }
+
     .res-inv .category { margin-bottom: 8px; }
     .res-inv .category-head { display: flex; align-items: baseline; gap: 10px; padding: 22px 0 10px; }
     .res-inv .category-head h3 {
@@ -126,6 +134,14 @@
     .res-inv .res-row td { padding: 12px 10px; vertical-align: top; }
     .res-inv .res-row td:first-child { padding-left: 4px; }
     .res-inv .res-row td:last-child { padding-right: 4px; }
+
+    .res-inv .res-row.tested { background: var(--ri-good-bg); }
+    .res-inv .res-row.tested .res-name { color: var(--ri-good); text-decoration: line-through; text-decoration-color: var(--ri-faint); }
+    .res-inv .res-row.tested .res-desc,
+    .res-inv .res-row.tested .res-note { opacity: 0.6; }
+
+    .res-inv .tested-cell { width: 30px; text-align: center; }
+    .res-inv .tested-check { width: 15px; height: 15px; accent-color: var(--ri-good); cursor: pointer; }
 
     .res-inv .res-name { font-weight: 600; font-size: 13.5px; color: var(--ri-text); white-space: nowrap; }
     .res-inv .res-name .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; position: relative; top: -1px; }
@@ -198,7 +214,7 @@
             <div class="stat crit"><div class="num">1</div><div class="lbl">Not running at all</div></div>
             <div class="stat warn"><div class="num">7</div><div class="lbl">Thin / no record</div></div>
             <div class="stat good"><div class="num">36</div><div class="lbl">Documented</div></div>
-            <div class="stat accent"><div class="num">0</div><div class="lbl">Live-tested by a player</div></div>
+            <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Marked tested (this browser)</div></div>
           </div>
 
           <div class="findings">
@@ -218,6 +234,10 @@
             <button class="filter-btn" data-filter="crit">Not Running (1)</button>
             <button class="filter-btn" data-filter="warn">Thin / Undocumented (7)</button>
             <button class="filter-btn" data-filter="good">Documented (36)</button>
+            <label class="tested-toggle">
+              <input type="checkbox" id="ri-tested-filter">
+              Untested only
+            </label>
             <input class="search" type="text" placeholder="Search resource or description…" id="ri-search">
           </div>
 
@@ -303,6 +323,18 @@
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 
     const riRoot = document.getElementById('ri-categories');
+    // Tested state persists per-browser via localStorage (a static site has
+    // no server to save to, so this is local to whoever's checking boxes).
+    const RI_STORAGE_KEY = 'tarboro-ri-tested-v1';
+    function riLoadTested() {
+      try { return JSON.parse(localStorage.getItem(RI_STORAGE_KEY)) || {}; }
+      catch { return {}; }
+    }
+    function riSaveTested(map) {
+      try { localStorage.setItem(RI_STORAGE_KEY, JSON.stringify(map)); } catch {}
+    }
+    const riTested = riLoadTested();
+
     RI_DATA.forEach(group => {
       const section = document.createElement('div');
       section.className = 'category';
@@ -310,7 +342,8 @@
         <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
         <table class="res-table"><tbody>
           ${group.items.map(it => `
-            <tr class="res-row" data-status-val="${it.status}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
+            <tr class="res-row${riTested[it.name] ? ' tested' : ''}" data-status-val="${it.status}" data-name="${it.name}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
+              <td class="tested-cell"><input type="checkbox" class="tested-check" data-name="${it.name}" ${riTested[it.name] ? 'checked' : ''} title="Mark as tested"></td>
               <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good'})"></span>${it.name}</span></td>
               <td>
                 <div class="res-desc">${it.desc}</div>
@@ -324,22 +357,48 @@
       riRoot.appendChild(section);
     });
 
+    function riUpdateTestedCount() {
+      const el = document.getElementById('ri-tested-count');
+      if (el) el.textContent = document.querySelectorAll('.res-inv .res-row.tested').length;
+    }
+    riUpdateTestedCount();
+
+    document.querySelectorAll('.res-inv .tested-check').forEach(box => {
+      box.addEventListener('change', () => {
+        const name = box.getAttribute('data-name');
+        const row = box.closest('.res-row');
+        riTested[name] = box.checked;
+        riSaveTested(riTested);
+        row.classList.toggle('tested', box.checked);
+        riUpdateTestedCount();
+        riApplyFilters();
+      });
+    });
+
     let riActiveFilter = 'all';
     let riSearchTerm = '';
+    let riUntestedOnly = false;
 
     function riApplyFilters() {
       document.querySelectorAll('.res-inv .res-row').forEach(row => {
         const status = row.getAttribute('data-status-val');
         const text = row.getAttribute('data-search');
+        const isTested = row.classList.contains('tested');
         const matchesFilter = riActiveFilter === 'all' || status === riActiveFilter;
         const matchesSearch = !riSearchTerm || text.includes(riSearchTerm);
-        row.setAttribute('data-status', (matchesFilter && matchesSearch) ? '' : 'hidden');
+        const matchesTested = !riUntestedOnly || !isTested;
+        row.setAttribute('data-status', (matchesFilter && matchesSearch && matchesTested) ? '' : 'hidden');
       });
       document.querySelectorAll('.res-inv .category').forEach(cat => {
         const visible = cat.querySelectorAll('.res-row:not([data-status="hidden"])').length;
         cat.style.display = visible ? '' : 'none';
       });
     }
+
+    document.getElementById('ri-tested-filter').addEventListener('change', (e) => {
+      riUntestedOnly = e.target.checked;
+      riApplyFilters();
+    });
 
     document.querySelectorAll('.res-inv .filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {

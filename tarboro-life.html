@@ -268,16 +268,6 @@
             <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Marked tested (synced)</div></div>
           </div>
 
-          <div class="findings">
-            <h2>⚠ What this audit actually found</h2>
-            <ul>
-              <li><code>tarboro-injuries</code> — bleeding / broken limbs / concussion / sickness, fully built, extends <code>tarboro-death</code> — <strong>is not in server.cfg at all.</strong> It's never loaded, ever. <span class="why">Confirmed by diffing every folder on disk against every `ensure` line — this was the only mismatch.</span></li>
-              <li><code>tarboro-arrival</code> — a genuinely substantial 8-beat cinematic new-player intake sequence (establishing shot, voice narration, walk-to-intake objective, an admin interview window with a Discord webhook, skip/release/reset admin commands) — <strong>had zero record anywhere in memory</strong> until this pass, despite running live on every fresh character.</li>
-              <li><code>tarboro-tutorial</code> — the soft "Guided Start" onboarding tracker — same story, built and running, previously undocumented.</li>
-              <li>Five more resources (<code>tarboro-interact</code>, <code>tarboro-hud</code>, <code>tarboro-death</code>, <code>tarboro-requests</code>, <code>tarboro-clothing</code>) are only known indirectly — referenced constantly as integration points by other systems, but with no dedicated build record of their own.</li>
-            </ul>
-          </div>
-
           <div class="banner" id="ri-banner">Loading…</div>
 
           <div class="auth-row">

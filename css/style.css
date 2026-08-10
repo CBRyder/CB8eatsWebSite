@@ -342,6 +342,7 @@ footer a:hover {
 
 @media (max-width: 640px) {
   header {
+    position: static;
     flex-direction: column;
     align-items: flex-start;
   }

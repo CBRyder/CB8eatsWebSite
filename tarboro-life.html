@@ -120,6 +120,13 @@
     .res-inv .tested-toggle input { accent-color: var(--ri-accent); width: 14px; height: 14px; cursor: pointer; }
     .res-inv .tested-toggle:hover { color: var(--ri-text); }
 
+    .res-inv .auth-row {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .res-inv .auth-note { color: var(--ri-faint); font-size: 12px; }
+    .res-inv .tested-check:disabled { opacity: 0.35; cursor: not-allowed; }
+
     .res-inv .category { margin-bottom: 8px; }
     .res-inv .category-head { display: flex; align-items: baseline; gap: 10px; padding: 22px 0 10px; }
     .res-inv .category-head h3 {
@@ -287,6 +294,11 @@
 
           <div class="banner" id="ri-banner">Loading…</div>
 
+          <div class="auth-row">
+            <button class="filter-btn" id="ri-signin-btn">Sign in to check off items</button>
+            <span class="auth-note" id="ri-auth-note">Anyone can view this checklist — only the site owner can check items off.</span>
+          </div>
+
           <div class="controls">
             <button class="filter-btn active" data-filter="all" id="ri-filter-all">All —</button>
             <button class="filter-btn" data-filter="crit" id="ri-filter-crit">Not Running (—)</button>
@@ -319,6 +331,9 @@
     import {
       getFirestore, doc, setDoc, updateDoc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
@@ -329,9 +344,52 @@
       appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
     };
 
+    // Only this account may check items off — enforced for real by the
+    // Firestore security rules (this constant just drives the UI).
+    const RI_AUTHORIZED_EMAIL = 'cbleo73@gmail.com';
+
     const firebaseApp = initializeApp(firebaseConfig);
     const db = getFirestore(firebaseApp);
     const testedDocRef = doc(db, 'tarboroLife', 'testedResources');
+    const auth = getAuth(firebaseApp);
+    const googleProvider = new GoogleAuthProvider();
+
+    let riIsAuthorized = false;
+
+    function riSetCheckboxesEnabled(enabled) {
+      document.querySelectorAll('.res-inv .tested-check').forEach(box => {
+        box.disabled = !enabled;
+      });
+    }
+
+    function riUpdateSignInUI(user) {
+      const btn = document.getElementById('ri-signin-btn');
+      const note = document.getElementById('ri-auth-note');
+      if (!btn) return;
+
+      if (user && user.email === RI_AUTHORIZED_EMAIL) {
+        riIsAuthorized = true;
+        btn.textContent = `Signed in as ${user.email} — Sign out`;
+        btn.onclick = () => signOut(auth);
+        if (note) note.textContent = 'Checkboxes unlocked.';
+      } else if (user) {
+        riIsAuthorized = false;
+        btn.textContent = `Signed in as ${user.email} (not authorized) — Sign out`;
+        btn.onclick = () => signOut(auth);
+        if (note) note.textContent = "That Google account isn't authorized to check items off.";
+      } else {
+        riIsAuthorized = false;
+        btn.textContent = 'Sign in to check off items';
+        btn.onclick = () => signInWithPopup(auth, googleProvider).catch(err => {
+          console.error('Sign-in failed:', err);
+        });
+        if (note) note.textContent = 'Anyone can view this checklist — only the site owner can check items off.';
+      }
+
+      riSetCheckboxesEnabled(riIsAuthorized);
+    }
+
+    onAuthStateChanged(auth, (user) => riUpdateSignInUI(user));
 
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 
@@ -460,13 +518,19 @@
       document.getElementById('ri-filter-warn').textContent = `Thin / Undocumented (${counts.warn || 0})`;
       document.getElementById('ri-filter-good').textContent = `Documented (${counts.good || 0})`;
 
+      // Auth state may already be known (onAuthStateChanged can fire before
+      // these rows exist) — apply it to the checkboxes we just created.
+      riSetCheckboxesEnabled(riIsAuthorized);
+
       // Checking a box writes straight to Firestore (dot-path update touches
       // only that one resource's key). The onSnapshot listener is what
       // actually updates the UI, including for the browser that clicked —
       // this just kicks off the write and shows an optimistic state while
-      // it's in flight.
+      // it's in flight. The `disabled` attribute keeps casual visitors from
+      // clicking at all; the Firestore rules are what actually enforce it.
       document.querySelectorAll('.res-inv .tested-check').forEach(box => {
         box.addEventListener('change', async () => {
+          if (!riIsAuthorized) { box.checked = !box.checked; return; }
           const name = box.getAttribute('data-name');
           const checked = box.checked;
           box.closest('.res-row').classList.toggle('tested', checked);
@@ -481,10 +545,18 @@
         });
       });
 
-      // Make sure the doc exists (first run ever), then listen for live
-      // updates from any device, including this one's own writes.
+      // Make sure the doc exists (harmless no-op after the first run ever).
+      // Unauthorized visitors will fail this write under the Firestore
+      // rules — that's expected, so it's silenced rather than surfaced.
       try {
         await setDoc(testedDocRef, { tested: {} }, { merge: true });
+      } catch (err) {
+        // Expected for anyone but the authorized account once the doc
+        // already exists — not worth alarming the user over.
+      }
+
+      // The read side stays open to everyone regardless of sign-in state.
+      try {
         onSnapshot(testedDocRef, (snap) => {
           const snapData = snap.data() || {};
           riApplyTestedState(snapData.tested || {});

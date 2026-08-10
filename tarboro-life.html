@@ -356,9 +356,13 @@
       } else {
         riIsAuthorized = false;
         btn.textContent = 'Sign in to check off items';
-        btn.onclick = () => signInWithRedirect(auth, googleProvider).catch(err => {
-          console.error('Sign-in failed:', err);
-        });
+        btn.onclick = () => {
+          if (note) note.textContent = 'Redirecting to Google…';
+          signInWithRedirect(auth, googleProvider).catch(err => {
+            console.error('Sign-in failed:', err);
+            if (note) note.textContent = `Sign-in error: ${err.code || err.message}`;
+          });
+        };
         if (note) note.textContent = 'Anyone can view this checklist — only the site owner can check items off.';
       }
 
@@ -373,6 +377,8 @@
     // surface a clear error if the redirect itself failed.
     getRedirectResult(auth).catch(err => {
       console.error('Sign-in redirect failed:', err);
+      const note = document.getElementById('ri-auth-note');
+      if (note) note.textContent = `Sign-in error: ${err.code || err.message}`;
     });
 
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };

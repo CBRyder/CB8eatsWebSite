@@ -205,8 +205,8 @@ p {
 .doc-embed iframe {
   display: block;
   width: 100%;
-  height: 85vh;
-  min-height: 500px;
+  height: 95vh;
+  min-height: 900px;
   border: none;
 }
 

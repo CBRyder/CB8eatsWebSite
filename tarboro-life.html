@@ -264,7 +264,7 @@
               <h1>Resource Inventory</h1>
               <div class="subtitle">Every resource on the Tarboro Life server, cross-checked against server.cfg and build memory — not just what's been discussed in chat.</div>
             </div>
-            <div class="timestamp">compiled 2026-08-10<br>from a live boot + server.cfg diff</div>
+            <div class="timestamp">compiled 2026-08-10<br>from a live boot + server.cfg diff<br><span id="ri-sync-status">connecting…</span></div>
           </header>
 
           <div class="stats">
@@ -272,7 +272,7 @@
             <div class="stat crit"><div class="num">1</div><div class="lbl">Not running at all</div></div>
             <div class="stat warn"><div class="num">7</div><div class="lbl">Thin / no record</div></div>
             <div class="stat good"><div class="num">36</div><div class="lbl">Documented</div></div>
-            <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Marked tested (this browser)</div></div>
+            <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Marked tested (synced)</div></div>
           </div>
 
           <div class="findings">
@@ -314,7 +314,25 @@
     &copy; 2026 CB8eats. All rights reserved.
   </footer>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, updateDoc, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
+      authDomain: "tarborolifebackend.firebaseapp.com",
+      projectId: "tarborolifebackend",
+      storageBucket: "tarborolifebackend.firebasestorage.app",
+      messagingSenderId: "578368600107",
+      appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+    const testedDocRef = doc(db, 'tarboroLife', 'testedResources');
+
     const RI_DATA = [
       { cat: "Not Running", items: [
         { name: "tarboro-injuries", status: "crit", desc: "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", note: "Fully implemented on disk. Missing from server.cfg entirely — never boots. The admin /injury:inflict, /injury:cure, /injury:clear commands in tarboro-admin are non-functional orphans until this is added." },
@@ -381,18 +399,11 @@
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 
     const riRoot = document.getElementById('ri-categories');
-    // Tested state persists per-browser via localStorage (a static site has
-    // no server to save to, so this is local to whoever's checking boxes).
-    const RI_STORAGE_KEY = 'tarboro-ri-tested-v1';
-    function riLoadTested() {
-      try { return JSON.parse(localStorage.getItem(RI_STORAGE_KEY)) || {}; }
-      catch { return {}; }
-    }
-    function riSaveTested(map) {
-      try { localStorage.setItem(RI_STORAGE_KEY, JSON.stringify(map)); } catch {}
-    }
-    const riTested = riLoadTested();
 
+    // Rows render once with an unchecked/untested default; Firestore's
+    // onSnapshot listener (below) fills in the real tested state for
+    // everyone the moment it connects, and again live whenever it changes
+    // on any device.
     RI_DATA.forEach(group => {
       const section = document.createElement('div');
       section.className = 'category';
@@ -400,8 +411,8 @@
         <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
         <table class="res-table"><tbody>
           ${group.items.map(it => `
-            <tr class="res-row${riTested[it.name] ? ' tested' : ''}" data-status-val="${it.status}" data-name="${it.name}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
-              <td class="tested-cell"><input type="checkbox" class="tested-check" data-name="${it.name}" ${riTested[it.name] ? 'checked' : ''} title="Mark as tested"></td>
+            <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
+              <td class="tested-cell"><input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested"></td>
               <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good'})"></span>${it.name}</span></td>
               <td>
                 <div class="res-desc">${it.desc}</div>
@@ -419,19 +430,27 @@
       const el = document.getElementById('ri-tested-count');
       if (el) el.textContent = document.querySelectorAll('.res-inv .res-row.tested').length;
     }
-    riUpdateTestedCount();
 
-    document.querySelectorAll('.res-inv .tested-check').forEach(box => {
-      box.addEventListener('change', () => {
-        const name = box.getAttribute('data-name');
-        const row = box.closest('.res-row');
-        riTested[name] = box.checked;
-        riSaveTested(riTested);
-        row.classList.toggle('tested', box.checked);
-        riUpdateTestedCount();
-        riApplyFilters();
+    function riSetSyncStatus(text, isError) {
+      const el = document.getElementById('ri-sync-status');
+      if (!el) return;
+      el.textContent = text;
+      el.style.color = isError ? 'var(--ri-crit)' : 'var(--ri-faint)';
+    }
+
+    // Apply a { resourceName: true } map from Firestore onto the already-
+    // rendered rows/checkboxes.
+    function riApplyTestedState(testedMap) {
+      document.querySelectorAll('.res-inv .res-row').forEach(row => {
+        const name = row.getAttribute('data-name');
+        const isTested = !!testedMap[name];
+        row.classList.toggle('tested', isTested);
+        const box = row.querySelector('.tested-check');
+        if (box) box.checked = isTested;
       });
-    });
+      riUpdateTestedCount();
+      riApplyFilters();
+    }
 
     let riActiveFilter = 'all';
     let riSearchTerm = '';
@@ -471,6 +490,46 @@
       riSearchTerm = e.target.value.toLowerCase();
       riApplyFilters();
     });
+
+    // Checking a box writes straight to Firestore (dot-path update touches
+    // only that one resource's key). The onSnapshot listener is what
+    // actually updates the UI, including for the browser that clicked —
+    // this just kicks off the write and shows an optimistic state while
+    // it's in flight.
+    document.querySelectorAll('.res-inv .tested-check').forEach(box => {
+      box.addEventListener('change', async () => {
+        const name = box.getAttribute('data-name');
+        const checked = box.checked;
+        box.closest('.res-row').classList.toggle('tested', checked);
+        riUpdateTestedCount();
+        riApplyFilters();
+        try {
+          await updateDoc(testedDocRef, { [`tested.${name}`]: checked });
+        } catch (err) {
+          console.error('Failed to save tested state to Firestore:', err);
+          riSetSyncStatus('⚠ sync failed — check console', true);
+        }
+      });
+    });
+
+    // Make sure the doc exists (first run ever), then listen for live
+    // updates from any device, including this one's own writes.
+    (async () => {
+      try {
+        await setDoc(testedDocRef, { tested: {} }, { merge: true });
+        onSnapshot(testedDocRef, (snap) => {
+          const data = snap.data() || {};
+          riApplyTestedState(data.tested || {});
+          riSetSyncStatus('☁ synced live');
+        }, (err) => {
+          console.error('Firestore listen error:', err);
+          riSetSyncStatus('⚠ sync error — check console', true);
+        });
+      } catch (err) {
+        console.error('Firestore init error:', err);
+        riSetSyncStatus('⚠ could not connect to sync backend', true);
+      }
+    })();
   </script>
 
 </body>

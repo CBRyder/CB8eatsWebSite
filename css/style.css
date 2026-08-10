@@ -192,24 +192,6 @@ p {
   background: var(--card);
 }
 
-/* ---------- Document embeds ---------- */
-
-.doc-embed {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--card);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-}
-
-.doc-embed iframe {
-  display: block;
-  width: 100%;
-  height: 95vh;
-  min-height: 900px;
-  border: none;
-}
-
 /* ---------- Cards / Grid ---------- */
 
 .grid {

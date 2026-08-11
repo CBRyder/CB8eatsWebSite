@@ -11,10 +11,10 @@
   --text: #ece9f5;
   --text-dim: #a6a2b8;
   --text-faint: #706c82;
-  --accent: #d21f4b;
-  --accent-bright: #ff3366;
+  --accent: #00d95f;
+  --accent-bright: #00ff88;
   --accent-2: #7b3ff2;
-  --glow: rgba(210, 31, 75, 0.35);
+  --glow: rgba(0, 217, 95, 0.35);
   --radius: 10px;
   --max-width: 1100px;
   --font-display: "Cinzel", Georgia, "Times New Roman", serif;
@@ -33,7 +33,7 @@ body {
   margin: 0;
   background:
     radial-gradient(ellipse 900px 500px at 15% -10%, rgba(123, 63, 242, 0.16), transparent 60%),
-    radial-gradient(ellipse 900px 500px at 85% 0%, rgba(210, 31, 75, 0.14), transparent 55%),
+    radial-gradient(ellipse 900px 500px at 85% 0%, rgba(0, 217, 95, 0.14), transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: var(--font-body);

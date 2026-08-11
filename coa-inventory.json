@@ -1,7 +1,7 @@
 {
   "compiled": "2026-08-11",
   "source": "Cross-check of Source/COAVamp's actual C++ headers plus a real Content/ folder pass (Blueprint asset names, not just C++), against prior build notes — not a boot-test, this is a singleplayer UE5 project with no live server to boot. Re-run this diff any time new content is added to catch drift.",
-  "caveat": "\"Ready to test\" here means the underlying asset/code is confirmed present and, for C++, compiles clean — it does NOT mean confirmed working. This matters more than usual for the Blueprint-only items below: unlike C++, a .uasset's existence can't be \"compile-checked\" from outside the editor, so most Blueprint-only systems are marked warn (exists, completeness/wiring unverified) even where the feature is clearly substantial, rather than good. Status values: crit = investigated but not built, or confirmed likely broken; warn = exists (C++ complete, or a real Blueprint asset set on disk) but needs in-editor verification or wiring before it's confirmed working; good = either compiles clean with nothing further needed in C++, or has a specific prior confirmation of working correctly. Items with a checks list can be marked tested behavior-by-behavior.",
+  "caveat": "\"Ready to test\" here means the underlying asset/code is confirmed present and, for C++, compiles clean — it does NOT mean confirmed working. This matters more than usual for the Blueprint-only items below: unlike C++, a .uasset's existence can't be \"compile-checked\" from outside the editor, so most Blueprint-only systems are marked warn (exists, completeness/wiring unverified) even where the feature is clearly substantial, rather than good. Status values: crit = investigated but not built, or confirmed likely broken; warn = exists (C++ complete, or a real Blueprint asset set on disk) but needs in-editor verification or wiring before it's confirmed working; good = either compiles clean with nothing further needed in C++, or has a specific prior confirmation of working correctly; planned = genuinely future work — a save-data schema or field exists for it, but no actual gameplay system has been built yet, confirmed by reading the code rather than assumed. Planned items' checks are build milestones/decisions still needed, not test steps, since there's no existing behavior yet to verify. Items with a checks list can be marked tested (or, for planned items, done) behavior-by-behavior.",
   "categories": [
     {
       "cat": "Core GAS Framework",
@@ -289,6 +289,42 @@
             { "id": "all-4-slots-bind-both", "label": "All 4 ability slots correctly bind to abilities on both keyboard/mouse and gamepad" },
             { "id": "touch-layer-works", "label": "Touch/mobile input layer actually works on a touch device or touch-emulation, not just present as unused assets" },
             { "id": "camera-toggles-work", "label": "Camera mode/side toggles (IA_ToggleCameraMode/IA_ToggleCameraSide) work correctly" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Planned / Future Work",
+      "items": [
+        { "name": "Quest system", "status": "planned", "desc": "FCOASaveQuestData (mirroring the real Blueprint struct S_QuestData) already exists in the save schema — ActiveQuests and CompletedQuestIDs round-trip through save files today — but no actual quest-giving, tracking, or completion gameplay exists anywhere in Source/ or Content/. The data container is a placeholder waiting on the system that would populate it.",
+          "checks": [
+            { "id": "design-quest-flow", "label": "Design the quest data flow: who gives a quest, how progress is tracked, what triggers completion" },
+            { "id": "build-quest-giver", "label": "Build a quest-giver interaction (likely reusing the shared BPI_InteractInterface already used by BP_Chest)" },
+            { "id": "build-quest-log-ui", "label": "Build a quest log/journal UI (nothing like this exists in Content/UI yet)" },
+            { "id": "wire-to-save", "label": "Wire ActiveQuests/CompletedQuestIDs to the save system for real, not just as an empty passthrough" }
+          ]
+        },
+        { "name": "World state / world persistence system", "status": "planned", "desc": "FCOASaveWorldState (WorldFlags/DiscoveredLocations/HavenEstablished) round-trips through the save system, but COAPlayerCharacter.cpp's own load code has a comment stating it \"has no confirmed live sink yet — not applied here.\" Confirmed directly from source, not inferred: nothing currently reads or writes meaningful values into these fields during gameplay.",
+          "checks": [
+            { "id": "design-world-flags", "label": "Decide what WorldFlags actually tracks — a generic name→bool map, or specific named flags?" },
+            { "id": "build-discovered-locations", "label": "Build DiscoveredLocations tracking (a natural tie-in to the MiniMap system, which already exists)" },
+            { "id": "build-haven-mechanic", "label": "Build the HavenEstablished mechanic — sounds like a player base/home system, nothing like it exists yet" },
+            { "id": "wire-restored-state", "label": "Wire the restored WorldState into actual gameplay on load, closing the gap the code comment flags today" }
+          ]
+        },
+        { "name": "XP/Level ↔ GAS unification", "status": "planned", "desc": "XP/Level currently lives entirely in Blueprint (plain vars on BP_ThirdPersonCharacter, WB_Hud's XP bar, enemy kill-reward graphs) — a deliberate earlier decision NOT to migrate it into a real UCOAAttributeSet attribute the way Health/Blood/StrideCharges work. Whether to eventually unify it is a genuinely open, undecided question, not a confirmed roadmap item — flagged here as a decision to make, not a design already chosen.",
+          "checks": [
+            { "id": "decide-migrate-or-not", "label": "Decide: migrate XP/Level to a real GAS attribute, or commit to keeping it Blueprint-only permanently" },
+            { "id": "design-xp-curve-if-migrating", "label": "If migrating: design the XP curve / level-up GameplayEffect" },
+            { "id": "confirm-save-wiring-if-not", "label": "If staying Blueprint-only: confirm the save system's XPPoints/PlayerLevel fields are actually wired to the real Blueprint vars, not just present in the schema" }
+          ]
+        },
+        { "name": "Ability-unlock progression", "status": "planned", "desc": "FCOASavePlayerData.UnlockedAbilities (TArray<FGameplayTag>, typed to match AbilityID on UCOAGameplayAbility) exists in the save schema, but no system currently grants/unlocks abilities progressively — all 7 abilities are presumably available from the start today. The natural tie-in is the Skill tree system (DT_Skills/WB_SkillsScreen), but that connection doesn't exist yet either.",
+          "checks": [
+            { "id": "design-unlock-trigger", "label": "Design what actually unlocks an ability — a skill tree node, a level threshold, a story event?" },
+            { "id": "build-unlock-granting", "label": "Build the actual unlock-granting logic" },
+            { "id": "gate-activation-on-tag", "label": "Gate ability activation on UnlockedAbilities actually containing the right tag" },
+            { "id": "wire-skill-tree-to-unlocks", "label": "Wire skill tree node completion to actually populate UnlockedAbilities" }
           ]
         }
       ]

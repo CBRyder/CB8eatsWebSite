@@ -28,6 +28,8 @@
       --ri-warn-bg: rgba(224, 184, 63, 0.12);
       --ri-crit: #e2574f;
       --ri-crit-bg: rgba(226, 87, 79, 0.14);
+      --ri-planned: #4a90d9;
+      --ri-planned-bg: rgba(74, 144, 217, 0.13);
       --ri-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
 
       background: var(--ri-bg);
@@ -60,7 +62,7 @@
     .res-inv .timestamp { color: var(--ri-faint); font-size: 12.5px; text-align: right; white-space: nowrap; }
 
     .res-inv .stats {
-      display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
       background: var(--ri-border); border: 1px solid var(--ri-border); border-radius: 6px;
       overflow: hidden; margin-bottom: 26px;
     }
@@ -69,6 +71,7 @@
     .res-inv .stat .lbl { color: var(--ri-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 7px; }
     .res-inv .stat.crit .num { color: var(--ri-crit); }
     .res-inv .stat.warn .num { color: var(--ri-warn); }
+    .res-inv .stat.planned .num { color: var(--ri-planned); }
     .res-inv .stat.good .num { color: var(--ri-good); }
     .res-inv .stat.neutral .num { color: var(--ri-text); }
     .res-inv .stat.accent .num { color: var(--ri-accent); font-size: 21px; }
@@ -158,6 +161,7 @@
     .res-inv .chip.crit { background: var(--ri-crit-bg); color: var(--ri-crit); }
     .res-inv .chip.warn { background: var(--ri-warn-bg); color: var(--ri-warn); }
     .res-inv .chip.good { background: var(--ri-good-bg); color: var(--ri-good); }
+    .res-inv .chip.planned { background: var(--ri-planned-bg); color: var(--ri-planned); }
 
     .res-inv .res-row[data-status="hidden"] { display: none; }
 
@@ -274,6 +278,7 @@
             <div class="stat crit"><div class="num" id="ri-stat-crit">—</div><div class="lbl">Not built</div></div>
             <div class="stat warn"><div class="num" id="ri-stat-warn">—</div><div class="lbl">Needs in-editor work</div></div>
             <div class="stat good"><div class="num" id="ri-stat-good">—</div><div class="lbl">Built, untested</div></div>
+            <div class="stat planned"><div class="num" id="ri-stat-planned">—</div><div class="lbl">Planned / future work</div></div>
             <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Systems fully tested</div></div>
             <div class="stat accent"><div class="num" id="ri-stat-checks">0 / 0</div><div class="lbl">Individual checks confirmed</div></div>
           </div>
@@ -296,6 +301,7 @@
             <button class="filter-btn" data-filter="crit" id="ri-filter-crit">Not Built (—)</button>
             <button class="filter-btn" data-filter="warn" id="ri-filter-warn">Needs In-Editor Work (—)</button>
             <button class="filter-btn" data-filter="good" id="ri-filter-good">Built, Untested (—)</button>
+            <button class="filter-btn" data-filter="planned" id="ri-filter-planned">Planned (—)</button>
             <label class="tested-toggle">
               <input type="checkbox" id="ri-tested-filter">
               Untested only
@@ -448,7 +454,7 @@
       }
     });
 
-    const RI_STATUS_LABEL = { crit: "Not built", warn: "Needs in-editor work", good: "Built, untested" };
+    const RI_STATUS_LABEL = { crit: "Not built", warn: "Needs in-editor work", good: "Built, untested", planned: "Planned / future work" };
 
     const riRoot = document.getElementById('ri-categories');
 
@@ -592,7 +598,7 @@
       document.getElementById('ri-banner').textContent = data.caveat;
 
       let total = 0;
-      const counts = { crit: 0, warn: 0, good: 0 };
+      const counts = { crit: 0, warn: 0, good: 0, planned: 0 };
       riChecksByName = {};
 
       riRoot.innerHTML = '';
@@ -607,7 +613,10 @@
             ${group.items.map(it => {
               const hasChecks = Array.isArray(it.checks) && it.checks.length > 0;
               riChecksByName[it.name] = hasChecks ? it.checks.map(c => c.id) : null;
-              const dotColor = it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good';
+              // it.status is always one of crit/warn/good/planned, each with a
+              // matching --ri-* custom property defined above, so it can be
+              // used directly as the color-token name rather than a ternary.
+              const dotColor = it.status;
               const searchText = (it.name + ' ' + it.desc + ' ' + (it.note || '') + ' ' + (hasChecks ? it.checks.map(c => c.label).join(' ') : '')).toLowerCase();
 
               const testedCellHtml = hasChecks
@@ -645,10 +654,12 @@
       document.getElementById('ri-stat-crit').textContent = counts.crit || 0;
       document.getElementById('ri-stat-warn').textContent = counts.warn || 0;
       document.getElementById('ri-stat-good').textContent = counts.good || 0;
+      document.getElementById('ri-stat-planned').textContent = counts.planned || 0;
       document.getElementById('ri-filter-all').textContent = `All ${total}`;
       document.getElementById('ri-filter-crit').textContent = `Not Built (${counts.crit || 0})`;
       document.getElementById('ri-filter-warn').textContent = `Needs In-Editor Work (${counts.warn || 0})`;
       document.getElementById('ri-filter-good').textContent = `Built, Untested (${counts.good || 0})`;
+      document.getElementById('ri-filter-planned').textContent = `Planned (${counts.planned || 0})`;
 
       riUpdateChecksProgress();
       riSetCheckboxesEnabled(riIsAuthorized);

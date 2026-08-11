@@ -337,6 +337,43 @@ footer a:hover {
   color: var(--accent-bright);
 }
 
+/* ---------- Hidden easter egg: hover/tap/focus the footer credit ---------- */
+.joker-egg {
+  position: relative;
+  display: inline-block;
+}
+
+.joker-egg-reveal {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%) translateY(10px);
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  color: #a10606;
+  text-shadow: 0 0 10px rgba(200, 0, 0, 0.6), 0 2px 0 #4a0000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  margin-bottom: 6px;
+}
+
+.joker-egg:hover .joker-egg-reveal,
+.joker-egg:focus .joker-egg-reveal,
+.joker-egg:focus-within .joker-egg-reveal {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  animation: joker-egg-flicker 1.6s ease-in-out infinite;
+}
+
+@keyframes joker-egg-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
 @media (max-width: 640px) {
   header {
     flex-direction: column;

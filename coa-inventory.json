@@ -1,7 +1,7 @@
 {
   "compiled": "2026-08-11",
-  "source": "Cross-check of Source/COAVamp's actual C++ headers/cpp against build notes, not a boot-test — this is a singleplayer UE5 project with no live server to boot. Re-run this diff any time a new system is built to catch drift.",
-  "caveat": "\"Ready to test\" here means the C++ compiles clean and is ready for a real Play-In-Editor/Standalone pass — nothing below has actually been run and confirmed working in a live session yet, even the items marked ready. Status values: crit = investigated but not built, or confirmed likely broken; warn = C++ complete but needs additional in-editor work (an asset authored, a Blueprint graph rewired) before it can even be tested at all; good = compiles clean, no further C++ work needed before testing. Items with a checks list can be marked tested behavior-by-behavior — a system only shows fully tested once every one of its checks is checked.",
+  "source": "Cross-check of Source/COAVamp's actual C++ headers plus a real Content/ folder pass (Blueprint asset names, not just C++), against prior build notes — not a boot-test, this is a singleplayer UE5 project with no live server to boot. Re-run this diff any time new content is added to catch drift.",
+  "caveat": "\"Ready to test\" here means the underlying asset/code is confirmed present and, for C++, compiles clean — it does NOT mean confirmed working. This matters more than usual for the Blueprint-only items below: unlike C++, a .uasset's existence can't be \"compile-checked\" from outside the editor, so most Blueprint-only systems are marked warn (exists, completeness/wiring unverified) even where the feature is clearly substantial, rather than good. Status values: crit = investigated but not built, or confirmed likely broken; warn = exists (C++ complete, or a real Blueprint asset set on disk) but needs in-editor verification or wiring before it's confirmed working; good = either compiles clean with nothing further needed in C++, or has a specific prior confirmation of working correctly. Items with a checks list can be marked tested behavior-by-behavior.",
   "categories": [
     {
       "cat": "Core GAS Framework",
@@ -33,7 +33,7 @@
     {
       "cat": "Vampire Abilities",
       "items": [
-        { "name": "Crimson Resonance (channel feed/drain)", "status": "good", "desc": "Channel/duration ability, polls every ~0.2s via a looping timer for interrupt conditions (target dead, escaped, out of reach), cleans up active GE handles/timer on EndAbility.",
+        { "name": "Crimson Resonance (channel feed/drain)", "status": "good", "desc": "Channel/duration ability, polls every ~0.2s via a looping timer for interrupt conditions (target dead, escaped, out of reach), cleans up active GE handles/timer on EndAbility. Blueprint config asset: Content/Characters/ClanAssets/GA_CrimsonResonance.uasset, with GE_CR_Cooldown/GE_CR_Drain/GE_CR_HealOverTime as its GE slots.",
           "checks": [
             { "id": "channel-starts", "label": "Channel starts correctly on activation" },
             { "id": "interrupts-correctly", "label": "Interrupts correctly when the target dies, escapes, or leaves reach" },
@@ -41,37 +41,46 @@
             { "id": "cleanup-no-leak", "label": "Cleans up GE handles/timer on EndAbility with no lingering state" }
           ]
         },
-        { "name": "Tail Lash (melee arc sweep + knockback)", "status": "good", "desc": "Instant fire-and-forget ability — calls EndAbility immediately after applying its effects, no channel needed.",
+        { "name": "Tail Lash (melee arc sweep + knockback)", "status": "good", "desc": "Instant fire-and-forget ability — calls EndAbility immediately after applying its effects, no channel needed. Blueprint config asset: GA_TailLash.uasset.",
           "checks": [
             { "id": "arc-hits-all", "label": "Arc sweep hits every target actually inside its range" },
             { "id": "knockback-applies", "label": "Knockback applies correctly to hit targets" },
             { "id": "ends-immediately", "label": "Ends immediately with no lingering state between casts" }
           ]
         },
-        { "name": "Umbral Veil (stealth)", "status": "good", "desc": "Grants a State.Stealthed tag (Infinite-duration, no-modifier GE) for as long as the ability owns it; breaks on movement or any other ability activating.",
+        { "name": "Umbral Veil (stealth)", "status": "good", "desc": "Grants a State.Stealthed tag (Infinite-duration, no-modifier GE_UV_Stealth) for as long as the ability owns it; breaks on movement or any other ability activating. Blueprint config asset: GA_UmbralVeil.uasset.",
           "checks": [
             { "id": "stealth-grants", "label": "Grants the stealth state tag on activation" },
             { "id": "breaks-on-move", "label": "Breaks correctly on movement" },
             { "id": "breaks-on-other-ability", "label": "Breaks correctly the instant any other ability activates" }
           ]
         },
-        { "name": "Crimson Burst (AoE lifesteal)", "status": "good", "desc": "Instant fire-and-forget AoE ability with a lifesteal heal back to the caster.",
+        { "name": "Crimson Burst (AoE lifesteal)", "status": "good", "desc": "Instant fire-and-forget AoE ability with a lifesteal heal back to the caster. Blueprint config asset: GA_CrimsonBurst.uasset.",
           "checks": [
             { "id": "aoe-hits-all", "label": "AoE correctly hits every valid target in range" },
             { "id": "lifesteal-heals", "label": "Lifesteal heals the caster proportional to damage actually dealt" }
           ]
         },
-        { "name": "Umbral Chains (single-target root)", "status": "good", "desc": "Instant activation, delayed one-shot cleanup: zeroes the target's MaxWalkSpeed, removes the root after RootDuration via a non-looping timer built with per-activation payload state (not ability-level members, since UCOAGameplayAbility is InstancedPerActor) — a real overlapping-activation clobber bug was caught and fixed here before shipping.",
+        { "name": "Umbral Chains (single-target root)", "status": "good", "desc": "Instant activation, delayed one-shot cleanup: zeroes the target's MaxWalkSpeed, removes the root (GE_UC_Rooted) after RootDuration via a non-looping timer built with per-activation payload state (not ability-level members, since UCOAGameplayAbility is InstancedPerActor) — a real overlapping-activation clobber bug was caught and fixed here before shipping. Blueprint config asset: GA_UmbralChains.uasset.",
           "checks": [
             { "id": "root-applies", "label": "Target correctly rooted (MaxWalkSpeed zeroed) on hit" },
             { "id": "root-removes-on-time", "label": "Root correctly removed after RootDuration" },
             { "id": "overlap-regression", "label": "Two overlapping activations on different targets don't clobber each other's state (regression check for the bug already fixed once)" }
           ]
         },
-        { "name": "Crimson Harvest (corpse-feed, instant)", "status": "good", "desc": "Instant harvest ability with an explicit OnFeedBuffEffects extension array, applied to the caster on every successful harvest — built exactly so more buffs (like the Fed Recharge Buff) can be added in-editor with zero code changes.",
+        { "name": "Crimson Harvest (corpse-feed, instant)", "status": "good", "desc": "Instant harvest ability with an explicit OnFeedBuffEffects extension array (GE_CH_Harvested plus whatever else gets added, like the Fed Recharge buff), applied to the caster on every successful harvest. Blueprint config asset: GA_CrimsonHarvest.uasset.",
           "checks": [
             { "id": "harvest-consumes-corpse", "label": "A successful harvest actually consumes/interacts with the corpse correctly" },
             { "id": "feed-buffs-apply", "label": "Every effect in OnFeedBuffEffects applies to the caster on a successful harvest" }
+          ]
+        },
+        { "name": "Phantom Stride (dash/blink) — Blueprint-only, newly found", "status": "warn", "desc": "GA_PhantomStride + GE_Cost_PhantomStride + GE_PS_Recharge + GE_PS_SetCharges (Content/Characters/ClanAssets), spending StrideCharges via an aim-then-execute input pair (IA_StrideAim / IA_StrideExecute) with a live BP_StridePreview/M_StridePreview visual. Unlike all 6 abilities above, there is NO C++ header for this ability anywhere in Source/COAVamp/Public — it is entirely Blueprint-side, and was not present in any prior build notes for this project at all. Found only by reading the actual Content/ folder for this pass, not previously known.",
+          "checks": [
+            { "id": "aim-preview-shows", "label": "Holding IA_StrideAim shows the BP_StridePreview visual" },
+            { "id": "execute-moves-player", "label": "IA_StrideExecute actually moves/dashes/teleports the player" },
+            { "id": "spends-stride-charge", "label": "Execution correctly spends a StrideCharge on UCOAAttributeSet" },
+            { "id": "recharge-works", "label": "GE_PS_Recharge correctly restores charges over time" },
+            { "id": "blocked-at-zero", "label": "Execution is blocked/fails cleanly at 0 charges rather than going negative or erroring" }
           ]
         }
       ]
@@ -79,7 +88,7 @@
     {
       "cat": "Feed & Recharge System",
       "items": [
-        { "name": "\"Feed to death\" Stride recharge buff", "status": "warn", "desc": "Killing a Crimson Resonance channel target, or landing a Crimson Harvest, should temporarily speed up passive Stride-charge recharge. C++ side is fully complete (GrantFedRechargeBuff(), the State.FedRechargeBoost tag, ACOAPlayerState's tag-change handler resetting recharge progress) — needs 2 GameplayEffect assets authored and assigned in-editor before any of it can actually do anything yet.",
+        { "name": "\"Feed to death\" Stride recharge buff", "status": "warn", "desc": "Killing a Crimson Resonance channel target, or landing a Crimson Harvest, should temporarily speed up passive Stride-charge recharge. C++ side is fully complete (GrantFedRechargeBuff(), the State.FedRechargeBoost tag, ACOAPlayerState's tag-change handler resetting recharge progress) — needs the 2 GameplayEffect assets authored and assigned in-editor before any of it can actually do anything yet.",
           "checks": [
             { "id": "ge-authored", "label": "FedRechargeBuffEffectClass GE authored (Duration, Add modifier on StrideCharges, grants State.FedRechargeBoost)" },
             { "id": "ge-on-resonance", "label": "That GE assigned into Crimson Resonance's FedRechargeBuffEffectClass slot" },
@@ -93,19 +102,68 @@
       ]
     },
     {
-      "cat": "Blueprint-to-C++ Ports",
+      "cat": "Enemy Roster",
       "items": [
-        { "name": "Skills (COASkillFunctionLibrary)", "status": "warn", "desc": "Native mirror of the Blueprint-only skill system, reverse-engineered from the binary .uasset's own field names/types. Compiles; not yet wired into the real Blueprint graphs it's meant to replace.",
+        { "name": "Enemy character types (Fey, Sevarog, Simple)", "status": "warn", "desc": "BP_EnemyFey and BP_EnemySevarog (built on the free Paragon Fey/Sevarog character asset packs), plus a generic BP_SimpleEnemy — all under Content/Characters/Enemy. All presumably extend ACOAEnemyCharacter for real GAS/ASC support, but that inheritance, and each one's actual AI behavior, hasn't been confirmed from outside the editor.",
           "checks": [
-            { "id": "rewired-into-graphs", "label": "COASkillFunctionLibrary calls actually replace the duplicated logic in the Skills Blueprint graphs" },
-            { "id": "behavior-matches-old", "label": "Skill tree progress behaves identically to the old Blueprint-only version after rewiring" }
+            { "id": "fey-extends-coa-base", "label": "BP_EnemyFey actually extends ACOAEnemyCharacter (has a working ASC)" },
+            { "id": "sevarog-extends-coa-base", "label": "BP_EnemySevarog actually extends ACOAEnemyCharacter (has a working ASC)" },
+            { "id": "simple-enemy-role", "label": "BP_SimpleEnemy's actual role confirmed (test dummy vs. a real third enemy type)" },
+            { "id": "enemies-take-real-damage", "label": "All 3 take damage correctly through UCOAAttributeSet/GAS, not a separate pipeline" },
+            { "id": "enemies-die-correctly", "label": "All 3 die/despawn/drop correctly once Health reaches 0" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Inventory, Crafting & Equipment",
+      "items": [
+        { "name": "Inventory core (AC_InventorySystem + item data)", "status": "warn", "desc": "The actor component AC_InventorySystem + AC_ItemDataComponent, backed by DT_ItemData and a full item-type schema (E_Itemtype/E_Quality/E_WeaponType/E_EquipmentSlot, S_ItemData/S_ArmorStatStruct/S_DamageStruct/S_HealingStruct). This is the real, live Blueprint-only system — deliberately NOT ported to the new C++ COAInventoryFunctionLibrary, since its equip/feed/interaction logic was judged too game-specific to reconstruct safely from the binary alone.",
+          "checks": [
+            { "id": "items-add-remove", "label": "Items add/remove correctly from the inventory" },
+            { "id": "grid-renders", "label": "WB_InventoryGrid renders real item icons/quantities correctly" },
+            { "id": "drag-drop-works", "label": "Drag-and-drop (WB_DragPreview) between inventory slots works" },
+            { "id": "item-data-reads", "label": "Item quality/type/weapon-type data reads correctly from DT_ItemData" }
           ]
         },
-        { "name": "Inventory / Crafting / HotBar", "status": "warn", "desc": "COAInventoryFunctionLibrary + COAHotbarFunctionLibrary, native structs/logic reverse-engineered the same way. Deliberately does NOT port AC_InventorySystem's equip/feed/interaction logic — judged too game-specific to reconstruct safely from the binary alone.",
+        { "name": "Crafting system", "status": "warn", "desc": "DT_CraftingRecipes + S_CraftingRecipe/S_CraftingMaterial, a real crafting queue (S_QueueSlotinfo, WB_QueueSlot) and UI (WB_CraftingPanel, WB_RecipeSlot, WB_MaterialRequirement). At least one real placeholder recipe chain exists on disk (BP_WoodStick + BP_Iron → BP_WoodSword).",
+          "checks": [
+            { "id": "panel-lists-recipes", "label": "WB_CraftingPanel opens and lists real recipes from DT_CraftingRecipes" },
+            { "id": "craft-consumes-produces", "label": "Crafting BP_WoodSword from BP_WoodStick + BP_Iron actually consumes the inputs and produces the output" },
+            { "id": "queue-processes-order", "label": "The crafting queue (WB_QueueSlot) correctly processes multiple queued items in order" },
+            { "id": "missing-materials-handled", "label": "A missing-materials case is handled cleanly (WB_MaterialRequirement shows what's actually missing)" }
+          ]
+        },
+        { "name": "Equipment & gear screen", "status": "warn", "desc": "WB_CharacterGearScreen + WB_EquippedGearSlot, backed by E_EquipmentSlot and S_ArmorStatStruct.",
+          "checks": [
+            { "id": "equip-from-inventory", "label": "Equipping an item from inventory into a gear slot works" },
+            { "id": "stats-apply", "label": "Equipped stats (S_ArmorStatStruct) actually apply to the character" },
+            { "id": "unequip-returns-item", "label": "Un-equipping returns the item to inventory correctly" }
+          ]
+        },
+        { "name": "World storage & interaction (BP_Chest)", "status": "warn", "desc": "BP_Chest + WB_ChestGrid, using the shared BPI_InteractInterface (via WB_InteractablewInterface) that other interactables in the project are meant to reuse.",
+          "checks": [
+            { "id": "chest-opens", "label": "Opening a BP_Chest in the world shows WB_ChestGrid with its real contents" },
+            { "id": "chest-take-item", "label": "Taking an item from a chest moves it to the player's inventory correctly" },
+            { "id": "interact-interface-consistent", "label": "The shared interact interface behaves consistently across chests and other interactables, not just this one case" }
+          ]
+        },
+        { "name": "COAInventoryFunctionLibrary / COAHotbarFunctionLibrary (C++ mirror)", "status": "warn", "desc": "Native structs/logic reverse-engineered from the binary Blueprint assets above. Compiles; not yet wired into the real Blueprint graphs it's meant to eventually replace, per prior build notes.",
           "checks": [
             { "id": "inventory-rewired", "label": "COAInventoryFunctionLibrary wired into the real inventory Blueprint graphs" },
-            { "id": "hotbar-rewired", "label": "COAHotbarFunctionLibrary wired into the real hotbar Blueprint graphs" },
-            { "id": "equip-still-works", "label": "Equip/feed/interaction still functions correctly via the untouched AC_InventorySystem path after rewiring" }
+            { "id": "hotbar-rewired", "label": "COAHotbarFunctionLibrary wired into WB_HotbarUI/WB_HotbarSlot's graphs" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Skills & Progression",
+      "items": [
+        { "name": "Skill tree & progression UI", "status": "warn", "desc": "DT_Skills (DataTable) + E_SkillTree enum + S_SkillInfo struct, with a WB_SkillSlot slot widget and a full WB_SkillsScreen. The native COASkillFunctionLibrary mirrors some of this logic in C++ but per prior build notes was never confirmed wired into these actual Blueprint graphs.",
+          "checks": [
+            { "id": "screen-lists-skills", "label": "WB_SkillsScreen opens and lists real skills from DT_Skills" },
+            { "id": "unlock-persists", "label": "Unlocking/leveling a skill via WB_SkillSlot actually persists (ties to the Save System's SkillTreeProgress field, previously flagged as having no confirmed live source at all)" },
+            { "id": "function-library-wired", "label": "COASkillFunctionLibrary calls actually replace the duplicated logic in these Blueprint graphs" }
           ]
         }
       ]
@@ -113,7 +171,7 @@
     {
       "cat": "Save System",
       "items": [
-        { "name": "COASaveGameSubsystem (Skyrim-style, unlimited slots)", "status": "warn", "desc": "Full replacement for the old Blueprint save system: SaveNewSlot/OverwriteSlot/LoadSlot/DeleteSlot/GetAllSaveSlots/GetMostRecentSaveSlot/HasAnySaveSlots, scanning Saved/SaveGames/*.sav directly via IFileManager (no manifest object needed). Compiles clean; the old Blueprint system hasn't actually been replaced/rewired in the live UI yet, and only about 8 of ~20 save fields have a confirmed live data source.",
+        { "name": "COASaveGameSubsystem (Skyrim-style, unlimited slots)", "status": "warn", "desc": "Full replacement for the old Blueprint save system (BP_GameInstanceSavingSystem/BP_SaveGameVamp/BP_SaveManifest): SaveNewSlot/OverwriteSlot/LoadSlot/DeleteSlot/GetAllSaveSlots/GetMostRecentSaveSlot/HasAnySaveSlots, scanning Saved/SaveGames/*.sav directly via IFileManager. Compiles clean; the old Blueprint system hasn't actually been replaced/rewired in the live UI (WB_SavesScreen/WB_SaveChoicePopup/WB_SaveSlotRow) yet, and only about 8 of ~20 save fields have a confirmed live data source.",
           "checks": [
             { "id": "save-creates-file", "label": "SaveNewSlot/OverwriteSlot creates a real .sav file on disk" },
             { "id": "load-roundtrips-transform", "label": "LoadSlot round-trips CurrentMapName/PlayerLocation/PlayerRotation correctly" },
@@ -121,8 +179,69 @@
             { "id": "slot-management-works", "label": "DeleteSlot/GetAllSaveSlots/GetMostRecentSaveSlot/HasAnySaveSlots all behave correctly against real files on disk" },
             { "id": "prune-respects-cap", "label": "PruneOldAutoSaves respects MaxAutoSaves without touching quicksaves/manual saves" },
             { "id": "ui-calls-new-system", "label": "The real WB_SavesScreen UI actually calls the new C++ functions, not the old Blueprint ones" },
-            { "id": "gas-restore-ge-exists", "label": "Restoring GAS attributes on load applies through a real Instant Override GE (not yet built as of last check)" },
-            { "id": "unconfirmed-fields-resolved", "label": "Fields with no confirmed live source (XP, Level, UnlockedAbilities, SkillTreeProgress, ResonanceOverflow, AbsorbedMemories, quest/world state) are either wired to a real system now or intentionally left at defaults" }
+            { "id": "gas-restore-ge-exists", "label": "Restoring GAS attributes on load applies through GE_RestoreAttributes_Instant (found in Content/GAS_BPs/GamePlayEffects — a prior build note flagged this exact GE as not yet built, but a matching asset now exists on disk; confirm it's actually wired into the load flow, not just present)" },
+            { "id": "unconfirmed-fields-resolved", "label": "Fields with no confirmed live source (XP, Level, UnlockedAbilities, SkillTreeProgress, ResonanceOverflow, AbsorbedMemories, quest/world state) are either wired to a real system now or intentionally left at defaults" },
+            { "id": "save-slot-row-shows", "label": "WB_SaveSlotRow displays correct per-slot metadata for real saved files" },
+            { "id": "save-choice-popup-works", "label": "WB_SaveChoicePopup (new save vs. overwrite) behaves correctly against real existing slots" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "UI, Menus & HUD",
+      "items": [
+        { "name": "HUD (WB_Hud)", "status": "warn", "desc": "The main gameplay HUD widget — home to the Blueprint-only XP bar and other plain-Blueprint character stats, per prior build notes, alongside whatever reads from the real GAS attributes.",
+          "checks": [
+            { "id": "gas-bars-live", "label": "Health/Blood bars on WB_Hud track real GAS attribute values live" },
+            { "id": "xp-bar-tracks", "label": "XP bar tracks the Blueprint-only XP system correctly" },
+            { "id": "no-desync-on-travel", "label": "HUD doesn't desync from actual character state after a level transition" }
+          ]
+        },
+        { "name": "Main Menu & Pause Menu", "status": "warn", "desc": "WB_MainMenu, WB_PauseMenu, and a shared WB_ConfirmAction dialog gated by E_ConfirmActionType.",
+          "checks": [
+            { "id": "start-triggers-loading", "label": "Main menu Start correctly triggers the loading screen + Open Level travel" },
+            { "id": "pause-toggles", "label": "Pause menu opens/closes correctly mid-game via IA_Pause" },
+            { "id": "confirm-gates-action", "label": "WB_ConfirmAction correctly gates a real destructive action (e.g. overwrite save, quit to menu)" }
+          ]
+        },
+        { "name": "Notifications", "status": "warn", "desc": "WB_NotificationToast + WB_NotificationWall, driven by E_NotifactionType/S_NoificationStruct.",
+          "checks": [
+            { "id": "toast-appears", "label": "A toast notification actually appears on a real gameplay event" },
+            { "id": "wall-stacks-clears", "label": "Multiple queued notifications stack and clear correctly on the notification wall" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Developer Console",
+      "items": [
+        { "name": "In-game developer console", "status": "warn", "desc": "WB_ConsoleTerminal + WB_ConsoleLine, toggled via IA_ToggleConsole. Contents/command set entirely unknown from outside the editor — first time this system has been documented anywhere for this project; found only by reading Content/UI directly for this pass.",
+          "checks": [
+            { "id": "toggles-open", "label": "Console actually toggles open/closed via IA_ToggleConsole" },
+            { "id": "command-executes", "label": "At least one real command executes something (confirms this isn't just a visual stub)" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "MiniMap",
+      "items": [
+        { "name": "MiniMap", "status": "warn", "desc": "WB_MiniMap widget backed by a real RT_MiniMap render target and M_MiniMap material — a genuine render-target implementation pattern, not just a stub. Corrects a prior build note that described this system as only \"surveyed as small/low-value\" — real, non-trivial assets exist for it.",
+          "checks": [
+            { "id": "renders-live-view", "label": "MiniMap actually renders a live top-down view, not a static image" },
+            { "id": "player-indicator-tracks", "label": "Player position/heading indicator tracks correctly" },
+            { "id": "survives-level-transition", "label": "MiniMap updates correctly across a level transition" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Settings & Audio",
+      "items": [
+        { "name": "Settings & audio mixing", "status": "warn", "desc": "BP_GlobalSettings + 4 Sound Classes (SC_Master/SC_Dialogue/SC_Music/SC_SFX) driving WB_Settings.",
+          "checks": [
+            { "id": "sliders-affect-audio", "label": "Each of the 4 volume sliders (Master/Dialogue/Music/SFX) actually changes real in-game audio" },
+            { "id": "settings-persist", "label": "Settings persist across a relog/restart" }
           ]
         }
       ]
@@ -144,12 +263,32 @@
       ]
     },
     {
-      "cat": "Combat & Open Questions",
+      "cat": "Combat Systems",
       "items": [
-        { "name": "Basic melee combo pipeline", "status": "crit", "desc": "BP_ThirdPersonCharacter's stock \"Variant_Combat\" template melee combo (ComboAttack/bSaveAttack/ComboIndex, bound to IA_ComboAttack). None of ACOACharacterBase/ACOAPlayerCharacter/ACOAEnemyCharacter reference Damage/Damageable/Attacker at all, meaning this combo's damage most likely never touches UCOAAttributeSet::Health or GAS at all — could not confirm live-but-broken vs. fully dead from source alone. Deliberately held off porting until this can be confirmed in a live session.",
+        { "name": "Basic melee combo pipeline", "status": "crit", "desc": "The stock UE5 \"Variant_Combat\" template turns out to be a much bigger self-contained system than previously known: BP_CombatCharacter/BP_CombatGameMode/BP_CombatPlayerController/BP_CombatAIController/BP_CombatEnemy, StateTree-driven AI (ChargedAttack/ComboAttack/FaceActor/FaceLocation/GetPlayerInfo/SetCharacterSpeed/WaitForLanding tasks, IsCharacterGrounded/IsInDanger conditions), EnvQuery-based targeting (Evade/Fallback/Flank), and hazard/level actors (ActivationVolume/CheckpointVolume/DamageableBox/LavaFloor) plus a UI_LifeBar. None of ACOACharacterBase/ACOAPlayerCharacter/ACOAEnemyCharacter reference Damage/Damageable/Attacker at all, meaning this entire template island most likely never touches UCOAAttributeSet::Health or GAS — could not confirm live-but-broken vs. fully dead/parallel from source alone.",
           "checks": [
-            { "id": "confirm-live-or-dead", "label": "Confirm in a live test whether basic melee actually damages an enemy's Health at all" },
-            { "id": "port-if-broken", "label": "If broken/dead, port it into the GAS pipeline the same way the Valkory clan's Blueprint GA_Melee already does correctly" }
+            { "id": "confirm-live-or-dead", "label": "Confirm in a live test whether basic melee (BP_ThirdPersonCharacter's IA_ComboAttack) actually damages an enemy's Health at all" },
+            { "id": "confirm-statetree-ai-active", "label": "Confirm whether the Variant_Combat StateTree/EnvQuery AI is active on any real enemy, or is fully unused template scaffolding" },
+            { "id": "port-if-broken", "label": "If broken/dead, port basic melee into the GAS pipeline the same way GA_Melee (the Valkory clan's Blueprint ability) already does correctly" }
+          ]
+        },
+        { "name": "Lock-on targeting", "status": "warn", "desc": "WB_LockOnDisplay + IA_ToggleLockOn. Unclear whether this is wired to the real GAS-driven abilities/combat, or is part of the same Variant_Combat template island as the basic melee combo above — connection status not confirmed from outside the editor.",
+          "checks": [
+            { "id": "toggle-locks-enemy", "label": "Toggling lock-on via IA_ToggleLockOn actually locks onto a real enemy" },
+            { "id": "display-renders", "label": "WB_LockOnDisplay renders correctly on the locked target" },
+            { "id": "interacts-with-abilities", "label": "Lock-on interacts correctly with real ability targeting (e.g. Umbral Chains/Tail Lash), not just camera framing" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Input & Controls",
+      "items": [
+        { "name": "Input & controls (keyboard/gamepad/touch)", "status": "warn", "desc": "Full Enhanced Input setup: IMC_Default/IMC_MouseLook mapping contexts, dual keyboard+gamepad bindings for all 4 ability slots (IA_PC_Ability1-4 / IA_C_Ability1-4), plus a full touch/mobile input layer (BPI_TouchInterface, BPI_TouchInterface_Combat, UI_Thumbstick, UI_TouchSimple) — mobile support was not previously known to exist anywhere in prior build notes for this project at all.",
+          "checks": [
+            { "id": "all-4-slots-bind-both", "label": "All 4 ability slots correctly bind to abilities on both keyboard/mouse and gamepad" },
+            { "id": "touch-layer-works", "label": "Touch/mobile input layer actually works on a touch device or touch-emulation, not just present as unused assets" },
+            { "id": "camera-toggles-work", "label": "Camera mode/side toggles (IA_ToggleCameraMode/IA_ToggleCameraSide) work correctly" }
           ]
         }
       ]

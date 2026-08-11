@@ -359,7 +359,7 @@ footer a:hover {
 .joker-egg-text::after {
   content: "";
   position: absolute;
-  top: 100%;
+  top: 70%;
   width: 12px;
   height: 0;
   background: #7a0505;
@@ -379,7 +379,7 @@ footer a:hover {
 
 .joker-egg-drip {
   position: absolute;
-  top: 100%;
+  top: 70%;
   width: 12px;
   height: 0;
   background: #7a0505;

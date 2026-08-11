@@ -360,11 +360,11 @@ footer a:hover {
   content: "";
   position: absolute;
   top: 100%;
-  width: 5px;
+  width: 12px;
   height: 0;
   background: #7a0505;
   border-radius: 0 0 50% 50%;
-  animation: joker-egg-drip 3.2s ease-in infinite;
+  animation: joker-egg-drip 6.5s ease-in-out infinite;
 }
 
 .joker-egg-text::before {
@@ -383,9 +383,53 @@ footer a:hover {
 }
 
 @keyframes joker-egg-drip {
-  0% { height: 0; opacity: 0.9; }
-  65% { height: 13px; opacity: 0.9; }
-  100% { height: 20px; opacity: 0; }
+  0% { height: 0; opacity: 0.95; }
+  50% { height: 22px; opacity: 0.95; }
+  85% { height: 32px; opacity: 0.8; }
+  100% { height: 40px; opacity: 0; }
+}
+
+/* ---------- Character-name reveal: tap/click to toggle, works the same on
+   touch and mouse (a checkbox-driven CSS toggle, not :hover — hover is what
+   got stuck open on mobile for the Joker signature above; this avoids that
+   entire bug class by using a real persistent toggle state instead). No
+   quotes yet, just names — swap in real quotes later by editing the text
+   inside .char-egg-names on each page. ---------- */
+.char-egg {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.char-egg-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.char-egg-trigger {
+  display: inline-block;
+  cursor: pointer;
+  color: var(--text-faint);
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.char-egg-trigger:hover,
+.char-egg-input:focus-visible ~ .char-egg-trigger {
+  color: var(--accent-2);
+}
+
+.char-egg-names {
+  display: none;
+  margin-left: 0.5em;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+.char-egg-input:checked ~ .char-egg-names {
+  display: inline;
 }
 
 @media (max-width: 640px) {

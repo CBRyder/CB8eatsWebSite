@@ -1,0 +1,158 @@
+{
+  "compiled": "2026-08-11",
+  "source": "Cross-check of Source/COAVamp's actual C++ headers/cpp against build notes, not a boot-test — this is a singleplayer UE5 project with no live server to boot. Re-run this diff any time a new system is built to catch drift.",
+  "caveat": "\"Ready to test\" here means the C++ compiles clean and is ready for a real Play-In-Editor/Standalone pass — nothing below has actually been run and confirmed working in a live session yet, even the items marked ready. Status values: crit = investigated but not built, or confirmed likely broken; warn = C++ complete but needs additional in-editor work (an asset authored, a Blueprint graph rewired) before it can even be tested at all; good = compiles clean, no further C++ work needed before testing. Items with a checks list can be marked tested behavior-by-behavior — a system only shows fully tested once every one of its checks is checked.",
+  "categories": [
+    {
+      "cat": "Core GAS Framework",
+      "items": [
+        { "name": "ACOACharacterBase / ASC wiring", "status": "good", "desc": "Abstract base unifying ability code across ACOAPlayerCharacter and ACOAEnemyCharacter, the two sibling classes with no other common ancestor. Declares the pure-virtual GetCOAAttributeSet() every subclass implements.",
+          "checks": [
+            { "id": "player-asc-resolves", "label": "Player character's ASC resolves correctly through ACOAPlayerState in a live PIE session" },
+            { "id": "enemy-asc-resolves", "label": "Enemy character's own ASC activates abilities correctly when AI-possessed" },
+            { "id": "attribute-set-correct", "label": "GetCOAAttributeSet() returns the right set on both subclasses" },
+            { "id": "avatar-cast-works", "label": "Abilities correctly resolve the pawn via Cast<ACOACharacterBase>(GetAvatarActorFromActorInfo())" }
+          ]
+        },
+        { "name": "UCOAAttributeSet", "status": "good", "desc": "Health/MaxHealth, Blood/MaxBlood, AttackPower, StrideCharges/MaxStrideCharges. No Stamina (removed as dead/unreferenced). No XP attribute — the existing XP/Level system stays Blueprint-only by deliberate choice.",
+          "checks": [
+            { "id": "health-decreases", "label": "Health decreases correctly when a DamageEffectClass GE lands" },
+            { "id": "clamping-correct", "label": "Health/Blood correctly clamp at 0 and at their Max" },
+            { "id": "blood-cost-spends", "label": "Blood is spent correctly by an ability's CostEffectClass" },
+            { "id": "stride-charges-track", "label": "StrideCharges increases/decreases correctly through real gameplay" }
+          ]
+        },
+        { "name": "UCOAGameplayAbility base + native tags", "status": "good", "desc": "Blueprintable/BlueprintSpawnable ability base class with an AbilityID FGameplayTag. Native gameplay tags declared in COAGameplayTags.h/.cpp under the COAGameplayTags:: namespace — no Config/DefaultGameplayTags.ini used, by deliberate choice.",
+          "checks": [
+            { "id": "subclass-activates", "label": "A subclassed ability activates correctly from its real input binding" },
+            { "id": "tags-resolve", "label": "Native tags resolve correctly at runtime (no missing-tag warnings in the log)" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Vampire Abilities",
+      "items": [
+        { "name": "Crimson Resonance (channel feed/drain)", "status": "good", "desc": "Channel/duration ability, polls every ~0.2s via a looping timer for interrupt conditions (target dead, escaped, out of reach), cleans up active GE handles/timer on EndAbility.",
+          "checks": [
+            { "id": "channel-starts", "label": "Channel starts correctly on activation" },
+            { "id": "interrupts-correctly", "label": "Interrupts correctly when the target dies, escapes, or leaves reach" },
+            { "id": "feed-buff-on-kill", "label": "Grants the Fed Recharge Buff correctly on a kill mid-channel (distinct from the target just escaping)" },
+            { "id": "cleanup-no-leak", "label": "Cleans up GE handles/timer on EndAbility with no lingering state" }
+          ]
+        },
+        { "name": "Tail Lash (melee arc sweep + knockback)", "status": "good", "desc": "Instant fire-and-forget ability — calls EndAbility immediately after applying its effects, no channel needed.",
+          "checks": [
+            { "id": "arc-hits-all", "label": "Arc sweep hits every target actually inside its range" },
+            { "id": "knockback-applies", "label": "Knockback applies correctly to hit targets" },
+            { "id": "ends-immediately", "label": "Ends immediately with no lingering state between casts" }
+          ]
+        },
+        { "name": "Umbral Veil (stealth)", "status": "good", "desc": "Grants a State.Stealthed tag (Infinite-duration, no-modifier GE) for as long as the ability owns it; breaks on movement or any other ability activating.",
+          "checks": [
+            { "id": "stealth-grants", "label": "Grants the stealth state tag on activation" },
+            { "id": "breaks-on-move", "label": "Breaks correctly on movement" },
+            { "id": "breaks-on-other-ability", "label": "Breaks correctly the instant any other ability activates" }
+          ]
+        },
+        { "name": "Crimson Burst (AoE lifesteal)", "status": "good", "desc": "Instant fire-and-forget AoE ability with a lifesteal heal back to the caster.",
+          "checks": [
+            { "id": "aoe-hits-all", "label": "AoE correctly hits every valid target in range" },
+            { "id": "lifesteal-heals", "label": "Lifesteal heals the caster proportional to damage actually dealt" }
+          ]
+        },
+        { "name": "Umbral Chains (single-target root)", "status": "good", "desc": "Instant activation, delayed one-shot cleanup: zeroes the target's MaxWalkSpeed, removes the root after RootDuration via a non-looping timer built with per-activation payload state (not ability-level members, since UCOAGameplayAbility is InstancedPerActor) — a real overlapping-activation clobber bug was caught and fixed here before shipping.",
+          "checks": [
+            { "id": "root-applies", "label": "Target correctly rooted (MaxWalkSpeed zeroed) on hit" },
+            { "id": "root-removes-on-time", "label": "Root correctly removed after RootDuration" },
+            { "id": "overlap-regression", "label": "Two overlapping activations on different targets don't clobber each other's state (regression check for the bug already fixed once)" }
+          ]
+        },
+        { "name": "Crimson Harvest (corpse-feed, instant)", "status": "good", "desc": "Instant harvest ability with an explicit OnFeedBuffEffects extension array, applied to the caster on every successful harvest — built exactly so more buffs (like the Fed Recharge Buff) can be added in-editor with zero code changes.",
+          "checks": [
+            { "id": "harvest-consumes-corpse", "label": "A successful harvest actually consumes/interacts with the corpse correctly" },
+            { "id": "feed-buffs-apply", "label": "Every effect in OnFeedBuffEffects applies to the caster on a successful harvest" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Feed & Recharge System",
+      "items": [
+        { "name": "\"Feed to death\" Stride recharge buff", "status": "warn", "desc": "Killing a Crimson Resonance channel target, or landing a Crimson Harvest, should temporarily speed up passive Stride-charge recharge. C++ side is fully complete (GrantFedRechargeBuff(), the State.FedRechargeBoost tag, ACOAPlayerState's tag-change handler resetting recharge progress) — needs 2 GameplayEffect assets authored and assigned in-editor before any of it can actually do anything yet.",
+          "checks": [
+            { "id": "ge-authored", "label": "FedRechargeBuffEffectClass GE authored (Duration, Add modifier on StrideCharges, grants State.FedRechargeBoost)" },
+            { "id": "ge-on-resonance", "label": "That GE assigned into Crimson Resonance's FedRechargeBuffEffectClass slot" },
+            { "id": "ge-on-harvest", "label": "That GE added into Crimson Harvest's OnFeedBuffEffects array" },
+            { "id": "override-tag-added", "label": "StrideRechargeEffectClass's Ongoing Tag Requirement (Ignore State.FedRechargeBoost) added on UCOAClanDataAsset" },
+            { "id": "overrides-not-stacks", "label": "Buff overrides normal recharge (no stacking) while active" },
+            { "id": "resets-on-removal-only", "label": "Recharge progress resets only when the buff tag is REMOVED, not when it's added" },
+            { "id": "kill-vs-escape", "label": "A kill mid-channel triggers the buff; a target merely escaping/timing out does not" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Blueprint-to-C++ Ports",
+      "items": [
+        { "name": "Skills (COASkillFunctionLibrary)", "status": "warn", "desc": "Native mirror of the Blueprint-only skill system, reverse-engineered from the binary .uasset's own field names/types. Compiles; not yet wired into the real Blueprint graphs it's meant to replace.",
+          "checks": [
+            { "id": "rewired-into-graphs", "label": "COASkillFunctionLibrary calls actually replace the duplicated logic in the Skills Blueprint graphs" },
+            { "id": "behavior-matches-old", "label": "Skill tree progress behaves identically to the old Blueprint-only version after rewiring" }
+          ]
+        },
+        { "name": "Inventory / Crafting / HotBar", "status": "warn", "desc": "COAInventoryFunctionLibrary + COAHotbarFunctionLibrary, native structs/logic reverse-engineered the same way. Deliberately does NOT port AC_InventorySystem's equip/feed/interaction logic — judged too game-specific to reconstruct safely from the binary alone.",
+          "checks": [
+            { "id": "inventory-rewired", "label": "COAInventoryFunctionLibrary wired into the real inventory Blueprint graphs" },
+            { "id": "hotbar-rewired", "label": "COAHotbarFunctionLibrary wired into the real hotbar Blueprint graphs" },
+            { "id": "equip-still-works", "label": "Equip/feed/interaction still functions correctly via the untouched AC_InventorySystem path after rewiring" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Save System",
+      "items": [
+        { "name": "COASaveGameSubsystem (Skyrim-style, unlimited slots)", "status": "warn", "desc": "Full replacement for the old Blueprint save system: SaveNewSlot/OverwriteSlot/LoadSlot/DeleteSlot/GetAllSaveSlots/GetMostRecentSaveSlot/HasAnySaveSlots, scanning Saved/SaveGames/*.sav directly via IFileManager (no manifest object needed). Compiles clean; the old Blueprint system hasn't actually been replaced/rewired in the live UI yet, and only about 8 of ~20 save fields have a confirmed live data source.",
+          "checks": [
+            { "id": "save-creates-file", "label": "SaveNewSlot/OverwriteSlot creates a real .sav file on disk" },
+            { "id": "load-roundtrips-transform", "label": "LoadSlot round-trips CurrentMapName/PlayerLocation/PlayerRotation correctly" },
+            { "id": "load-roundtrips-gas", "label": "Health/MaxHealth/Blood/StrideCharges/MaxStrideCharges round-trip correctly through GAS attributes on load" },
+            { "id": "slot-management-works", "label": "DeleteSlot/GetAllSaveSlots/GetMostRecentSaveSlot/HasAnySaveSlots all behave correctly against real files on disk" },
+            { "id": "prune-respects-cap", "label": "PruneOldAutoSaves respects MaxAutoSaves without touching quicksaves/manual saves" },
+            { "id": "ui-calls-new-system", "label": "The real WB_SavesScreen UI actually calls the new C++ functions, not the old Blueprint ones" },
+            { "id": "gas-restore-ge-exists", "label": "Restoring GAS attributes on load applies through a real Instant Override GE (not yet built as of last check)" },
+            { "id": "unconfirmed-fields-resolved", "label": "Fields with no confirmed live source (XP, Level, UnlockedAbilities, SkillTreeProgress, ResonanceOverflow, AbsorbedMemories, quest/world state) are either wired to a real system now or intentionally left at defaults" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Loading Screen & Splash",
+      "items": [
+        { "name": "COALoadingScreenSubsystem + native Slate widget", "status": "warn", "desc": "Hooks the engine's global PreLoadMap/PostLoadMapWithWorld delegates via MoviePlayer, so any Open Level travel gets the loading-screen treatment automatically, no per-caller rewiring needed. Two real bugs already found and fixed in this build (a garbage-collection crash on the background texture, and a stuck-until-click auto-dismiss bug) — highest execution-risk system in the project, and NOT yet re-tested since the second fix landed.",
+          "checks": [
+            { "id": "shows-on-travel", "label": "Loading screen shows on a normal Open Level travel (main menu Start, save-then-load)" },
+            { "id": "auto-dismisses", "label": "Auto-dismisses on its own with no click needed (regression check for the fixed stuck-until-click bug)" },
+            { "id": "no-gc-crash", "label": "No repeat of the background-texture GC crash across several level transitions in a row" },
+            { "id": "splash-first-load-only", "label": "Splash shows only on the very first level load of the session, not on later transitions" },
+            { "id": "splash-min-duration", "label": "MinimumSplashDisplayTime holds its full duration even on a fast/instant boot load" },
+            { "id": "rotating-background", "label": "BackgroundTextures array actually picks a random Altheria concept-art panel each load" },
+            { "id": "tested-in-standalone", "label": "Verified in Standalone Game specifically, not just embedded PIE (MoviePlayer often doesn't render in PIE at all)" }
+          ]
+        }
+      ]
+    },
+    {
+      "cat": "Combat & Open Questions",
+      "items": [
+        { "name": "Basic melee combo pipeline", "status": "crit", "desc": "BP_ThirdPersonCharacter's stock \"Variant_Combat\" template melee combo (ComboAttack/bSaveAttack/ComboIndex, bound to IA_ComboAttack). None of ACOACharacterBase/ACOAPlayerCharacter/ACOAEnemyCharacter reference Damage/Damageable/Attacker at all, meaning this combo's damage most likely never touches UCOAAttributeSet::Health or GAS at all — could not confirm live-but-broken vs. fully dead from source alone. Deliberately held off porting until this can be confirmed in a live session.",
+          "checks": [
+            { "id": "confirm-live-or-dead", "label": "Confirm in a live test whether basic melee actually damages an enemy's Health at all" },
+            { "id": "port-if-broken", "label": "If broken/dead, port it into the GAS pipeline the same way the Valkory clan's Blueprint GA_Melee already does correctly" }
+          ]
+        }
+      ]
+    }
+  ]
+}

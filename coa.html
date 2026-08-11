@@ -321,7 +321,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, doc, updateDoc, setDoc, onSnapshot
+      getFirestore, doc, updateDoc, setDoc, getDoc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
       getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -360,15 +360,21 @@
     // This is a BRAND NEW Firestore collection (coaVamp), unlike tarboroLife
     // which already existed — updateDoc() alone would fail with "No document
     // to update" on the very first checkbox click if nothing has ever created
-    // it. setDoc(ref, {}, {merge:true}) is safe to call unconditionally: with
-    // a truly empty object, merge touches ZERO fields, so it's a real no-op
-    // against an existing doc (can never wipe real tested state, unlike the
-    // tested:{} bug documented on the other page) while still creating the
-    // doc if it's missing. Only fires when signed in as the authorized
-    // account, since Firestore rules deny the write otherwise anyway.
+    // it. Explicitly existence-gated via getDoc() first: only ever writes
+    // when the doc is confirmed absent, so this can NEVER touch real tested
+    // state once it exists — a stronger guarantee than relying on merge
+    // semantics. Also matches the real security-rule shape (requires
+    // `tested` to exist and be a map), which a truly-empty {} merge write
+    // would fail: the rule's `request.resource.data.tested is map` check
+    // errors out on a document with no `tested` field at all. Only fires
+    // when signed in as the authorized account, since the rule denies the
+    // write otherwise anyway.
     async function riEnsureDocExists() {
       try {
-        await setDoc(testedDocRef, {}, { merge: true });
+        const snap = await getDoc(testedDocRef);
+        if (!snap.exists()) {
+          await setDoc(testedDocRef, { tested: {} });
+        }
       } catch (err) {
         console.error('Failed to ensure tested doc exists (likely a Firestore rules gap for the coaVamp collection):', err);
         riSetSyncStatus('⚠ could not create sync doc — check Firestore rules', true);

@@ -1,5 +1,5 @@
 {
-  "compiled": "2026-08-10",
+  "compiled": "2026-08-11",
   "source": "Full audit of resources/[tarboro]/* on disk, diffed against server.cfg's ensure list, cross-checked against build memory. Re-run this diff any time a resource is added or removed to catch drift immediately.",
   "caveat": "Every resource below, including ones marked \"good\", has never been run by a real connected player. \"good\" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors) — not that anyone has clicked the prompt, opened the menu, or walked the flow in-game. Status values: crit = not running at all, warn = thin or zero documentation, good = documented.",
   "categories": [
@@ -8,16 +8,16 @@
       "items": [
         { "name": "tarboro-interact", "status": "warn", "desc": "Shared proximity-interaction UI — the right-side prompt panel with arrow-key navigation used by nearly every other resource.", "note": "No dedicated build record — only known by how constantly it's relied on." },
         { "name": "tarboro-config", "status": "good", "desc": "Shared config table and admin toggles — the single source of truth for every tunable value in the project." },
-        { "name": "tarboro-inventory", "status": "good", "desc": "Typed-slot layer on top of ox_inventory — the F2 panel (primary ×2, sidearm, melee, tool ×2, bag expansion)." },
+        { "name": "tarboro-inventory", "status": "good", "desc": "Typed-slot layer on top of ox_inventory — the F2 panel (primary ×2, sidearm, melee, tool ×2, bag expansion)." , "note": "FIXED 2026-08-10 — F2 opened the panel but couldn't close it (SetNuiFocus steals keyboard input from the native keybind once open). Added an F2 listener in html/slots.js alongside the existing Escape one." },
         { "name": "tarboro-banking", "status": "good", "desc": "Card-first money: cash / bank / dirty, medical liens, garnishment, society funds, ATM network." },
-        { "name": "tarboro-hud", "status": "warn", "desc": "The on-screen HUD.", "note": "Only known as an integration point (setVisible export called by other resources) — no dedicated build record." },
+        { "name": "tarboro-hud", "status": "good", "desc": "The on-screen HUD — status/money/postal panels, a settings-toggle system, and an always-on player-ID readout separate from those toggles.", "note": "Upgraded from thin/undocumented 2026-08-10/11 while root-causing the character-select \"ID box floating alone\" bug — full whole-HUD hide/show export (setVisible) now understood and documented, not just referenced." },
         { "name": "tarboro-loading", "status": "good", "desc": "Custom branded loading screen." }
       ]
     },
     {
       "cat": "Character & Onboarding",
       "items": [
-        { "name": "tarboro-character", "status": "good", "desc": "Character creation, appearance, spawn locations, ID/driver/firearm/business licensing, new-player protection." },
+        { "name": "tarboro-character", "status": "good", "desc": "Character creation, appearance, spawn locations, ID/driver/firearm/business licensing, new-player protection.", "note": "FIXED 2026-08-10/11 — the returning-player character-select screen never told tarboro-hud to hide, so its always-on ID readout floated over the selection camera. client/selector.lua now hides the HUD on entry, client/spawn.lua shows it back on spawn." },
         { "name": "tarboro-arrival", "status": "warn", "desc": "8-beat cinematic new-player intake: black screen, establishing shot, voice narration, camera finds player, walk to an intake objective, an admin interview window (Discord webhook + self-release timeout), release into the world.", "note": "Genuinely substantial and previously undocumented. Admin commands exist to skip/release/reset it for testing." },
         { "name": "tarboro-tutorial", "status": "warn", "desc": "Soft, fully-skippable \"Guided Start\" tracker: earn cash → bank it → install an app. Metadata-driven, no DB table.", "note": "Previously undocumented; hooks into banking, phone, and tarboro-arrival's completion event." },
         { "name": "tarboro-death", "status": "warn", "desc": "Death / downed state, EMS response, hospital respawn.", "note": "Only known via its NPCRevive export integration — no dedicated build record of the resource itself." },
@@ -41,12 +41,12 @@
         { "name": "tarboro-gathering", "status": "good", "desc": "World gathering nodes: mining, lumberjacking, stripping scrap cars — 48 nodes, admin-movable/deletable." },
         { "name": "tarboro-fabrication", "status": "good", "desc": "Welding minigame (9 variants across 3 tiers, 12 recipes), vehicle fabrication, 3-tier crafting mastery, Welder's Hood safety-gear requirement." },
         { "name": "tarboro-industry", "status": "good", "desc": "Industrial production lines — smelter, lumber mill, stamping press, machine shop — tick autonomously once loaded with inputs." },
-        { "name": "tarboro-drugs", "status": "good", "desc": "5-tier legal weed economy (cash payout), acid (replaces meth), coke, and crack verticals; baggie-gated packaging." },
+        { "name": "tarboro-drugs", "status": "good", "desc": "5-tier legal weed economy (cash payout), acid (replaces meth), coke, and crack verticals; baggie-gated packaging.", "note": "MAJOR BUG FOUND+FIXED 2026-08-10 — the entire 5-tier weed/acid item rework had never actually been merged into ox_inventory's real item registry, so none of those items could be granted at all (forage/plant/harvest/bag/sell were silently broken end-to-end, not just cosmetic). Fixed: 16 missing items added, 5 stale old-strain items removed, item count went 308→319 exactly matching the math. Real coords for the Vinewood Hills (crimson) forage area also walked in and swapped in for the old placeholders." },
         { "name": "tarboro-laundering", "status": "good", "desc": "Converts dirty money to clean at a loss, four NPC laundromat locations." },
         { "name": "tarboro-stocks", "status": "good", "desc": "Player-facing stock market — 8 tickers, insider tips, portfolio tracking." },
         { "name": "tarboro-business", "status": "good", "desc": "Player-owned legal orgs: payroll, shared funds, LinkedUp job postings — plus commercial-property business types (9, including a Mining depot) and a nested illegal/front picker." },
         { "name": "tarboro-shops", "status": "good", "desc": "Player-facing storefronts — Electronics, 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer." },
-        { "name": "tl_plants", "status": "good", "desc": "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", "note": "The rare exception actually confirmed working in-game — owner screenshots showed full plants and correct harvest behavior." }
+        { "name": "tl_plants", "status": "good", "desc": "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", "note": "Plant/harvest structure confirmed working in-game via owner screenshots. FIXED 2026-08-10/11 — every leaf/branch/bud mesh had a blank, never-painted texture (owner-reported: colors only visible from far away, washed out white up close). Leaves/stems now solid green/brown; buds now come in 5 tier-matched hues (tan/green/teal/red/purple) as separate archetypes, picked per-strain by the forage code. Not yet confirmed live." }
       ]
     },
     {
@@ -79,7 +79,7 @@
     {
       "cat": "Admin Tools",
       "items": [
-        { "name": "tarboro-admin", "status": "good", "desc": "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands (orphaned — see tarboro-injuries).", "note": "Extended repeatedly across this whole project." }
+        { "name": "tarboro-admin", "status": "good", "desc": "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands, /addmoney (new 2026-08-10, admin cash/bank/dirty grant, bypasses garnishment/bonus).", "note": "Extended repeatedly across this whole project. Injury commands are no longer orphaned now that tarboro-injuries actually runs." }
       ]
     }
   ]

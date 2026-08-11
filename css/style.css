@@ -377,6 +377,24 @@ footer a:hover {
   animation-delay: 1.9s;
 }
 
+.joker-egg-drip {
+  position: absolute;
+  top: 100%;
+  width: 12px;
+  height: 0;
+  background: #7a0505;
+  border-radius: 0 0 50% 50%;
+  animation: joker-egg-drip 6.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.joker-egg-drip-1 { left: 8%; animation-delay: 0s; }
+.joker-egg-drip-2 { left: 22%; animation-delay: 0.8s; }
+.joker-egg-drip-3 { left: 38%; animation-delay: 1.6s; }
+.joker-egg-drip-4 { left: 54%; animation-delay: 2.4s; }
+.joker-egg-drip-5 { left: 70%; animation-delay: 3.2s; }
+.joker-egg-drip-6 { right: 8%; animation-delay: 4s; }
+
 @keyframes joker-egg-pulse {
   0%, 100% { text-shadow: 0 0 8px rgba(200, 0, 0, 0.5), 0 2px 0 #4a0000; }
   50% { text-shadow: 0 0 18px rgba(255, 20, 20, 0.9), 0 2px 0 #4a0000; }

@@ -337,41 +337,55 @@ footer a:hover {
   color: var(--accent-bright);
 }
 
-/* ---------- Hidden easter egg: hover/tap/focus the footer credit ---------- */
+/* ---------- Footer signature: always-on, centered, animated blood pulse + drip ---------- */
 .joker-egg {
-  position: relative;
-  display: inline-block;
+  display: block;
+  text-align: center;
+  margin-bottom: 0.6rem;
 }
 
-.joker-egg-reveal {
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  transform: translateX(-50%) translateY(10px);
-  white-space: nowrap;
+.joker-egg-text {
+  position: relative;
+  display: inline-block;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.15rem;
   letter-spacing: 0.1em;
-  color: #a10606;
-  text-shadow: 0 0 10px rgba(200, 0, 0, 0.6), 0 2px 0 #4a0000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.45s ease, transform 0.45s ease;
-  margin-bottom: 6px;
+  color: #b00707;
+  animation: joker-egg-pulse 2.4s ease-in-out infinite;
 }
 
-.joker-egg:hover .joker-egg-reveal,
-.joker-egg:focus .joker-egg-reveal,
-.joker-egg:focus-within .joker-egg-reveal {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  animation: joker-egg-flicker 1.6s ease-in-out infinite;
+.joker-egg-text::before,
+.joker-egg-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 5px;
+  height: 0;
+  background: #7a0505;
+  border-radius: 0 0 50% 50%;
+  animation: joker-egg-drip 3.2s ease-in infinite;
 }
 
-@keyframes joker-egg-flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
+.joker-egg-text::before {
+  left: 12%;
+  animation-delay: 0.5s;
+}
+
+.joker-egg-text::after {
+  right: 12%;
+  animation-delay: 1.9s;
+}
+
+@keyframes joker-egg-pulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(200, 0, 0, 0.5), 0 2px 0 #4a0000; }
+  50% { text-shadow: 0 0 18px rgba(255, 20, 20, 0.9), 0 2px 0 #4a0000; }
+}
+
+@keyframes joker-egg-drip {
+  0% { height: 0; opacity: 0.9; }
+  65% { height: 13px; opacity: 0.9; }
+  100% { height: 20px; opacity: 0; }
 }
 
 @media (max-width: 640px) {

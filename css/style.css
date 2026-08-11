@@ -54,6 +54,8 @@ a {
 /* ---------- Header / Nav ---------- */
 
 header {
+  position: sticky;
+  top: -45px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -63,6 +65,7 @@ header {
   background: rgba(12, 12, 17, 0.85);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
+  z-index: 999;
 }
 
 .brand {

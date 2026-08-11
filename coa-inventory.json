@@ -165,6 +165,14 @@
             { "id": "unlock-persists", "label": "Unlocking/leveling a skill via WB_SkillSlot actually persists (ties to the Save System's SkillTreeProgress field, previously flagged as having no confirmed live source at all)" },
             { "id": "function-library-wired", "label": "COASkillFunctionLibrary calls actually replace the duplicated logic in these Blueprint graphs" }
           ]
+        },
+        { "name": "XP/Level system (Blueprint-only, by design)", "status": "warn", "desc": "Plain Blueprint vars on BP_ThirdPersonCharacter (CurrentXP/Level), enemy kill-reward graphs, WB_Hud's XP bar, and the save system's XPPoints/PlayerLevel fields. Owner's explicit decision (2026-08-11, reconfirming an earlier settled choice): this stays Blueprint-only permanently — NOT migrating into a real UCOAAttributeSet GAS attribute. Remaining work is confirming the existing Blueprint-only pipeline is fully wired end-to-end, not deciding an architecture.",
+          "checks": [
+            { "id": "xp-gain-on-kill", "label": "Enemy kill-reward graphs actually grant XP correctly" },
+            { "id": "level-up-triggers", "label": "Leveling up (CurrentXP crossing the threshold) triggers correctly" },
+            { "id": "hud-bar-tracks", "label": "WB_Hud's XP bar tracks the real Blueprint XP value live" },
+            { "id": "save-fields-wired", "label": "The save system's XPPoints/PlayerLevel fields are actually wired to the real Blueprint vars, not just present in the schema" }
+          ]
         }
       ]
     },
@@ -310,13 +318,6 @@
             { "id": "build-discovered-locations", "label": "Build DiscoveredLocations tracking (a natural tie-in to the MiniMap system, which already exists)" },
             { "id": "build-haven-mechanic", "label": "Build the HavenEstablished mechanic — sounds like a player base/home system, nothing like it exists yet" },
             { "id": "wire-restored-state", "label": "Wire the restored WorldState into actual gameplay on load, closing the gap the code comment flags today" }
-          ]
-        },
-        { "name": "XP/Level ↔ GAS unification", "status": "planned", "desc": "XP/Level currently lives entirely in Blueprint (plain vars on BP_ThirdPersonCharacter, WB_Hud's XP bar, enemy kill-reward graphs) — a deliberate earlier decision NOT to migrate it into a real UCOAAttributeSet attribute the way Health/Blood/StrideCharges work. Whether to eventually unify it is a genuinely open, undecided question, not a confirmed roadmap item — flagged here as a decision to make, not a design already chosen.",
-          "checks": [
-            { "id": "decide-migrate-or-not", "label": "Decide: migrate XP/Level to a real GAS attribute, or commit to keeping it Blueprint-only permanently" },
-            { "id": "design-xp-curve-if-migrating", "label": "If migrating: design the XP curve / level-up GameplayEffect" },
-            { "id": "confirm-save-wiring-if-not", "label": "If staying Blueprint-only: confirm the save system's XPPoints/PlayerLevel fields are actually wired to the real Blueprint vars, not just present in the schema" }
           ]
         },
         { "name": "Ability-unlock progression", "status": "planned", "desc": "FCOASavePlayerData.UnlockedAbilities (TArray<FGameplayTag>, typed to match AbilityID on UCOAGameplayAbility) exists in the save schema, but no system currently grants/unlocks abilities progressively — all 7 abilities are presumably available from the start today. The natural tie-in is the Skill tree system (DT_Skills/WB_SkillsScreen), but that connection doesn't exist yet either.",

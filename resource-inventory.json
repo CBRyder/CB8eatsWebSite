@@ -1,85 +1,484 @@
 {
   "compiled": "2026-08-11",
   "source": "Full audit of resources/[tarboro]/* on disk, diffed against server.cfg's ensure list, cross-checked against build memory. Re-run this diff any time a resource is added or removed to catch drift immediately.",
-  "caveat": "Every resource below, including ones marked \"good\", has never been run by a real connected player. \"good\" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors) — not that anyone has clicked the prompt, opened the menu, or walked the flow in-game. Status values: crit = not running at all, warn = thin or zero documentation, good = documented.",
+  "caveat": "Every resource below, including ones marked \"good\", has never been run by a real connected player. \"good\" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors) — not that anyone has clicked the prompt, opened the menu, or walked the flow in-game. Status values: crit = not running at all, warn = thin or zero documentation, good = documented. Resources with a checks list can be marked tested behavior-by-behavior — a resource only shows fully tested once every one of its checks is checked.",
   "categories": [
     {
       "cat": "Core Framework",
       "items": [
-        { "name": "tarboro-interact", "status": "warn", "desc": "Shared proximity-interaction UI — the right-side prompt panel with arrow-key navigation used by nearly every other resource.", "note": "No dedicated build record — only known by how constantly it's relied on." },
+        { "name": "tarboro-interact", "status": "warn", "desc": "Shared proximity-interaction UI — the right-side prompt panel with arrow-key navigation used by nearly every other resource.", "note": "No dedicated build record — only known by how constantly it's relied on.",
+          "checks": [
+            { "id": "prompt-shows", "label": "Right-side panel actually shows near a prompt" },
+            { "id": "label-correct", "label": "Label text is correct on a few different prompts" },
+            { "id": "overlap-nav", "label": "Arrow-key navigation works when two prompts overlap in range" }
+          ]
+        },
         { "name": "tarboro-config", "status": "good", "desc": "Shared config table and admin toggles — the single source of truth for every tunable value in the project." },
-        { "name": "tarboro-inventory", "status": "good", "desc": "Typed-slot layer on top of ox_inventory — the F2 panel (primary ×2, sidearm, melee, tool ×2, bag expansion)." , "note": "FIXED 2026-08-10 — F2 opened the panel but couldn't close it (SetNuiFocus steals keyboard input from the native keybind once open). Added an F2 listener in html/slots.js alongside the existing Escape one." },
-        { "name": "tarboro-banking", "status": "good", "desc": "Card-first money: cash / bank / dirty, medical liens, garnishment, society funds, ATM network." },
-        { "name": "tarboro-hud", "status": "good", "desc": "The on-screen HUD — status/money/postal panels, a settings-toggle system, and an always-on player-ID readout separate from those toggles.", "note": "Upgraded from thin/undocumented 2026-08-10/11 while root-causing the character-select \"ID box floating alone\" bug — full whole-HUD hide/show export (setVisible) now understood and documented, not just referenced." },
-        { "name": "tarboro-loading", "status": "good", "desc": "Custom branded loading screen." }
+        { "name": "tarboro-inventory", "status": "good", "desc": "Typed-slot layer on top of ox_inventory — the F2 panel (primary ×2, sidearm, melee, tool ×2, bag expansion).", "note": "FIXED 2026-08-10 — F2 opened the panel but couldn't close it (SetNuiFocus steals keyboard input from the native keybind once open). Added an F2 listener in html/slots.js alongside the existing Escape one.",
+          "checks": [
+            { "id": "typed-slots", "label": "Typed slots enforce correctly (can't put a gun in the tool slot)" },
+            { "id": "no-native-ui", "label": "ox_inventory's native UI never pops up instead" },
+            { "id": "f2-closes", "label": "F2 now actually closes the panel too (this session's fix)" }
+          ]
+        },
+        { "name": "tarboro-banking", "status": "good", "desc": "Card-first money: cash / bank / dirty, medical liens, garnishment, society funds, ATM network.",
+          "checks": [
+            { "id": "atm-cash", "label": "Pull cash from an ATM" },
+            { "id": "bank-balance", "label": "Bank balance updates correctly" },
+            { "id": "bill-pays", "label": "A bill/invoice pays correctly" },
+            { "id": "dirty-source", "label": "Dirty money only comes from actual illegal sales, not legal weed" }
+          ]
+        },
+        { "name": "tarboro-hud", "status": "good", "desc": "The on-screen HUD — status/money/postal panels, a settings-toggle system, and an always-on player-ID readout separate from those toggles.", "note": "Upgraded from thin/undocumented 2026-08-10/11 while root-causing the character-select \"ID box floating alone\" bug — full whole-HUD hide/show export (setVisible) now understood and documented, not just referenced.",
+          "checks": [
+            { "id": "visible-on-spawn", "label": "Visible on spawn" },
+            { "id": "updates-live", "label": "Updates live (health/armor/hunger/thirst)" },
+            { "id": "hide-hood", "label": "setVisible toggles correctly around hood equip" },
+            { "id": "hide-arrival", "label": "Same around the arrival cutscene" },
+            { "id": "hide-charselect", "label": "Same around character creation/select" },
+            { "id": "no-stuck-hidden", "label": "Never left stuck hidden if a caller errors mid-sequence" }
+          ]
+        },
+        { "name": "tarboro-loading", "status": "good", "desc": "Custom branded loading screen.",
+          "checks": [
+            { "id": "shows-on-reconnect", "label": "Disconnect/reconnect shows the branded screen, not blank/default" },
+            { "id": "logo-edge", "label": "Logo renders with the correct transparent edge" }
+          ]
+        }
       ]
     },
     {
       "cat": "Character & Onboarding",
       "items": [
-        { "name": "tarboro-character", "status": "good", "desc": "Character creation, appearance, spawn locations, ID/driver/firearm/business licensing, new-player protection.", "note": "FIXED 2026-08-10/11 — the returning-player character-select screen never told tarboro-hud to hide, so its always-on ID readout floated over the selection camera. client/selector.lua now hides the HUD on entry, client/spawn.lua shows it back on spawn." },
-        { "name": "tarboro-arrival", "status": "warn", "desc": "8-beat cinematic new-player intake: black screen, establishing shot, voice narration, camera finds player, walk to an intake objective, an admin interview window (Discord webhook + self-release timeout), release into the world.", "note": "Genuinely substantial and previously undocumented. Admin commands exist to skip/release/reset it for testing." },
-        { "name": "tarboro-tutorial", "status": "warn", "desc": "Soft, fully-skippable \"Guided Start\" tracker: earn cash → bank it → install an app. Metadata-driven, no DB table.", "note": "Previously undocumented; hooks into banking, phone, and tarboro-arrival's completion event." },
-        { "name": "tarboro-death", "status": "warn", "desc": "Death / downed state, EMS response, hospital respawn.", "note": "Only known via its NPCRevive export integration — no dedicated build record of the resource itself." },
-        { "name": "tarboro-injuries", "status": "good", "desc": "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", "note": "FIXED 2026-08-10 — was fully built but missing from server.cfg, so it had never run a single time. Added and confirmed booting clean (first-ever successful start). Still needs real in-game testing: /injury:inflict, /injury:cure, /injury:clear, /injury:list, and confirming it doesn't conflict with tarboro-death's own downed/EMS flow." },
-        { "name": "tarboro-needs", "status": "good", "desc": "Hunger and thirst depletion with consumable items to restore them." }
+        { "name": "tarboro-character", "status": "good", "desc": "Character creation, appearance, spawn locations, ID/driver/firearm/business licensing, new-player protection.", "note": "FIXED 2026-08-10/11 — the returning-player character-select screen never told tarboro-hud to hide, so its always-on ID readout floated over the selection camera. client/selector.lua now hides the HUD on entry, client/spawn.lua shows it back on spawn.",
+          "checks": [
+            { "id": "full-flow", "label": "Full creation flow completes (name → appearance → origins → spawn)" },
+            { "id": "presets-save", "label": "Appearance presets save/load correctly" },
+            { "id": "licensing-gates", "label": "Licensing (ID/driver/firearm/business) gates what it should" },
+            { "id": "protection-graduates", "label": "New-player protection graduates correctly on time/first-car" }
+          ]
+        },
+        { "name": "tarboro-arrival", "status": "warn", "desc": "8-beat cinematic new-player intake: black screen, establishing shot, voice narration, camera finds player, walk to an intake objective, an admin interview window (Discord webhook + self-release timeout), release into the world.", "note": "Genuinely substantial and previously undocumented. Admin commands exist to skip/release/reset it for testing.",
+          "checks": [
+            { "id": "black-screen", "label": "Black screen → establishing shot + title card plays" },
+            { "id": "voice-lines", "label": "Voice narration lines play" },
+            { "id": "camera-finds", "label": "Camera finds the player, control returns correctly" },
+            { "id": "walk-to-intake", "label": "Blip/marker walk-to-intake-objective works" },
+            { "id": "wait-window", "label": "The intake wait window shows" },
+            { "id": "release-notify", "label": "Release-into-world notify fires at the end" },
+            { "id": "skip-works", "label": "/arrival:skip fast-forwards from any point" },
+            { "id": "reconnect-resumes", "label": "Disconnecting mid-sequence + reconnecting re-runs from the start" },
+            { "id": "webhook-posts", "label": "Discord webhook posts (if configured)" },
+            { "id": "error-recovery", "label": "A mid-sequence error gives control/HUD back instead of stuck" }
+          ]
+        },
+        { "name": "tarboro-tutorial", "status": "warn", "desc": "Soft, fully-skippable \"Guided Start\" tracker: earn cash → bank it → install an app. Metadata-driven, no DB table.", "note": "Previously undocumented; hooks into banking, phone, and tarboro-arrival's completion event.",
+          "checks": [
+            { "id": "shows-3-steps", "label": "Guided Start panel shows all 3 steps" },
+            { "id": "cash-ticks", "label": "\"Earn cash\" ticks off on a real sale" },
+            { "id": "bank-ticks", "label": "\"Bank it\" ticks off on a real ATM deposit" },
+            { "id": "app-ticks", "label": "\"Install an app\" ticks off on a real phone install" },
+            { "id": "closes-when-done", "label": "Closes itself once all 3 are done" },
+            { "id": "dismiss-sticks", "label": "Dismissing it early actually stops it coming back" }
+          ]
+        },
+        { "name": "tarboro-death", "status": "warn", "desc": "Death / downed state, EMS response, hospital respawn.", "note": "Only known via its NPCRevive export integration — no dedicated build record of the resource itself.",
+          "checks": [
+            { "id": "bleedout-timer", "label": "Get downed, bleed-out timer counts down" },
+            { "id": "player-ems", "label": "Player-EMS revive works" },
+            { "id": "npc-revive", "label": "~25s NPC auto-revive fallback fires with no EMS on duty" },
+            { "id": "hospital-respawn", "label": "Hospital respawn lands correctly" }
+          ]
+        },
+        { "name": "tarboro-injuries", "status": "good", "desc": "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", "note": "FIXED 2026-08-10 — was fully built but missing from server.cfg, so it had never run a single time. Added and confirmed booting clean (first-ever successful start).",
+          "checks": [
+            { "id": "inflict-bleeding", "label": "/injury:inflict bleeding at severity 1-3, visible effect" },
+            { "id": "inflict-broken", "label": "/injury:inflict broken_limb at severity 1-3, visible effect" },
+            { "id": "inflict-concussion", "label": "/injury:inflict concussion at severity 1-3, visible effect" },
+            { "id": "inflict-sickness", "label": "/injury:inflict sickness at severity 1-3, visible effect" },
+            { "id": "cure-clears", "label": "/injury:cure clears an active condition" },
+            { "id": "list-accurate", "label": "/injury:list shows accurate current state" },
+            { "id": "clear-idempotent", "label": "/injury:clear is a safe idempotent full reset" },
+            { "id": "no-death-conflict", "label": "Downed WITH an active injury doesn't break tarboro-death's flow" }
+          ]
+        },
+        { "name": "tarboro-needs", "status": "good", "desc": "Hunger and thirst depletion with consumable items to restore them.",
+          "checks": [
+            { "id": "hunger-depletes", "label": "Hunger depletes over real time" },
+            { "id": "thirst-depletes", "label": "Thirst depletes on its own timer, independent of hunger" },
+            { "id": "hud-tracks-live", "label": "HUD bars track the real values live, not stale/cached" },
+            { "id": "eat-restores", "label": "Eating a food item restores hunger by the right amount" },
+            { "id": "drink-restores", "label": "Drinking a beverage restores thirst by the right amount" },
+            { "id": "no-overflow", "label": "Eating/drinking near full doesn't overflow or silently waste the item" }
+          ]
+        }
       ]
     },
     {
       "cat": "Property & Vehicles",
       "items": [
         { "name": "tarboro-property", "status": "good", "desc": "Real estate: browse/buy/rent, house interiors (16 of 31 assigned), player-named signs, vacant land + object placement, commercial storefronts." },
-        { "name": "tarboro-garage", "status": "good", "desc": "Take-out/store at 9 public garages, plus physical driveway vehicle slots on owned properties — parked cars are real, stealable, persistent entities." },
-        { "name": "tarboro-fuel", "status": "good", "desc": "Fuel consumption and vehicle wear over time, refuel at pumps." },
-        { "name": "tarboro-seatbelt", "status": "good", "desc": "Seatbelt toggle plus a harness item for ejection resistance." },
-        { "name": "tarboro-mechanic", "status": "good", "desc": "Mechanic job: diagnose, repair, customize, and bill a customer's vehicle." }
+        { "name": "tarboro-garage", "status": "good", "desc": "Take-out/store at 9 public garages, plus physical driveway vehicle slots on owned properties — parked cars are real, stealable, persistent entities.",
+          "checks": [
+            { "id": "takeout-saved-state", "label": "Public-garage take-out spawns the right vehicle with saved mods/fuel/engine/body" },
+            { "id": "store-saves", "label": "Store correctly saves the vehicle's current state" },
+            { "id": "ally-takeout", "label": "Ally take-out-someone-else's-vehicle menu works with mutual acceptance" },
+            { "id": "park-here", "label": "Physical \"Park Here\" spawns/deletes the vehicle correctly at a driveway slot" },
+            { "id": "slot-count", "label": "Slot count notify matches Config.GarageSlots for that property's tier" },
+            { "id": "correct-vehicle-type", "label": "A parked non-automobile (bike/boat/aircraft) respawns as the correct type" },
+            { "id": "slots-fill", "label": "Filling every slot correctly blocks the next Park Here" },
+            { "id": "drift-frees-slot", "label": "Driving a parked vehicle off frees the slot within ~8s" },
+            { "id": "restart-respawns", "label": "A resource/server restart respawns parked vehicles at the right slots" },
+            { "id": "steal-parked", "label": "A second player can lockpick-steal a slot-parked vehicle immediately" },
+            { "id": "no-dupe-in-old-list", "label": "A slot-parked vehicle doesn't also show in the old public-garage list" }
+          ]
+        },
+        { "name": "tarboro-fuel", "status": "good", "desc": "Fuel consumption and vehicle wear over time, refuel at pumps.",
+          "checks": [
+            { "id": "depletes-driving", "label": "Fuel depletes while driving" },
+            { "id": "refuel-works", "label": "Refueling at a pump works and charges correctly" },
+            { "id": "empty-affects", "label": "Running out of fuel actually affects the vehicle" }
+          ]
+        },
+        { "name": "tarboro-seatbelt", "status": "good", "desc": "Seatbelt toggle plus a harness item for ejection resistance.",
+          "checks": [
+            { "id": "seatbelt-reduces", "label": "Seatbelt toggle reduces ejection in a crash" },
+            { "id": "harness-stronger", "label": "Harness item does the same but stronger" }
+          ]
+        },
+        { "name": "tarboro-mechanic", "status": "good", "desc": "Mechanic job: diagnose, repair, customize, and bill a customer's vehicle.",
+          "checks": [
+            { "id": "diagnose", "label": "Diagnose a vehicle's issue" },
+            { "id": "repair", "label": "Repair it" },
+            { "id": "bill-charges", "label": "Bill charges the customer and pays the mechanic correctly" },
+            { "id": "hood-gate", "label": "H-menu engine-strip gate blocks until the hood is actually opened" }
+          ]
+        }
       ]
     },
     {
       "cat": "Work & Economy",
       "items": [
-        { "name": "tarboro-gathering", "status": "good", "desc": "World gathering nodes: mining, lumberjacking, stripping scrap cars — 48 nodes, admin-movable/deletable." },
-        { "name": "tarboro-fabrication", "status": "good", "desc": "Welding minigame (9 variants across 3 tiers, 12 recipes), vehicle fabrication, 3-tier crafting mastery, Welder's Hood safety-gear requirement." },
-        { "name": "tarboro-industry", "status": "good", "desc": "Industrial production lines — smelter, lumber mill, stamping press, machine shop — tick autonomously once loaded with inputs." },
-        { "name": "tarboro-drugs", "status": "good", "desc": "5-tier legal weed economy (cash payout), acid (replaces meth), coke, and crack verticals; baggie-gated packaging.", "note": "MAJOR BUG FOUND+FIXED 2026-08-10 — the entire 5-tier weed/acid item rework had never actually been merged into ox_inventory's real item registry, so none of those items could be granted at all (forage/plant/harvest/bag/sell were silently broken end-to-end, not just cosmetic). Fixed: 16 missing items added, 5 stale old-strain items removed, item count went 308→319 exactly matching the math. Real coords for the Vinewood Hills (crimson) forage area also walked in and swapped in for the old placeholders." },
-        { "name": "tarboro-laundering", "status": "good", "desc": "Converts dirty money to clean at a loss, four NPC laundromat locations." },
-        { "name": "tarboro-stocks", "status": "good", "desc": "Player-facing stock market — 8 tickers, insider tips, portfolio tracking." },
-        { "name": "tarboro-business", "status": "good", "desc": "Player-owned legal orgs: payroll, shared funds, LinkedUp job postings — plus commercial-property business types (9, including a Mining depot) and a nested illegal/front picker." },
-        { "name": "tarboro-shops", "status": "good", "desc": "Player-facing storefronts — Electronics, 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer." },
-        { "name": "tl_plants", "status": "good", "desc": "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", "note": "Plant/harvest structure confirmed working in-game via owner screenshots. FIXED 2026-08-10/11 — every leaf/branch/bud mesh had a blank, never-painted texture (owner-reported: colors only visible from far away, washed out white up close). Leaves/stems now solid green/brown; buds now come in 5 tier-matched hues (tan/green/teal/red/purple) as separate archetypes, picked per-strain by the forage code. Not yet confirmed live." }
+        { "name": "tarboro-gathering", "status": "good", "desc": "World gathering nodes: mining, lumberjacking, stripping scrap cars — 48 nodes, admin-movable/deletable.",
+          "checks": [
+            { "id": "rusty-pickaxe", "label": "Mine/chop/strip with the rusty pickaxe" },
+            { "id": "steel-pickaxe", "label": "Same with the (upgraded) pickaxe / steel pickaxe" },
+            { "id": "axe-chainsaw", "label": "Same with axe/chainsaw" },
+            { "id": "crowbar", "label": "Same with the crowbar" },
+            { "id": "yield-differs", "label": "Yield actually differs by tool tier" },
+            { "id": "respawn-timers", "label": "Node respawn timers work" },
+            { "id": "admin-override-live", "label": "Admin move/delete overrides apply live for a second connected player" }
+          ]
+        },
+        { "name": "tarboro-fabrication", "status": "good", "desc": "Welding minigame (9 variants across 3 tiers, 12 recipes), vehicle fabrication, 3-tier crafting mastery, Welder's Hood safety-gear requirement.",
+          "checks": [
+            { "id": "non-welding-craft", "label": "Craft a non-welding recipe end-to-end (workbench NUI, quantity)" },
+            { "id": "mastery-xp", "label": "Mastery XP actually gains from crafting" },
+            { "id": "mastery-thresholds", "label": "3-tier mastery thresholds unlock what they should" },
+            { "id": "weld-stuck-fixed", "label": "The old \"gets stuck, never resolves\" welding bug is actually gone" },
+            { "id": "weld-tier1", "label": "Weld tier 1, minigame speed/shape feels right" },
+            { "id": "weld-tier2", "label": "Weld tier 2, minigame speed/shape feels right" },
+            { "id": "weld-tier3", "label": "Weld tier 3, minigame speed/shape feels right" },
+            { "id": "weld-12-recipes", "label": "All 12 recipes trigger the minigame, not the old plain-timer path" },
+            { "id": "weld-plausibility", "label": "Server elapsed-time check uses the real variant duration, not the old flat one" },
+            { "id": "hood-toggle", "label": "Equipping/unequipping the Welder's Hood toggles the head prop" },
+            { "id": "hood-survives-relog", "label": "Hood state survives a relog" },
+            { "id": "hood-blocks-weld", "label": "Welding without the hood correctly blocks with Missing Safety Gear" },
+            { "id": "tool-icons", "label": "welding_hood/arc_welder/welding_torch icons render correctly in a real slot" }
+          ]
+        },
+        { "name": "tarboro-industry", "status": "good", "desc": "Industrial production lines — smelter, lumber mill, stamping press, machine shop — tick autonomously once loaded with inputs.",
+          "checks": [
+            { "id": "loads-and-ticks", "label": "Load inputs, confirm autonomous ticking without staying logged in" },
+            { "id": "catchup-cap", "label": "24h catchup cap works correctly" }
+          ]
+        },
+        { "name": "tarboro-drugs", "status": "good", "desc": "5-tier legal weed economy (cash payout), acid (replaces meth), coke, and crack verticals; baggie-gated packaging.", "note": "MAJOR BUG FOUND+FIXED 2026-08-10 — the entire 5-tier weed/acid item rework had never actually been merged into ox_inventory's real item registry, so none of those items could be granted at all. Fixed: 16 missing items added, 5 stale old-strain items removed, item count went 308→319 exactly matching the math. Real coords for the Vinewood Hills (crimson) forage area also walked in and swapped in for the old placeholders.",
+          "checks": [
+            { "id": "amber-forage", "label": "Amber Haze: forage it" },
+            { "id": "amber-plant", "label": "Amber Haze: plant a seed from it" },
+            { "id": "amber-harvest", "label": "Amber Haze: harvest the grown plant" },
+            { "id": "amber-bag", "label": "Amber Haze: bag the harvested bud" },
+            { "id": "amber-sell", "label": "Amber Haze: sell the bagged product" },
+            { "id": "jade-forage", "label": "Jade Diesel: forage it" },
+            { "id": "jade-plant", "label": "Jade Diesel: plant a seed from it" },
+            { "id": "jade-harvest", "label": "Jade Diesel: harvest the grown plant" },
+            { "id": "jade-bag", "label": "Jade Diesel: bag the harvested bud" },
+            { "id": "jade-sell", "label": "Jade Diesel: sell the bagged product" },
+            { "id": "turquoise-forage", "label": "Turquoise Dream: forage it" },
+            { "id": "turquoise-plant", "label": "Turquoise Dream: plant a seed from it" },
+            { "id": "turquoise-harvest", "label": "Turquoise Dream: harvest the grown plant" },
+            { "id": "turquoise-bag", "label": "Turquoise Dream: bag the harvested bud" },
+            { "id": "turquoise-sell", "label": "Turquoise Dream: sell the bagged product" },
+            { "id": "crimson-forage", "label": "Crimson Kush: forage it (real measured Vinewood coords, 2026-08-10)" },
+            { "id": "crimson-plant", "label": "Crimson Kush: plant a seed from it" },
+            { "id": "crimson-harvest", "label": "Crimson Kush: harvest the grown plant" },
+            { "id": "crimson-bag", "label": "Crimson Kush: bag the harvested bud" },
+            { "id": "crimson-sell", "label": "Crimson Kush: sell the bagged product" },
+            { "id": "galaxy-forage", "label": "Galaxy OG: forage it" },
+            { "id": "galaxy-plant", "label": "Galaxy OG: plant a seed from it" },
+            { "id": "galaxy-harvest", "label": "Galaxy OG: harvest the grown plant" },
+            { "id": "galaxy-bag", "label": "Galaxy OG: bag the harvested bud" },
+            { "id": "galaxy-sell", "label": "Galaxy OG: sell the bagged product" },
+            { "id": "weed-cash-clean", "label": "Legal weed sale pays clean cash, not bank/dirty" },
+            { "id": "acid-cook", "label": "Acid cook stations work end-to-end under the new event names" },
+            { "id": "acid-bag", "label": "acid_raw → acid_packaged bags correctly" },
+            { "id": "acid-dirty", "label": "Selling acid still pays dirty money, not caught by the weed cash path" },
+            { "id": "baggie-buy", "label": "Buying a baggie at the Salvage Dealer gives a real item/icon" },
+            { "id": "baggie-consume", "label": "Bagging consumes the right raw:baggie ratio per drug" },
+            { "id": "crack-no-baggie", "label": "Crack still bypasses bagging entirely" },
+            { "id": "trapping-full-list", "label": "/trapping gives all 8 items correctly (5 weed + acid + coke + crack)" }
+          ]
+        },
+        { "name": "tarboro-laundering", "status": "good", "desc": "Converts dirty money to clean at a loss, four NPC laundromat locations.",
+          "checks": [
+            { "id": "launder-works", "label": "Launder dirty money at one of the 4 NPC spots" },
+            { "id": "rate-correct", "label": "The ~55% rate actually applies" },
+            { "id": "daily-cap", "label": "The $5k/day cap actually applies" }
+          ]
+        },
+        { "name": "tarboro-stocks", "status": "good", "desc": "Player-facing stock market — 8 tickers, insider tips, portfolio tracking.",
+          "checks": [
+            { "id": "buy-stock", "label": "Buy a stock via /stocks" },
+            { "id": "sell-stock", "label": "Sell a stock via /stocks" },
+            { "id": "price-drifts", "label": "Price actually drifts over the 10-min tick" },
+            { "id": "insider-tips", "label": "Insider tips show up and are vague, not exact" },
+            { "id": "portfolio-math", "label": "/portfolio math is correct" }
+          ]
+        },
+        { "name": "tarboro-business", "status": "good", "desc": "Player-owned legal orgs: payroll, shared funds, LinkedUp job postings — plus commercial-property business types (9, including a Mining depot) and a nested illegal/front picker.",
+          "checks": [
+            { "id": "createbusiness", "label": "Create a business via /createbusiness" },
+            { "id": "paycheck", "label": "Wait ~10 min, a real paycheck hits an employee" },
+            { "id": "bizmanager-shows", "label": "Biz Manager appears in the phone app grid" },
+            { "id": "bizmanager-owner-only", "label": "Biz Manager only appears for the owner, not everyone" },
+            { "id": "buy-commercial", "label": "Buy a commercial property, behaves exactly like buying a house" },
+            { "id": "register-prompt", "label": "\"Register Business\" shows for the owner, not for renters" },
+            { "id": "type-picker", "label": "Full type picker works, no double business-fee charge" },
+            { "id": "illegal-nested", "label": "Picking Illegal shows the subtype menu then the front-type menu" },
+            { "id": "prompt-disappears", "label": "Register Business prompt disappears immediately after registering" },
+            { "id": "duplicate-rejected", "label": "Registering at an already-registered property is cleanly rejected" },
+            { "id": "server-validates", "label": "A tampered/direct callback call is rejected server-side, not just hidden in the UI" },
+            { "id": "mining-public-prompt", "label": "Mining depot's \"Sell Materials\" shows for any player, not just the owner" },
+            { "id": "mining-live-broadcast", "label": "Depot prompt appears for other connected players with no relog" },
+            { "id": "mining-sell-item", "label": "Selling a gathered material removes it from inventory" },
+            { "id": "mining-sell-cash", "label": "Selling pays clean cash, not bank/dirty" },
+            { "id": "mining-stock-increases", "label": "tarboro_business_stock's qty actually increases" },
+            { "id": "mining-cant-afford", "label": "Selling when the fund can't afford it is cleanly rejected" },
+            { "id": "mining-refund", "label": "Selling more than carried refunds the fund rather than losing money" },
+            { "id": "mining-balance-consistent", "label": "/orgbalance and Biz Manager show the mining fund correctly" }
+          ]
+        },
+        { "name": "tarboro-shops", "status": "good", "desc": "Player-facing storefronts — Electronics, 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer.",
+          "checks": [
+            { "id": "buy-247", "label": "Buy from the 24/7" },
+            { "id": "buy-electronics", "label": "Buy from Electronics" },
+            { "id": "buy-youtool", "label": "Buy from YouTool Hardware" },
+            { "id": "buy-salvage", "label": "Buy from Salvage Dealer" },
+            { "id": "themed-panel", "label": "All 4 use Tarboro's themed panel, not ox_inventory's native UI" }
+          ]
+        },
+        { "name": "tl_plants", "status": "good", "desc": "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", "note": "Plant/harvest structure confirmed working in-game via owner screenshots. FIXED 2026-08-10/11 — every leaf/branch/bud mesh had a blank, never-painted texture (colors only visible from far away, washed out white up close). Leaves/stems now solid green/brown; buds now come in 5 tier-matched hues, picked per-strain by the forage code.",
+          "checks": [
+            { "id": "plant-green-close", "label": "Leaves/stems read as green/brown up close, not washed out" },
+            { "id": "plant-green-far", "label": "Same from far away" },
+            { "id": "bud-amber-hue", "label": "Sandy Shores buds show tan (Amber Haze)" },
+            { "id": "bud-jade-hue", "label": "Blaine County buds show green (Jade Diesel)" },
+            { "id": "bud-turquoise-hue", "label": "Paleto Bay buds show teal (Turquoise Dream)" },
+            { "id": "bud-crimson-hue", "label": "Vinewood Hills buds show red (Crimson Kush)" },
+            { "id": "bud-galaxy-hue", "label": "Mount Chiliad buds show purple (Galaxy OG)" }
+          ]
+        }
       ]
     },
     {
       "cat": "Crime & Law",
       "items": [
-        { "name": "tarboro-crime", "status": "good", "desc": "Cuffing, arrest, jail sentences, illegal-item confiscation on arrest." },
-        { "name": "tarboro-theft", "status": "good", "desc": "Permanent vehicle theft (real ownership transfer), security cameras, 4-tier insurance — extended this session to cover physically-parked garage vehicles." },
-        { "name": "tarboro-hacking", "status": "good", "desc": "Tiered hacking skill pillar — ATM skims, vehicle camera disables, player theater hacks, and the Vault (a bespoke NUI codebreaker minigame).", "note": "The Vault's real-CEF behavior is repeatedly flagged as the single highest-risk untested piece in the whole project." },
-        { "name": "tarboro-prison", "status": "good", "desc": "Daily inmate schedule, prison jobs, contraband, dual-layer (player + NPC) guards.", "note": "Built solo while the owner was unavailable — extra care was taken and explicitly noted at the time." },
-        { "name": "tarboro-npcfallback", "status": "good", "desc": "Spawns NPC police/EMS when too few players are on duty, plus ambient population density tuning." }
+        { "name": "tarboro-crime", "status": "good", "desc": "Cuffing, arrest, jail sentences, illegal-item confiscation on arrest.",
+          "checks": [
+            { "id": "cuff", "label": "Cuff a player" },
+            { "id": "arrest-reason", "label": "/arrest with a reason" },
+            { "id": "jail-countdown", "label": "Jail countdown works" },
+            { "id": "auto-release", "label": "Auto-release + Bolingbroke teleport fires" },
+            { "id": "reconnect-resumes-jail", "label": "Reconnecting mid-sentence correctly resumes it" },
+            { "id": "weed-not-seized", "label": "Weed items are NOT seized on arrest" },
+            { "id": "hard-drugs-seized", "label": "Acid/coke/crack/precursors/guns ARE seized" }
+          ]
+        },
+        { "name": "tarboro-theft", "status": "good", "desc": "Permanent vehicle theft (real ownership transfer), security cameras, 4-tier insurance — extended this session to cover physically-parked garage vehicles.",
+          "checks": [
+            { "id": "grace-timer", "label": "Street-parking grace timer applies" },
+            { "id": "lockpick-check", "label": "Lockpick skillcheck works" },
+            { "id": "ownership-transfer", "label": "Real ownership transfer happens" },
+            { "id": "camera-install", "label": "Install a security camera" },
+            { "id": "camera-disable", "label": "Camera can be disabled by a hacker" },
+            { "id": "insurance-buy", "label": "Buy insurance" },
+            { "id": "insurance-claim", "label": "File an insurance claim" }
+          ]
+        },
+        { "name": "tarboro-hacking", "status": "good", "desc": "Tiered hacking skill pillar — ATM skims, vehicle camera disables, player theater hacks, and the Vault (a bespoke NUI codebreaker minigame).", "note": "The Vault's real-CEF behavior is repeatedly flagged as the single highest-risk untested piece in the whole project.",
+          "checks": [
+            { "id": "atm-skim", "label": "ATM skim" },
+            { "id": "theater-hack", "label": "Theater /hack <id> flow — victim balance untouched, only notified" },
+            { "id": "vault-renders", "label": "The Vault's NUI codebreaker actually renders/responds in real CEF" }
+          ]
+        },
+        { "name": "tarboro-prison", "status": "good", "desc": "Daily inmate schedule, prison jobs, contraband, dual-layer (player + NPC) guards.", "note": "Built solo while the owner was unavailable — extra care was taken and explicitly noted at the time.",
+          "checks": [
+            { "id": "daily-schedule", "label": "Daily schedule runs" },
+            { "id": "prison-job", "label": "At least one prison job works" },
+            { "id": "contraband", "label": "Contraband smuggling works" },
+            { "id": "player-guards", "label": "Player guards respond to something" },
+            { "id": "npc-guards", "label": "NPC fallback guard layer responds to something" }
+          ]
+        },
+        { "name": "tarboro-npcfallback", "status": "good", "desc": "Spawns NPC police/EMS when too few players are on duty, plus ambient population density tuning.",
+          "checks": [
+            { "id": "npc-patrol", "label": "Zero player cops: an NPC patrol unit spawns and drives within ~30s" },
+            { "id": "npc-ambulance", "label": "Zero player EMS: an NPC ambulance unit spawns within ~30s" },
+            { "id": "density-lower", "label": "Ambient ped/vehicle density is visibly lower" }
+          ]
+        }
       ]
     },
     {
       "cat": "Social Systems",
       "items": [
-        { "name": "tarboro-phone", "status": "good", "desc": "The phone itself and most of its app suite — Bank, Messages, Radio/Music, Bills, Real Estate, Garage, Biz Manager, LinkedUp, Darkweb, Insurance, Services, personalizable home screen.", "note": "The one system with the deepest verification on this list — its icon-editing drag interactions were validated in a real disposable browser test harness, though it's still never run inside the actual game client." },
-        { "name": "tarboro-allies", "status": "good", "desc": "Mutual accept/reject ally requests, lightweight crews, bail, lien payoff, ally revive, garage vehicle access." },
-        { "name": "tarboro-gangs", "status": "good", "desc": "Player-registered gangs with a fixed 4-grade ladder, gang funds, 7-zone turf claiming (Downtown locked to the government)." },
-        { "name": "tarboro-racing", "status": "good", "desc": "Ad-hoc street challenges, pink-slip wagers with double lock-in confirmation, car meets, organized circuit racing." },
-        { "name": "tarboro-heists", "status": "good", "desc": "3-tier heists (small/medium/marquee) — a shared gear-up safehouse, real-cop-or-NPC-fallback response, one attempt per gear-up." },
-        { "name": "tarboro-midgame", "status": "good", "desc": "Progression nudges (property/fabrication/stocks) and an open-world delivery-crate event." },
-        { "name": "tarboro-darkweb", "status": "good", "desc": "Anonymous gig/bounty board with escrowed cash." },
-        { "name": "tarboro-socialmedia", "status": "good", "desc": "Clout-to-income social feed — profiles, posts, follower thresholds, a sponsor-economy payout." },
-        { "name": "tarboro-news", "status": "good", "desc": "Tarboro Tribune — player-authored news articles, phone-only, admin moderation." },
-        { "name": "tarboro-requests", "status": "warn", "desc": "Player request board — clothing, vehicle liveries, vehicle upgrades, admin-fulfilled.", "note": "Only a one-line cross-reference exists in memory, no dedicated build record." },
-        { "name": "tarboro-radio", "status": "good", "desc": "Installable vehicle radio item, GTA native station tuning (music playback itself now lives in the Phone's Music app)." },
-        { "name": "tarboro-clothing", "status": "warn", "desc": "Clothing store interactions.", "note": "Description only — no build narrative found anywhere in memory." }
+        { "name": "tarboro-phone", "status": "good", "desc": "The phone itself and most of its app suite — Bank, Messages, Radio/Music, Bills, Real Estate, Garage, Biz Manager, LinkedUp, Darkweb, Insurance, Services, personalizable home screen.", "note": "The one system with the deepest verification on this list — its icon-editing drag interactions were validated in a real disposable browser test harness, though it's still never run inside the actual game client.",
+          "checks": [
+            { "id": "app-bank", "label": "Bank app" },
+            { "id": "app-messages", "label": "Messages app" },
+            { "id": "app-radio", "label": "Radio/Music app, incl. personalization/wallpaper/icon-folder drag" },
+            { "id": "app-bills", "label": "Bills app" },
+            { "id": "app-realestate", "label": "Real Estate app" },
+            { "id": "app-garage", "label": "Garage app" },
+            { "id": "app-bizmanager", "label": "Biz Manager app" },
+            { "id": "app-linkedup", "label": "LinkedUp app" },
+            { "id": "app-darkweb", "label": "Darkweb app" },
+            { "id": "app-insurance", "label": "Insurance app" },
+            { "id": "app-services-911", "label": "Services app — 911/211" },
+            { "id": "app-services-comms", "label": "Services app — gang/crew comms" },
+            { "id": "app-news", "label": "News app" },
+            { "id": "app-socialmedia", "label": "Social Media app" },
+            { "id": "app-requests", "label": "Requests app" },
+            { "id": "app-store-gating", "label": "App Store install/uninstall gating" }
+          ]
+        },
+        { "name": "tarboro-allies", "status": "good", "desc": "Mutual accept/reject ally requests, lightweight crews, bail, lien payoff, ally revive, garage vehicle access.",
+          "checks": [
+            { "id": "send-request", "label": "Send an ally request" },
+            { "id": "accept-request", "label": "Accept an ally request" },
+            { "id": "form-crew", "label": "Form a lightweight crew" },
+            { "id": "bail-ally", "label": "/bail on an actual jailed ally" },
+            { "id": "paylien-ally", "label": "/paylien on an actual liened ally" },
+            { "id": "team-bonus", "label": "+5% team-bonus PayPlayer wiring applies near an online ally" }
+          ]
+        },
+        { "name": "tarboro-gangs", "status": "good", "desc": "Player-registered gangs with a fixed 4-grade ladder, gang funds, 7-zone turf claiming (Downtown locked to the government).",
+          "checks": [
+            { "id": "create-gang", "label": "Create a gang" },
+            { "id": "invite-member", "label": "Invite a member" },
+            { "id": "kick-member", "label": "Kick a member" },
+            { "id": "claim-turf", "label": "Claim a turf zone" },
+            { "id": "downtown-locked", "label": "Downtown/Pillbox Hill refuses a claim" },
+            { "id": "contest-cooldown", "label": "Contested-claim cooldown prevents instant ping-pong" }
+          ]
+        },
+        { "name": "tarboro-racing", "status": "good", "desc": "Ad-hoc street challenges, pink-slip wagers with double lock-in confirmation, car meets, organized circuit racing.",
+          "checks": [
+            { "id": "adhoc-challenge", "label": "Ad-hoc /challenge" },
+            { "id": "pinkslip-wager", "label": "Full pink-slip wager with both sides confirming their plate" },
+            { "id": "car-meet", "label": "A car meet blip" },
+            { "id": "circuit-race", "label": "An organized circuit race" }
+          ]
+        },
+        { "name": "tarboro-heists", "status": "good", "desc": "3-tier heists (small/medium/marquee) — a shared gear-up safehouse, real-cop-or-NPC-fallback response, one attempt per gear-up.",
+          "checks": [
+            { "id": "gear-up", "label": "Gear up at the shared safehouse" },
+            { "id": "heist-small", "label": "Run the small tier" },
+            { "id": "heist-medium", "label": "Run the medium tier" },
+            { "id": "heist-marquee", "label": "Run the marquee tier (needs a Master-tier hacker)" },
+            { "id": "police-response", "label": "Real-cop-or-NPC-fallback response fires regardless of success" }
+          ]
+        },
+        { "name": "tarboro-midgame", "status": "good", "desc": "Progression nudges (property/fabrication/stocks) and an open-world delivery-crate event.",
+          "checks": [
+            { "id": "nudge-property", "label": "Property-afford nudge fires" },
+            { "id": "nudge-fabrication", "label": "Fabrication-tier nudge fires" },
+            { "id": "nudge-stocks", "label": "Never-touched-stocks nudge fires" },
+            { "id": "nudge-once", "label": "Each nudge only fires once per character" },
+            { "id": "delivery-event", "label": "Catch a delivery-crate open-world event" }
+          ]
+        },
+        { "name": "tarboro-darkweb", "status": "good", "desc": "Anonymous gig/bounty board with escrowed cash.",
+          "checks": [
+            { "id": "post-gig", "label": "Post a gig with an escrowed bounty" },
+            { "id": "claim-gig", "label": "Claim it as a second character" },
+            { "id": "completion-releases", "label": "Completion releases escrow" },
+            { "id": "cancel-refunds", "label": "Cancellation refunds it" }
+          ]
+        },
+        { "name": "tarboro-socialmedia", "status": "good", "desc": "Clout-to-income social feed — profiles, posts, follower thresholds, a sponsor-economy payout.",
+          "checks": [
+            { "id": "post", "label": "Post" },
+            { "id": "get-likes", "label": "Get likes on a post" },
+            { "id": "follower-formula", "label": "Follower-count formula behaves sensibly" },
+            { "id": "sponsor-payout", "label": "Sponsor-economy payout trickles in at a follower threshold" }
+          ]
+        },
+        { "name": "tarboro-news", "status": "good", "desc": "Tarboro Tribune — player-authored news articles, phone-only, admin moderation.",
+          "checks": [
+            { "id": "publish", "label": "Publish an article" },
+            { "id": "anonymous-option", "label": "Anonymous option actually hides the byline" },
+            { "id": "shows-in-feed", "label": "Shows in the Tribune feed" },
+            { "id": "deletenews", "label": "/deletenews moderation works" }
+          ]
+        },
+        { "name": "tarboro-requests", "status": "warn", "desc": "Player request board — clothing, vehicle liveries, vehicle upgrades, admin-fulfilled.", "note": "Only a one-line cross-reference exists in memory, no dedicated build record.",
+          "checks": [
+            { "id": "submit-clothing", "label": "Submit a clothing request via the phone" },
+            { "id": "submit-livery", "label": "Submit a livery/vehicle-upgrade request" },
+            { "id": "cooldown-30min", "label": "30-min cooldown applies" },
+            { "id": "cap-3-pending", "label": "Max-3-pending cap applies" },
+            { "id": "admin-fulfills", "label": "An admin can see and fulfill a request" }
+          ]
+        },
+        { "name": "tarboro-radio", "status": "good", "desc": "Installable vehicle radio item, GTA native station tuning (music playback itself now lives in the Phone's Music app).",
+          "checks": [
+            { "id": "install-item", "label": "Install the vehicle radio item" },
+            { "id": "tune-station", "label": "Tune a native GTA station" },
+            { "id": "audible-nearby", "label": "Audible to nearby players" }
+          ]
+        },
+        { "name": "tarboro-clothing", "status": "warn", "desc": "Clothing store interactions.", "note": "Description only — no build narrative found anywhere in memory.",
+          "checks": [
+            { "id": "buy-outfit", "label": "Buy/change an outfit at a clothing store" },
+            { "id": "applies", "label": "Actually applies" },
+            { "id": "persists", "label": "Persists across a relog" }
+          ]
+        }
       ]
     },
     {
       "cat": "Admin Tools",
       "items": [
-        { "name": "tarboro-admin", "status": "good", "desc": "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands, /addmoney (new 2026-08-10, admin cash/bank/dirty grant, bypasses garnishment/bonus).", "note": "Extended repeatedly across this whole project. Injury commands are no longer orphaned now that tarboro-injuries actually runs." }
+        { "name": "tarboro-admin", "status": "good", "desc": "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands, /addmoney (new 2026-08-10, admin cash/bank/dirty grant, bypasses garnishment/bonus).", "note": "Extended repeatedly across this whole project. Injury commands are no longer orphaned now that tarboro-injuries actually runs.",
+          "checks": [
+            { "id": "cmd-tp", "label": "/tp" },
+            { "id": "cmd-tpm", "label": "/tpm" },
+            { "id": "cmd-goto", "label": "/goto" },
+            { "id": "cmd-bring", "label": "/bring" },
+            { "id": "cmd-coords", "label": "/coords" },
+            { "id": "cmd-addblip", "label": "/addblip" },
+            { "id": "cmd-delblip", "label": "/delblip" },
+            { "id": "cmd-listblips", "label": "/listblips" },
+            { "id": "cmd-movenode", "label": "/movenode" },
+            { "id": "cmd-delnode", "label": "/delnode" },
+            { "id": "cmd-listnodes", "label": "/listnodes" },
+            { "id": "cmd-addmoney", "label": "/addmoney (new this session)" },
+            { "id": "ace-gating", "label": "ACE-gating denies a non-admin on every one of the above" }
+          ]
+        }
       ]
     }
   ]

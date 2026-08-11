@@ -59,7 +59,7 @@
     .res-inv .timestamp { color: var(--ri-faint); font-size: 12.5px; text-align: right; white-space: nowrap; }
 
     .res-inv .stats {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
       background: var(--ri-border); border: 1px solid var(--ri-border); border-radius: 6px;
       overflow: hidden; margin-bottom: 26px;
     }
@@ -70,7 +70,7 @@
     .res-inv .stat.warn .num { color: var(--ri-warn); }
     .res-inv .stat.good .num { color: var(--ri-good); }
     .res-inv .stat.neutral .num { color: var(--ri-text); }
-    .res-inv .stat.accent .num { color: var(--ri-accent); }
+    .res-inv .stat.accent .num { color: var(--ri-accent); font-size: 21px; }
 
     .res-inv .banner {
       background: var(--ri-surface2); border: 1px solid var(--ri-border-soft); border-radius: 4px;
@@ -160,6 +160,26 @@
 
     .res-inv .res-row[data-status="hidden"] { display: none; }
 
+    .res-inv .checks-toggle {
+      background: none; border: 1px solid transparent; cursor: pointer; font-family: var(--ri-mono);
+      color: var(--ri-muted); font-size: 12px; padding: 3px 6px; display: inline-flex;
+      align-items: center; gap: 5px; border-radius: 4px; font-variant-numeric: tabular-nums;
+    }
+    .res-inv .checks-toggle:hover { color: var(--ri-text); border-color: var(--ri-border); background: var(--ri-surface2); }
+    .res-inv .checks-toggle .chev { display: inline-block; transition: transform 0.12s ease; font-size: 9px; color: var(--ri-faint); }
+    .res-inv .res-row.expanded .checks-toggle .chev { transform: rotate(90deg); }
+    .res-inv .checks-toggle .frac.complete { color: var(--ri-good); font-weight: 600; }
+
+    .res-inv .res-subrow td { padding: 7px 10px; }
+    .res-inv .res-subrow .tested-cell { padding-left: 20px; }
+    .res-inv .res-subrow .sub-label { color: var(--ri-muted); font-size: 12.5px; padding-left: 6px; }
+    .res-inv .res-subrow .tested-check { width: 13px; height: 13px; }
+    .res-inv .res-subrow.sub-tested .sub-label { color: var(--ri-good); text-decoration: line-through; text-decoration-color: var(--ri-faint); }
+    .res-inv .res-subrow:hover { background: var(--ri-surface); }
+
+    .res-inv .reset-btn { color: var(--ri-crit); border-color: var(--ri-crit); }
+    .res-inv .reset-btn:hover { background: var(--ri-crit-bg); border-color: var(--ri-crit); color: var(--ri-crit); }
+
     .res-inv footer {
       margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--ri-border);
       color: var(--ri-faint); font-size: 12px; line-height: 1.7; text-align: left;
@@ -167,6 +187,7 @@
 
     @media (max-width: 720px) {
       .res-inv .stats { grid-template-columns: repeat(2, 1fr); }
+      .res-inv .stat.accent .num { font-size: 17px; }
       .res-inv .res-table, .res-inv .res-table tbody, .res-inv .res-table tr, .res-inv .res-table td { display: block; width: 100%; }
       .res-inv .res-row td { padding: 3px 0; }
       .res-inv .res-row { padding: 12px 4px; }
@@ -273,7 +294,8 @@
             <div class="stat crit"><div class="num" id="ri-stat-crit">—</div><div class="lbl">Not running at all</div></div>
             <div class="stat warn"><div class="num" id="ri-stat-warn">—</div><div class="lbl">Thin / no record</div></div>
             <div class="stat good"><div class="num" id="ri-stat-good">—</div><div class="lbl">Documented</div></div>
-            <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Marked tested (synced)</div></div>
+            <div class="stat accent"><div class="num" id="ri-tested-count">0</div><div class="lbl">Resources fully tested</div></div>
+            <div class="stat accent"><div class="num" id="ri-stat-checks">0 / 0</div><div class="lbl">Individual checks confirmed</div></div>
           </div>
 
           <div class="banner" id="ri-banner">Loading…</div>
@@ -285,6 +307,7 @@
               <button type="submit" class="filter-btn" id="ri-signin-btn">Sign in</button>
             </form>
             <button type="button" class="filter-btn" id="ri-signout-btn" style="display:none;">Sign out</button>
+            <button type="button" class="filter-btn reset-btn" id="ri-reset-btn" style="display:none;">Reset all progress</button>
             <span class="auth-note" id="ri-auth-note">Anyone can view this checklist — only the site owner can check items off.</span>
           </div>
 
@@ -353,6 +376,7 @@
     function riUpdateSignInUI(user) {
       const form = document.getElementById('ri-signin-form');
       const signOutBtn = document.getElementById('ri-signout-btn');
+      const resetBtn = document.getElementById('ri-reset-btn');
       const note = document.getElementById('ri-auth-note');
       if (!form || !signOutBtn) return;
 
@@ -360,16 +384,19 @@
         riIsAuthorized = true;
         form.style.display = 'none';
         signOutBtn.style.display = '';
+        if (resetBtn) resetBtn.style.display = '';
         if (note) note.textContent = `Signed in as ${user.email} — checkboxes unlocked.`;
       } else if (user) {
         riIsAuthorized = false;
         form.style.display = 'none';
         signOutBtn.style.display = '';
+        if (resetBtn) resetBtn.style.display = 'none';
         if (note) note.textContent = `Signed in as ${user.email}, but that account isn't authorized.`;
       } else {
         riIsAuthorized = false;
         form.style.display = '';
         signOutBtn.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'none';
         if (note) note.textContent = 'Anyone can view this checklist — only the site owner can check items off.';
       }
 
@@ -395,13 +422,62 @@
 
     document.getElementById('ri-signout-btn').addEventListener('click', () => signOut(auth));
 
+    // Full wipe of the tested map — a real field replacement via updateDoc,
+    // not the old setDoc(..., {merge:true}) pattern documented as a bug
+    // below. That bug was an ACCIDENTAL wipe firing on every page load;
+    // this is an explicit, confirmed, user-triggered one, needed because the
+    // 2026-08-11 schema change (per-behavior checks) makes old coarse
+    // per-resource flags meaningless for any resource that now has a
+    // checks[] list.
+    document.getElementById('ri-reset-btn').addEventListener('click', async () => {
+      if (!riIsAuthorized) return;
+      const ok = confirm('Reset ALL testing progress (every resource and every individual check)? This cannot be undone.');
+      if (!ok) return;
+      const note = document.getElementById('ri-auth-note');
+      try {
+        await updateDoc(testedDocRef, { tested: {} });
+        if (note) note.textContent = 'All testing progress reset.';
+      } catch (err) {
+        console.error('Failed to reset tested state:', err);
+        riSetSyncStatus('⚠ reset failed — check console', true);
+      }
+    });
+
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 
     const riRoot = document.getElementById('ri-categories');
 
+    // Populated during riInit(): { resourceName: [checkId, checkId, ...] }
+    // for resources with a checks[] array, or null for legacy single-flag
+    // resources. Drives every per-check lookup below.
+    let riChecksByName = {};
+
     function riUpdateTestedCount() {
       const el = document.getElementById('ri-tested-count');
-      if (el) el.textContent = document.querySelectorAll('.res-inv .res-row.tested').length;
+      if (el) el.textContent = document.querySelectorAll('.res-inv .res-row:not(.res-subrow).tested').length;
+    }
+
+    // Second, finer-grained stat: individual behaviors confirmed across the
+    // whole inventory, counting each check on a checks[] resource as its own
+    // unit and each legacy resource's single flag as one unit.
+    function riUpdateChecksProgress() {
+      let totalChecks = 0, doneChecks = 0;
+      Object.keys(riChecksByName).forEach(name => {
+        const checkIds = riChecksByName[name];
+        if (checkIds && checkIds.length) {
+          totalChecks += checkIds.length;
+          checkIds.forEach(id => {
+            const box = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(name)}"][data-check-id="${CSS.escape(id)}"]`);
+            if (box && box.checked) doneChecks++;
+          });
+        } else {
+          totalChecks += 1;
+          const row = document.querySelector(`.res-inv .res-row[data-name="${CSS.escape(name)}"]:not(.res-subrow)`);
+          if (row && row.classList.contains('tested')) doneChecks++;
+        }
+      });
+      const el = document.getElementById('ri-stat-checks');
+      if (el) el.textContent = `${doneChecks} / ${totalChecks}`;
     }
 
     function riSetSyncStatus(text, isError) {
@@ -411,17 +487,42 @@
       el.style.color = isError ? 'var(--ri-crit)' : 'var(--ri-faint)';
     }
 
-    // Apply a { resourceName: true } map from Firestore onto the already-
-    // rendered rows/checkboxes.
+    // Apply a { resourceName: true } (legacy) or { resourceName: { checkId:
+    // true } } (per-behavior) map from Firestore onto the already-rendered
+    // rows/checkboxes/sub-checkboxes.
     function riApplyTestedState(testedMap) {
-      document.querySelectorAll('.res-inv .res-row').forEach(row => {
+      document.querySelectorAll('.res-inv .res-row:not(.res-subrow)').forEach(row => {
         const name = row.getAttribute('data-name');
-        const isTested = !!testedMap[name];
-        row.classList.toggle('tested', isTested);
-        const box = row.querySelector('.tested-check');
-        if (box) box.checked = isTested;
+        const checkIds = riChecksByName[name];
+
+        if (checkIds && checkIds.length) {
+          const raw = testedMap[name];
+          const entry = (raw && typeof raw === 'object') ? raw : {};
+          let doneCount = 0;
+          checkIds.forEach(id => {
+            const done = !!entry[id];
+            if (done) doneCount++;
+            const box = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(name)}"][data-check-id="${CSS.escape(id)}"]`);
+            if (box) box.checked = done;
+            const subrow = box ? box.closest('.res-subrow') : null;
+            if (subrow) subrow.classList.toggle('sub-tested', done);
+          });
+          const allDone = doneCount === checkIds.length;
+          row.classList.toggle('tested', allDone);
+          const frac = row.querySelector('.checks-toggle .frac');
+          if (frac) {
+            frac.textContent = `${doneCount}/${checkIds.length}`;
+            frac.classList.toggle('complete', allDone);
+          }
+        } else {
+          const isTested = !!testedMap[name];
+          row.classList.toggle('tested', isTested);
+          const box = row.querySelector('.tested-check');
+          if (box) box.checked = isTested;
+        }
       });
       riUpdateTestedCount();
+      riUpdateChecksProgress();
       riApplyFilters();
     }
 
@@ -429,8 +530,22 @@
     let riSearchTerm = '';
     let riUntestedOnly = false;
 
+    // Sub-rows are shown only when BOTH their parent resource passes the
+    // active filter/search AND the resource is expanded — keeps 273
+    // individual checks from turning the page into an endless scroll by
+    // default while still making every one of them reachable.
+    function riSyncSubrowVisibility() {
+      document.querySelectorAll('.res-inv .res-subrow').forEach(sub => {
+        const parentName = sub.getAttribute('data-parent');
+        const parentRow = document.querySelector(`.res-inv .res-row[data-name="${CSS.escape(parentName)}"]:not(.res-subrow)`);
+        const parentHidden = !parentRow || parentRow.getAttribute('data-status') === 'hidden';
+        const expanded = !!(parentRow && parentRow.classList.contains('expanded'));
+        sub.setAttribute('data-status', (!parentHidden && expanded) ? '' : 'hidden');
+      });
+    }
+
     function riApplyFilters() {
-      document.querySelectorAll('.res-inv .res-row').forEach(row => {
+      document.querySelectorAll('.res-inv .res-row:not(.res-subrow)').forEach(row => {
         const status = row.getAttribute('data-status-val');
         const text = row.getAttribute('data-search');
         const isTested = row.classList.contains('tested');
@@ -440,9 +555,10 @@
         row.setAttribute('data-status', (matchesFilter && matchesSearch && matchesTested) ? '' : 'hidden');
       });
       document.querySelectorAll('.res-inv .category').forEach(cat => {
-        const visible = cat.querySelectorAll('.res-row:not([data-status="hidden"])').length;
+        const visible = cat.querySelectorAll('.res-row:not(.res-subrow):not([data-status="hidden"])').length;
         cat.style.display = visible ? '' : 'none';
       });
+      riSyncSubrowVisibility();
     }
 
     document.getElementById('ri-tested-filter').addEventListener('change', (e) => {
@@ -487,6 +603,7 @@
 
       let total = 0;
       const counts = { crit: 0, warn: 0, good: 0 };
+      riChecksByName = {};
 
       riRoot.innerHTML = '';
       data.categories.forEach(group => {
@@ -497,17 +614,38 @@
         section.innerHTML = `
           <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
           <table class="res-table"><tbody>
-            ${group.items.map(it => `
-              <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${(it.name + ' ' + it.desc + ' ' + (it.note||'')).toLowerCase()}">
-                <td class="tested-cell"><input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested"></td>
-                <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good'})"></span>${it.name}</span></td>
-                <td>
-                  <div class="res-desc">${it.desc}</div>
-                  ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
-                </td>
-                <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
-              </tr>
-            `).join('')}
+            ${group.items.map(it => {
+              const hasChecks = Array.isArray(it.checks) && it.checks.length > 0;
+              riChecksByName[it.name] = hasChecks ? it.checks.map(c => c.id) : null;
+              const dotColor = it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good';
+              const searchText = (it.name + ' ' + it.desc + ' ' + (it.note || '') + ' ' + (hasChecks ? it.checks.map(c => c.label).join(' ') : '')).toLowerCase();
+
+              const testedCellHtml = hasChecks
+                ? `<button type="button" class="checks-toggle" data-toggle="${it.name}" title="Show/hide individual checks">
+                     <span class="chev">▸</span><span class="frac">0/${it.checks.length}</span>
+                   </button>`
+                : `<input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested">`;
+
+              const parentRow = `
+                <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${searchText}">
+                  <td class="tested-cell">${testedCellHtml}</td>
+                  <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${it.name}</span></td>
+                  <td>
+                    <div class="res-desc">${it.desc}</div>
+                    ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
+                  </td>
+                  <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
+                </tr>`;
+
+              const subRows = hasChecks ? it.checks.map(chk => `
+                <tr class="res-row res-subrow" data-parent="${it.name}">
+                  <td class="tested-cell"><input type="checkbox" class="tested-check sub-check" data-parent="${it.name}" data-check-id="${chk.id}" title="Mark as tested"></td>
+                  <td colspan="3" class="sub-label">${chk.label}</td>
+                </tr>
+              `).join('') : '';
+
+              return parentRow + subRows;
+            }).join('')}
           </tbody></table>
         `;
         riRoot.appendChild(section);
@@ -522,26 +660,80 @@
       document.getElementById('ri-filter-warn').textContent = `Thin / Undocumented (${counts.warn || 0})`;
       document.getElementById('ri-filter-good').textContent = `Documented (${counts.good || 0})`;
 
+      // Show the real "X / total" denominator immediately, before the first
+      // Firestore snapshot arrives (which will re-run this with real counts).
+      riUpdateChecksProgress();
+
       // Auth state may already be known (onAuthStateChanged can fire before
       // these rows exist) — apply it to the checkboxes we just created.
       riSetCheckboxesEnabled(riIsAuthorized);
 
-      // Checking a box writes straight to Firestore (dot-path update touches
-      // only that one resource's key). The onSnapshot listener is what
-      // actually updates the UI, including for the browser that clicked —
-      // this just kicks off the write and shows an optimistic state while
-      // it's in flight. The `disabled` attribute keeps casual visitors from
-      // clicking at all; the Firestore rules are what actually enforce it.
-      document.querySelectorAll('.res-inv .tested-check').forEach(box => {
+      // Expand/collapse a resource's individual checks. Purely local UI
+      // state (not synced) — only which checks are DONE gets written.
+      document.querySelectorAll('.res-inv .checks-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const row = btn.closest('.res-row');
+          row.classList.toggle('expanded');
+          riSyncSubrowVisibility();
+        });
+      });
+
+      // Legacy resource-level checkboxes (resources with no checks[] list):
+      // writes straight to tested.{name} as a plain boolean, same as before
+      // this schema change.
+      document.querySelectorAll('.res-inv .tested-check:not(.sub-check)').forEach(box => {
         box.addEventListener('change', async () => {
           if (!riIsAuthorized) { box.checked = !box.checked; return; }
           const name = box.getAttribute('data-name');
           const checked = box.checked;
           box.closest('.res-row').classList.toggle('tested', checked);
           riUpdateTestedCount();
+          riUpdateChecksProgress();
           riApplyFilters();
           try {
             await updateDoc(testedDocRef, { [`tested.${name}`]: checked });
+          } catch (err) {
+            console.error('Failed to save tested state to Firestore:', err);
+            riSetSyncStatus('⚠ sync failed — check console', true);
+          }
+        });
+      });
+
+      // Per-behavior checkboxes: writes to the nested tested.{name}.{checkId}
+      // dot-path — Firestore updates just that one leaf key, same "touch
+      // only this field" guarantee the legacy path already relied on, just
+      // one level deeper. Also optimistically recomputes the parent
+      // resource's fraction/complete state without waiting on the snapshot.
+      document.querySelectorAll('.res-inv .tested-check.sub-check').forEach(box => {
+        box.addEventListener('change', async () => {
+          if (!riIsAuthorized) { box.checked = !box.checked; return; }
+          const parentName = box.getAttribute('data-parent');
+          const checkId = box.getAttribute('data-check-id');
+          const checked = box.checked;
+          box.closest('.res-subrow').classList.toggle('sub-tested', checked);
+
+          const checkIds = riChecksByName[parentName] || [];
+          const parentRow = document.querySelector(`.res-inv .res-row[data-name="${CSS.escape(parentName)}"]:not(.res-subrow)`);
+          if (parentRow) {
+            const doneCount = checkIds.filter(id => {
+              if (id === checkId) return checked;
+              const b = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(id)}"]`);
+              return b && b.checked;
+            }).length;
+            const allDone = doneCount === checkIds.length;
+            parentRow.classList.toggle('tested', allDone);
+            const frac = parentRow.querySelector('.checks-toggle .frac');
+            if (frac) {
+              frac.textContent = `${doneCount}/${checkIds.length}`;
+              frac.classList.toggle('complete', allDone);
+            }
+          }
+          riUpdateTestedCount();
+          riUpdateChecksProgress();
+          riApplyFilters();
+
+          try {
+            await updateDoc(testedDocRef, { [`tested.${parentName}.${checkId}`]: checked });
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);

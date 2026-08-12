@@ -213,6 +213,22 @@ p {
   gap: 1.25rem;
 }
 
+/* Fixed 3-column layout for grids that need to land as clean rows (e.g. an
+   even number of cards meant to read as 2 rows of 3) rather than however
+   many 240px columns happen to fit — auto-fit would give 4 on a full-width
+   desktop viewport, not 3. */
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 860px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}
+
 .card {
   display: block;
   background: var(--card);

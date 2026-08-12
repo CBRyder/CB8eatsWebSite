@@ -62,8 +62,7 @@ header {
   gap: 1.5rem;
   flex-wrap: wrap;
   padding: 1rem 2rem;
-  background: rgba(12, 12, 17, 0.85);
-  backdrop-filter: blur(10px);
+  background: rgba(12, 12, 17, 0.97);
   border-bottom: 1px solid var(--border);
   z-index: 999;
 }

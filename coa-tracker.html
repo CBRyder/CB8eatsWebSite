@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>System Inventory &amp; Testing — COA: Vampire Knights — CB8eats</title>
-  <meta name="description" content="Live audit of every COA: Vampire Knights C++ system, cross-checked against the actual source tree.">
+  <meta name="description" content="Live audit of every COA: Vampire Knights C++ and Blueprint system, cross-checked against the actual source tree and Content folder.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
@@ -229,15 +229,16 @@
 
     <section>
       <h2>System Inventory &amp; Testing</h2>
-      <p class="lede">A live audit of every C++ system built so far, cross-checked against the actual source
-        tree — check items off as you actually verify them in a live Play-In-Editor/Standalone pass.</p>
+      <p class="lede">A live audit of every C++ and Blueprint system built so far, cross-checked against the
+        actual source tree and Content folder — check items off as you actually verify them in a live
+        Play-In-Editor/Standalone pass.</p>
 
       <div class="res-inv">
         <div class="wrap">
 
           <header class="top">
             <div>
-              <div class="prompt">coavamp-dev<span class="accent">@</span>editor <span class="accent">~$</span> ls Source/COAVamp/Public/ --audit</div>
+              <div class="prompt">coavamp-dev<span class="accent">@</span>editor <span class="accent">~$</span> ls Source/COAVamp/ Content/ --audit</div>
               <h1>System Inventory</h1>
               <div class="subtitle" id="ri-subtitle">Loading system inventory…</div>
             </div>
@@ -283,7 +284,7 @@
           <div id="ri-categories">Loading system inventory…</div>
 
           <footer>
-            Status reflects C++ build completeness only, not a full code review — systems marked "Built, Untested" still carry the same live-testing gap as everything else. Re-run this diff (Source/COAVamp/Public headers vs. this file) any time a new system is built to catch future drift immediately.
+            Status reflects C++ build completeness and confirmed Blueprint asset presence only, not a full code review — systems marked "Built, Untested" still carry the same live-testing gap as everything else. Re-run this diff (Source/COAVamp/Public headers + a real Content/ folder pass vs. this file) any time a new system is built to catch future drift immediately.
           </footer>
 
         </div>

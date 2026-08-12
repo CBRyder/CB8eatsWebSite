@@ -6,7 +6,6 @@
     "enabled": true
   },
   "assets": {
-    "directory": ".",
-    "html_handling": "none"
+    "directory": "."
   }
 }

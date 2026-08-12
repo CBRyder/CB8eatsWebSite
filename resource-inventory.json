@@ -1,6 +1,6 @@
 {
-  "compiled": "2026-08-11",
-  "source": "Full audit of resources/[tarboro]/* on disk, diffed against server.cfg's ensure list, cross-checked against build memory. Re-run this diff any time a resource is added or removed to catch drift immediately.",
+  "compiled": "2026-08-12",
+  "source": "Full audit of resources/[tarboro]/* on disk, diffed against server.cfg's ensure list, cross-checked against build memory. Re-run this diff any time a resource is added or removed to catch drift immediately. 2026-08-12 pass specifically re-read every file touched in the prior ~4h (no git in this repo, diffed by mtime) to catch a real batch of undocumented work: the tarboro-needs eat/drink fix, the new injuries item system, Trap Line, and the clothing-store fix.",
   "caveat": "Every resource below, including ones marked \"good\", has never been run by a real connected player. \"good\" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors) — not that anyone has clicked the prompt, opened the menu, or walked the flow in-game. Status values: crit = not running at all, warn = thin or zero documentation, good = documented. Resources with a checks list can be marked tested behavior-by-behavior — a resource only shows fully tested once every one of its checks is checked.",
   "categories": [
     {
@@ -90,7 +90,7 @@
             { "id": "hospital-respawn", "label": "Hospital respawn lands correctly" }
           ]
         },
-        { "name": "tarboro-injuries", "status": "good", "desc": "Bleeding / broken limb / concussion / sickness. Extends tarboro-death, does not replace it.", "note": "FIXED 2026-08-10 — was fully built but missing from server.cfg, so it had never run a single time. Added and confirmed booting clean (first-ever successful start).",
+        { "name": "tarboro-injuries", "status": "good", "desc": "Bleeding / broken limb / concussion / sickness, escalation/decay ticks, and a real item-based treatment loop — bandage, splint, oxy, first_aid_kit, plus an EMS-only diagnostic tool. Extends tarboro-death, does not replace it.", "note": "FIXED 2026-08-10 — was fully built but missing from server.cfg, so it had never run a single time. Added and confirmed booting clean (first-ever successful start). EXPANDED 2026-08-11 — a full item-based cure layer was built on top: bandage cures bleeding (hooked via the same global ox_inventory:usedItem event as tarboro-needs, and had the IDENTICAL bug — was reading `source` instead of the real player id from `inventoryId`, since ox_inventory fires this as a server-local TriggerEvent, not a net event; fixed alongside tarboro-needs' own fix), splint cures broken limbs, oxy masks pain + heals over time WITHOUT curing (the underlying condition keeps escalating faster underneath while masked), first_aid_kit self-heals + cures minor conditions when there's no downed ally to revive. ems_diagnostic is auto-issued on EMS clock-in / stripped on clock-out or disconnect, can't be dropped or traded (vetoed via ox_inventory's swapItems hook), and reveals condition NAMES only to the requesting medic after 4 server-side checks (job, duty, possession, range) — no path exists for a civilian to see a diagnosis. New Pharmacy shops (Pillbox + Sandy Shores) sell all 4 items.",
           "checks": [
             { "id": "inflict-bleeding", "label": "/injury:inflict bleeding at severity 1-3, visible effect" },
             { "id": "inflict-broken", "label": "/injury:inflict broken_limb at severity 1-3, visible effect" },
@@ -99,17 +99,26 @@
             { "id": "cure-clears", "label": "/injury:cure clears an active condition" },
             { "id": "list-accurate", "label": "/injury:list shows accurate current state" },
             { "id": "clear-idempotent", "label": "/injury:clear is a safe idempotent full reset" },
-            { "id": "no-death-conflict", "label": "Downed WITH an active injury doesn't break tarboro-death's flow" }
+            { "id": "no-death-conflict", "label": "Downed WITH an active injury doesn't break tarboro-death's flow" },
+            { "id": "bandage-cures-bleeding", "label": "Using a bandage cures bleeding (regression check for the inventoryId-vs-source bug)" },
+            { "id": "splint-cures-broken", "label": "Using a splint cures a broken limb and consumes the item" },
+            { "id": "oxy-masks-not-cures", "label": "Oxy suppresses symptoms + heals over time, but the underlying condition is still there/worse once it wears off" },
+            { "id": "first-aid-self-use", "label": "first_aid_kit self-heals + cures minor conditions with no downed ally nearby" },
+            { "id": "ems-diagnostic-issued", "label": "ems_diagnostic is granted on EMS clock-in and stripped on clock-out/disconnect" },
+            { "id": "ems-diagnostic-no-trade", "label": "ems_diagnostic genuinely cannot be dropped or given to another player" },
+            { "id": "ems-diagnostic-reveal", "label": "Diagnosis correctly reveals condition names only to the requesting on-duty medic, in range, holding the tool" },
+            { "id": "pharmacy-buys", "label": "Buy all 4 treatment items from either Pharmacy location" }
           ]
         },
-        { "name": "tarboro-needs", "status": "good", "desc": "Hunger and thirst depletion with consumable items to restore them.",
+        { "name": "tarboro-needs", "status": "good", "desc": "Hunger and thirst depletion with consumable items to restore them.", "note": "FIXED 2026-08-11 — eating/drinking did nothing at all. Root cause: item defs' `server = { event = 'tarboro:needs:consume' }` field was never real — ox_inventory doesn't read a per-item server.event, only the single global `ox_inventory:usedItem` event. Consumption is now hooked there directly, loading data/items.lua purely as a hungerRestore/thirstRestore lookup table. Debug print statements (`[tarboro-needs DEBUG] ...`) are still sitting in the handler — safe to strip once confirmed working live.",
           "checks": [
             { "id": "hunger-depletes", "label": "Hunger depletes over real time" },
             { "id": "thirst-depletes", "label": "Thirst depletes on its own timer, independent of hunger" },
             { "id": "hud-tracks-live", "label": "HUD bars track the real values live, not stale/cached" },
-            { "id": "eat-restores", "label": "Eating a food item restores hunger by the right amount" },
+            { "id": "eat-restores", "label": "Eating a food item restores hunger by the right amount (regression check for the fixed usedItem-wiring bug)" },
             { "id": "drink-restores", "label": "Drinking a beverage restores thirst by the right amount" },
-            { "id": "no-overflow", "label": "Eating/drinking near full doesn't overflow or silently waste the item" }
+            { "id": "no-overflow", "label": "Eating/drinking near full doesn't overflow or silently waste the item" },
+            { "id": "debug-prints-stripped", "label": "Debug print statements removed from the consume handler once confirmed working" }
           ]
         }
       ]
@@ -227,7 +236,13 @@
             { "id": "baggie-buy", "label": "Buying a baggie at the Salvage Dealer gives a real item/icon" },
             { "id": "baggie-consume", "label": "Bagging consumes the right raw:baggie ratio per drug" },
             { "id": "crack-no-baggie", "label": "Crack still bypasses bagging entirely" },
-            { "id": "trapping-full-list", "label": "/trapping gives all 8 items correctly (5 weed + acid + coke + crack)" }
+            { "id": "trapping-full-list", "label": "/trapping gives all 8 items correctly (5 weed + acid + coke + crack)" },
+            { "id": "trap-line-mail", "label": "Holding sellable product triggers a phone text with a live Trap Line button" },
+            { "id": "trap-toggle-live", "label": "The Messages app button correctly flips Start Selling <-> Stop Trapping based on real state" },
+            { "id": "trap-resweep", "label": "Periodic sweep re-sends the text if you're holding product with no live button" },
+            { "id": "hostile-ambush", "label": "A customer occasionally turns hostile (armed, has to be fought off) instead of buying" },
+            { "id": "police-suppression", "label": "Most ambushes don't rack up wanted stars; the rare \"called in\" roll still does" },
+            { "id": "sequential-customers", "label": "Only one customer is ever active at a time; the next doesn't spawn until the current one resolves" }
           ]
         },
         { "name": "tarboro-laundering", "status": "good", "desc": "Converts dirty money to clean at a loss, four NPC laundromat locations.",
@@ -269,13 +284,13 @@
             { "id": "mining-balance-consistent", "label": "/orgbalance and Biz Manager show the mining fund correctly" }
           ]
         },
-        { "name": "tarboro-shops", "status": "good", "desc": "Player-facing storefronts — Electronics, 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer.",
+        { "name": "tarboro-shops", "status": "good", "desc": "Player-facing storefronts — 24/7 (migrated off ox_inventory's native shop module), YouTool Hardware, Salvage Dealer, Auto Parts Counter, and Pharmacy (new 2026-08-11, 2 locations).", "note": "The standalone \"Electronics\" shop referenced in earlier notes no longer exists as a real entry in data/shops.lua — radio/fuel_can live under YouTool and Auto Parts now. Only a stale mention survives in fxmanifest.lua's description string, harmless/cosmetic. Reshuffled 2026-08-11: baggie moved from Salvage Dealer to the 24/7 (it's an ordinary household item, belongs next to baking_soda); a place-anywhere atm_personal item appeared at YouTool.",
           "checks": [
             { "id": "buy-247", "label": "Buy from the 24/7" },
-            { "id": "buy-electronics", "label": "Buy from Electronics" },
             { "id": "buy-youtool", "label": "Buy from YouTool Hardware" },
             { "id": "buy-salvage", "label": "Buy from Salvage Dealer" },
-            { "id": "themed-panel", "label": "All 4 use Tarboro's themed panel, not ox_inventory's native UI" }
+            { "id": "buy-pharmacy", "label": "Buy bandage/splint/oxy/first_aid_kit from either Pharmacy location" },
+            { "id": "themed-panel", "label": "All storefronts use Tarboro's themed panel, not ox_inventory's native UI" }
           ]
         },
         { "name": "tl_plants", "status": "good", "desc": "Custom weed and coca 3D plant/bud props, replacing placeholder GTA assets.", "note": "Plant/harvest structure confirmed working in-game via owner screenshots. FIXED 2026-08-10/11 — every leaf/branch/bud mesh had a blank, never-painted texture (colors only visible from far away, washed out white up close). Leaves/stems now solid green/brown; buds now come in 5 tier-matched hues, picked per-strain by the forage code.",
@@ -344,8 +359,9 @@
     {
       "cat": "Social Systems",
       "items": [
-        { "name": "tarboro-phone", "status": "good", "desc": "The phone itself and most of its app suite — Bank, Messages, Radio/Music, Bills, Real Estate, Garage, Biz Manager, LinkedUp, Darkweb, Insurance, Services, personalizable home screen.", "note": "The one system with the deepest verification on this list — its icon-editing drag interactions were validated in a real disposable browser test harness, though it's still never run inside the actual game client.",
+        { "name": "tarboro-phone", "status": "good", "desc": "The phone itself and most of its app suite — Bank, Messages, Radio/Music, Bills, Real Estate, Garage, Biz Manager, LinkedUp, Darkweb, Insurance, Services, personalizable home screen.", "note": "The one system with the deepest verification on this list — its icon-editing drag interactions were validated in a real disposable browser test harness, though it's still never run inside the actual game client. FIXED 2026-08-11 — mail buttons (Set GPS on midgame nudges, Start Selling on the drug Trap Line) used to be one-shot: the DB column got blanked after a single press, so any button meant to be pressed more than once silently died forever after the first use. Buttons are now repeatable; the old one-shot handler still exists for any future genuinely single-use button, it's just not called by these.",
           "checks": [
+            { "id": "mail-button-repeatable", "label": "A Trap Line/GPS-style mail button survives being pressed more than once (regression check for the one-shot bug)" },
             { "id": "app-bank", "label": "Bank app" },
             { "id": "app-messages", "label": "Messages app" },
             { "id": "app-radio", "label": "Radio/Music app, incl. personalization/wallpaper/icon-folder drag" },
@@ -450,11 +466,14 @@
             { "id": "audible-nearby", "label": "Audible to nearby players" }
           ]
         },
-        { "name": "tarboro-clothing", "status": "warn", "desc": "Clothing store interactions.", "note": "Description only — no build narrative found anywhere in memory.",
+        { "name": "tarboro-clothing", "status": "warn", "desc": "Interact zones at 15 real clothing stores + 7 barber shops across the map, opening qb-clothing's menu directly, plus a holographic fitting-room pad effect while it's open.", "note": "FIXED 2026-08-11 — this was completely dead until now: the interact handler called client-side `TriggerNetEvent`, which isn't a real FiveM client function at all, so pressing E at any store/barber silently did nothing. Fixed to `TriggerEvent` (a local client event qb-clothing itself listens for). Also added while touching this: a purely cosmetic hologram pad (DrawMarker loop, no networked entity) that materialises under the player while the menu's open and clears on close, with a safety-net poll in case qb-clothing's own onMenuClose event doesn't fire for some reason.",
           "checks": [
+            { "id": "menu-opens", "label": "Pressing E at a clothing store/barber actually opens qb-clothing's menu (regression check — was a dead no-op before the TriggerNetEvent fix)" },
             { "id": "buy-outfit", "label": "Buy/change an outfit at a clothing store" },
             { "id": "applies", "label": "Actually applies" },
-            { "id": "persists", "label": "Persists across a relog" }
+            { "id": "persists", "label": "Persists across a relog" },
+            { "id": "hologram-shows", "label": "Fitting-room hologram pad appears while the menu is open" },
+            { "id": "hologram-clears", "label": "Hologram cleanly disappears when the menu closes, including via the no-NUI-focus safety net" }
           ]
         }
       ]

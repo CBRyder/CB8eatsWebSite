@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gangs — Tarboro Life — CB8eats</title>
+  <meta name="description" content="Gangs and turf in Tarboro Life — ranks, gang funds, and the 7 turf zones.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <div class="brand"><a href="index.html">CB8eats</a></div>
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="designs.html">Designs</a></li>
+        <li><a href="music.html">Music</a></li>
+        <li><a href="coa.html">COA: Vampire Knights</a></li>
+        <li><a href="tarboro-life.html" class="active">Tarboro Life</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="tarboro-life.html">&larr; Back to Tarboro Life</a>
+
+    <section class="hero">
+      <p class="eyebrow">Tarboro Life</p>
+      <h1>Gangs</h1>
+      <p class="lede">Every player-created gang runs the same fixed ladder and can fight for the same map —
+        except for the one zone that was never up for grabs to begin with.</p>
+      <div class="tags">
+        <span class="tag">In Development</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Currently Registered</h2>
+      <p class="lede">Pulled directly from the live server — not a mockup.</p>
+      <div id="live-gangs"><p class="note">Loading…</p></div>
+    </section>
+
+    <section>
+      <h2>Structure</h2>
+      <ul class="feature-list">
+        <li><strong>Fixed 4-grade ladder</strong> — Member, Enforcer, Shot Caller, Boss. Every gang gets the
+          same ranks; no per-gang customization the way legal businesses can set their own grades.</li>
+        <li><strong>Gang funds</strong> — a shared bank, deposit/withdraw, bank authority reserved for the
+          Boss rank.</li>
+        <li><strong>Roster management</strong> — invite, kick, and promote/demote members without leaving the
+          phone.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Turf — 7 Zones</h2>
+      <p class="lede">Claim a zone by walking up and interacting with it. A rival gang can contest and flip
+        ownership, with a cooldown that stops instant back-and-forth ping-pong over the same block.</p>
+      <div class="grid">
+        <div class="card locked">
+          <span class="locked-badge">Government — Never Claimable</span>
+          <h3>Downtown / Pillbox Hill</h3>
+          <p>Locked to the government by design — this is the city's administrative core, not contested
+            ground.</p>
+        </div>
+        <div class="card">
+          <h3>Davis</h3>
+          <p>South LS gang neighborhood.</p>
+        </div>
+        <div class="card">
+          <h3>Strawberry</h3>
+          <p>South LS gang neighborhood.</p>
+        </div>
+        <div class="card">
+          <h3>Rancho</h3>
+          <p>South LS gang neighborhood.</p>
+        </div>
+        <div class="card">
+          <h3>Chamberlain Hills</h3>
+          <p>South LS gang neighborhood.</p>
+        </div>
+        <div class="card">
+          <h3>Sandy Shores</h3>
+          <p>Overlaps with the county's drug-country economy.</p>
+        </div>
+        <div class="card">
+          <h3>Paleto Bay</h3>
+          <p>Overlaps with the county's drug-country economy.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script>
+    fetch('tarboro-gangs.json', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        const el = document.getElementById('live-gangs');
+        if (!data.gangs || !data.gangs.length) {
+          el.innerHTML = '<p class="note">No gangs have been created yet — be the first.</p>';
+          return;
+        }
+        el.innerHTML = '<div class="grid">' + data.gangs.map(g => `
+          <div class="card">
+            <h3>${g.label}</h3>
+            <p>Leader: ${g.leader || 'Unknown'}</p>
+          </div>`).join('') + '</div>';
+      })
+      .catch(() => {
+        document.getElementById('live-gangs').innerHTML = '<p class="note">Couldn\'t load live data right now.</p>';
+      });
+  </script>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "compiled": "2026-08-12",
-  "source": "Full audit of resources/[tarboro]/* on disk, diffed against server.cfg's ensure list, cross-checked against build memory. Re-run this diff any time a resource is added or removed to catch drift immediately. First 2026-08-12 pass re-read every file touched in the prior ~4h (no git in this repo, diffed by mtime) to catch a batch of undocumented work: the tarboro-needs eat/drink fix, the new injuries item system, Trap Line, and the clothing-store fix. A same-day follow-up pass caught a second, later batch: the new grow-op placeables/watering/air-drop systems, and the Mail-vs-Messages channel-routing fix.",
+  "source": "Full audit of resources/[tarboro]/* on disk, diffed against server.cfg's ensure list, cross-checked against build memory. Re-run this diff any time a resource is added or removed to catch drift immediately.",
   "caveat": "Every resource below, including ones marked \"good\", has never been run by a real connected player. \"good\" means the build has a real narrative record and passed a boot test (all 60 running resources start cleanly with zero errors) — not that anyone has clicked the prompt, opened the menu, or walked the flow in-game. Status values: crit = not running at all, warn = thin or zero documentation, good = documented. Resources with a checks list can be marked tested behavior-by-behavior — a resource only shows fully tested once every one of its checks is checked.",
   "categories": [
     {

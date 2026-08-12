@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Applications — Tarboro Life — CB8eats</title>
+  <meta name="description" content="Apply to join the Tarboro Life admin or development team.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ===== Application form (scoped) ===== */
+    .apply-form {
+      display: grid;
+      gap: 1.25rem;
+      max-width: 640px;
+      margin-top: 1.5rem;
+    }
+    .apply-field label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.92rem;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+    .apply-field .hint {
+      display: block;
+      font-weight: 400;
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      margin-top: 0.2rem;
+    }
+    .apply-field input[type="text"],
+    .apply-field textarea {
+      width: 100%;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.7rem 0.9rem;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+    }
+    .apply-field input[type="text"]:focus,
+    .apply-field textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .apply-field textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .apply-checks {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .apply-checks label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 400;
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+    .apply-checks input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .apply-status {
+      font-size: 0.9rem;
+      color: var(--text-faint);
+      min-height: 1.2em;
+    }
+    .apply-status.error { color: #e2574f; }
+    .apply-status.success { color: var(--accent-bright); }
+
+    /* ===== Owner-only submissions viewer (scoped) ===== */
+    .apps-auth-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .apps-signin-form {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .apps-signin-form input {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.5rem 0.8rem;
+      color: var(--text);
+      font-size: 0.85rem;
+      width: 160px;
+    }
+    .apps-list {
+      display: grid;
+      gap: 1rem;
+    }
+    .apps-list .card p {
+      margin: 0.3rem 0;
+    }
+    .apps-list .card .label {
+      color: var(--text-faint);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand"><a href="index.html">CB8eats</a></div>
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="designs.html">Designs</a></li>
+        <li><a href="music.html">Music</a></li>
+        <li><a href="coa.html">COA: Vampire Knights</a></li>
+        <li><a href="tarboro-life.html" class="active">Tarboro Life</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="tarboro-life.html">&larr; Back to Tarboro Life</a>
+
+    <section class="hero">
+      <p class="eyebrow">Tarboro Life</p>
+      <h1>Staff Applications</h1>
+      <p class="lede">Apply to join the admin or development team — not a player application, this is for
+        helping run and build the server itself.</p>
+      <div class="tags">
+        <span class="tag">In Development</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Apply</h2>
+      <form class="apply-form" id="apply-form">
+        <div class="apply-field">
+          <label for="apply-discord">Discord username</label>
+          <input type="text" id="apply-discord" required autocomplete="off">
+        </div>
+
+        <div class="apply-field">
+          <label>Position(s) you're applying for</label>
+          <div class="apply-checks">
+            <label><input type="checkbox" name="position" value="Admin"> Admin</label>
+            <label><input type="checkbox" name="position" value="Developer"> Developer</label>
+          </div>
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-experience">Relevant experience</label>
+          <span class="hint">FiveM/RP admin or dev experience, other servers you've worked on, anything relevant.</span>
+          <textarea id="apply-experience" required></textarea>
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-why">Why do you want to join the team?</label>
+          <textarea id="apply-why" required></textarea>
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-availability">Availability</label>
+          <span class="hint">Roughly how many hours a week, and what timezone.</span>
+          <input type="text" id="apply-availability" required autocomplete="off">
+        </div>
+
+        <div class="btn-row" style="margin-top:0;">
+          <button type="submit" class="btn btn-primary" id="apply-submit-btn">Submit Application</button>
+        </div>
+        <div class="apply-status" id="apply-status"></div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Submitted Applications</h2>
+      <p class="lede">Owner-only — sign in to review what's come in.</p>
+
+      <div class="apps-auth-row" id="apps-auth-row">
+        <form id="apps-signin-form" class="apps-signin-form">
+          <input type="email" id="apps-email" placeholder="Email" autocomplete="username" required>
+          <input type="password" id="apps-password" placeholder="Password" autocomplete="current-password" required>
+          <button type="submit" class="filter-btn" id="apps-signin-btn">Sign in</button>
+        </form>
+        <button type="button" class="filter-btn" id="apps-signout-btn" style="display:none;">Sign out</button>
+        <span class="apply-status" id="apps-auth-note">Sign in as the site owner to view submitted applications.</span>
+      </div>
+
+      <div class="apps-list" id="apps-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, query, orderBy, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import {
+      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    // Same Firebase project as the resource trackers (tarborolifebackend) —
+    // reused rather than provisioning a new project just for this form. A
+    // brand new top-level collection (staffApplications), not nested under
+    // either tracker's existing document. Submissions are public-create,
+    // owner-only-read — the INVERSE of the trackers' public-read rule, since
+    // application contents are personal, not a public status board. See the
+    // security rules note in this repo's memory for the exact rule block
+    // that needs to be added in the Firebase console for this to work.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
+      authDomain: "tarborolifebackend.firebaseapp.com",
+      projectId: "tarborolifebackend",
+      storageBucket: "tarborolifebackend.firebasestorage.app",
+      messagingSenderId: "578368600107",
+      appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
+    };
+
+    const OWNER_EMAIL = 'cbleo73@gmail.com';
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+    const auth = getAuth(firebaseApp);
+    const appsCollection = collection(db, 'staffApplications');
+
+    // ---------- Submission form ----------
+    const form = document.getElementById('apply-form');
+    const statusEl = document.getElementById('apply-status');
+    const submitBtn = document.getElementById('apply-submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const positions = Array.from(form.querySelectorAll('input[name="position"]:checked')).map(el => el.value);
+
+      if (positions.length === 0) {
+        statusEl.textContent = 'Pick at least one position.';
+        statusEl.className = 'apply-status error';
+        return;
+      }
+
+      const payload = {
+        discordUsername: document.getElementById('apply-discord').value.trim(),
+        positions,
+        experience: document.getElementById('apply-experience').value.trim(),
+        whyJoin: document.getElementById('apply-why').value.trim(),
+        availability: document.getElementById('apply-availability').value.trim(),
+        submittedAt: serverTimestamp(),
+      };
+
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Submitting…';
+      statusEl.className = 'apply-status';
+
+      try {
+        await addDoc(appsCollection, payload);
+        form.reset();
+        statusEl.textContent = "Application submitted — thanks for your interest. You'll be reached out to on Discord.";
+        statusEl.className = 'apply-status success';
+      } catch (err) {
+        console.error('Failed to submit application:', err);
+        statusEl.textContent = 'Something went wrong submitting that — try again in a moment.';
+        statusEl.className = 'apply-status error';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // ---------- Owner-only submissions viewer ----------
+    let isOwner = false;
+
+    function renderApps(docs) {
+      const list = document.getElementById('apps-list');
+      if (!docs.length) {
+        list.innerHTML = '<p class="note">No applications yet.</p>';
+        return;
+      }
+      list.innerHTML = docs.map(d => {
+        const data = d.data();
+        const when = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : 'Unknown time';
+        return `
+          <div class="card">
+            <span class="label">${when}</span>
+            <h3>${escapeHtml(data.discordUsername || 'Unknown')}</h3>
+            <p><strong>Applying for:</strong> ${(data.positions || []).map(escapeHtml).join(', ')}</p>
+            <p><strong>Experience:</strong> ${escapeHtml(data.experience || '')}</p>
+            <p><strong>Why join:</strong> ${escapeHtml(data.whyJoin || '')}</p>
+            <p><strong>Availability:</strong> ${escapeHtml(data.availability || '')}</p>
+          </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function loadApps() {
+      const list = document.getElementById('apps-list');
+      list.innerHTML = '<p class="note">Loading…</p>';
+      try {
+        const q = query(appsCollection, orderBy('submittedAt', 'desc'));
+        const snap = await getDocs(q);
+        renderApps(snap.docs);
+      } catch (err) {
+        console.error('Failed to load applications:', err);
+        list.innerHTML = '<p class="note">Could not load applications — check the console.</p>';
+      }
+    }
+
+    function updateAuthUI(user) {
+      const form = document.getElementById('apps-signin-form');
+      const signOutBtn = document.getElementById('apps-signout-btn');
+      const note = document.getElementById('apps-auth-note');
+      const list = document.getElementById('apps-list');
+
+      if (user && user.email === OWNER_EMAIL) {
+        isOwner = true;
+        form.style.display = 'none';
+        signOutBtn.style.display = '';
+        note.textContent = `Signed in as ${user.email}.`;
+        loadApps();
+      } else {
+        isOwner = false;
+        form.style.display = '';
+        signOutBtn.style.display = 'none';
+        note.textContent = user
+          ? `Signed in as ${user.email}, but that account isn't authorized.`
+          : 'Sign in as the site owner to view submitted applications.';
+        list.innerHTML = '';
+      }
+    }
+
+    onAuthStateChanged(auth, updateAuthUI);
+
+    document.getElementById('apps-signin-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('apps-email').value.trim();
+      const password = document.getElementById('apps-password').value;
+      const note = document.getElementById('apps-auth-note');
+      note.textContent = 'Signing in…';
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('apps-password').value = '';
+      } catch (err) {
+        console.error('Sign-in failed:', err);
+        note.textContent = `Sign-in error: ${err.code || err.message}`;
+      }
+    });
+
+    document.getElementById('apps-signout-btn').addEventListener('click', () => signOut(auth));
+  </script>
+
+</body>
+</html>

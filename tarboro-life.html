@@ -45,6 +45,14 @@
     .res-inv .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 28px 56px; }
 
     .res-inv header.top {
+      /* Overriding position/top/z-index/background explicitly: the site-wide
+         `header { position: sticky; ... }` rule in css/style.css uses a bare
+         tag selector with no class scoping, so it was also matching THIS
+         <header> (the tracker's own title block) and making it sticky right
+         alongside the real nav bar — never intended, just an accidental
+         selector collision. This resets it back to a normal element that
+         scrolls away like everything else. */
+      position: static; top: auto; z-index: auto; background: none;
       display: flex; align-items: baseline; justify-content: space-between; gap: 24px;
       border-bottom: 1px solid var(--ri-border); padding-bottom: 22px; margin-bottom: 28px;
       flex-wrap: wrap;

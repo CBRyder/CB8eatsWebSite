@@ -214,6 +214,7 @@ p {
 }
 
 .card {
+  display: block;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -242,6 +243,114 @@ p {
   color: var(--text-faint);
   font-size: 0.92rem;
   margin: 0;
+}
+
+.card .card-cta {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+
+/* ---------- Subpages (COA lore pages) ---------- */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--text-faint);
+  margin-bottom: 2rem;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--accent-bright);
+}
+
+/* The capital sits between the two regions, so its banner carries both
+   accent colors at once rather than picking a side — the one place on the
+   page the full brand gradient appears as a hairline, not just on buttons. */
+.capital-banner {
+  text-align: center;
+  padding: 2.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 3rem;
+}
+
+.capital-banner::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+}
+
+.capital-banner .eyebrow {
+  display: block;
+}
+
+.capital-banner h2 {
+  margin-bottom: 0.5rem;
+}
+
+.capital-banner p {
+  max-width: 50ch;
+  margin: 0 auto;
+}
+
+/* Two regions, split down the middle — literal, not decorative: Asanaha
+   really is one world divided into two named halves around a shared
+   capital. Each side takes one half of the site's own brand gradient. */
+.region-split {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 2rem;
+}
+
+.region-panel {
+  padding: 0.5rem 0 0.5rem;
+  border-top: 2px solid var(--region-color, var(--accent));
+  padding-top: 1.5rem;
+}
+
+.region-panel.region-a { --region-color: var(--accent); }
+.region-panel.region-b { --region-color: var(--accent-2); }
+
+.region-panel .region-label {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  color: var(--region-color, var(--text-faint));
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.region-panel .region-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--text-faint);
+  font-style: italic;
+  margin: 0 0 0.75rem;
+}
+
+.region-divider {
+  background: linear-gradient(180deg, transparent, var(--border) 12%, var(--border) 88%, transparent);
+}
+
+@media (max-width: 720px) {
+  .region-split {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .region-divider {
+    display: none;
+  }
 }
 
 /* ---------- Buttons ---------- */

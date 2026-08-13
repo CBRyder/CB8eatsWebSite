@@ -120,6 +120,47 @@ nav .nav-tabs {
   box-shadow: 0 0 18px var(--glow);
 }
 
+/* Groups .brand with .header-back so `header`'s own space-between still
+   only has two real columns (this group, and nav) instead of three. */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* A compact "back to X" pill living in the header itself (subpages only).
+   Hidden at the very top - the full-size .back-link in the page body
+   already covers that - and revealed once you've scrolled away from it,
+   so getting back to the hub page never needs a scroll back to the top
+   first. Toggled via the `scrolled` class js/nav-scroll.js adds to
+   <header> based on scroll position (independent of nav-hidden, which is
+   based on scroll direction). */
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.header-back:hover {
+  color: var(--text);
+  background: var(--card);
+}
+
+header.scrolled .header-back {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
 /* ---------- Layout ---------- */
 
 main {

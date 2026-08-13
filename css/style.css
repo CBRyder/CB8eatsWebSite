@@ -393,6 +393,27 @@ p {
   background: linear-gradient(180deg, transparent, var(--border) 12%, var(--border) 88%, transparent);
 }
 
+/* A working zone map, not official concept art - framed like the other
+   COA lore cards (border/radius/--card) rather than floated bare. */
+.map-figure {
+  margin: 0 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card);
+}
+
+.map-figure img {
+  width: 100%;
+}
+
+.map-figure figcaption {
+  padding: 0.9rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text-faint);
+  border-top: 1px solid var(--border);
+}
+
 @media (max-width: 720px) {
   .region-split {
     grid-template-columns: 1fr;

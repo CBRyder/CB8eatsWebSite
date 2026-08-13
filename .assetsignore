@@ -4,3 +4,4 @@
 **/.github
 wrangler.jsonc
 .assetsignore
+worker.js

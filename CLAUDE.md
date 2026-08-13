@@ -143,6 +143,23 @@ check this rule is actually published — Firestore denies by default, so a miss
 `create` rule for this collection looks exactly like a broken form even though the
 code is fine.
 
+The owner-only viewer's cards each have **Accept** / **Delete** buttons. Accept
+*moves* the doc (copy into `acceptedApplications` with an added `acceptedAt`
+timestamp, then delete from `staffApplications`) rather than just flagging it in
+place — so a pending application disappears from Pending and shows up in Accepted in
+the same action, never both at once. Delete just removes it outright (with a
+`confirm()` prompt first, since it's irreversible). The Accepted list renders above
+Pending, directly below the sign-in/out row, with its own **Remove** button per card.
+`acceptedApplications` is entirely owner-only (unlike `staffApplications`, nothing
+public writes here) — needs its own rule:
+
+```
+match /acceptedApplications/{appId} {
+  allow read, create, delete: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
+  allow update: if false;
+}
+```
+
 ### Known Firestore bug (fixed, don't reintroduce)
 
 An early version called `setDoc(docRef, { tested: {} }, { merge: true })` on every

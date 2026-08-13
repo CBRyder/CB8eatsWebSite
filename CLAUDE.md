@@ -134,15 +134,16 @@ match /tarboroLife/testedResources {
 ```
 (mirrored for `coaVamp/testedResources`).
 
-**⚠ MANUAL STEP NOT YET DONE, as of 2026-08-13:** the rule above (`hasOnly(['tested',
-'bugged'])`) is what BOTH collections need now that the `bugged` field exists in the
-HTML/JS — the live rule in the Firebase console still only has `hasOnly(['tested'])`
-for both. Until the owner updates both rule blocks by hand (this file is documentation,
-not the actual rule source), every write to a `bugged.*` field will fail with
-permission-denied — same "looks like a broken feature but the code is fine" gotcha
-already documented below for Staff Applications' missing `create` rule. **Existing
-`tested` checkbox writes are unaffected** (they don't introduce the `bugged` key), so
-this only blocks the new checkboxes specifically, not the whole tracker.
+**Resolved 2026-08-13:** the rule above (`hasOnly(['tested', 'bugged'])`) was missing
+from the live Firebase console rules for a while after the `bugged` field shipped in the
+HTML/JS — both collections still had the old `hasOnly(['tested'])`, so every write to a
+`bugged.*` field failed with permission-denied (same "looks like a broken feature but
+the code is fine" gotcha already documented below for Staff Applications' missing
+`create` rule). The owner has since published the updated rule shown above for both
+`tarboroLife/testedResources` and `coaVamp/testedResources`, and both trackers'
+tested/bugged checkboxes are confirmed working end-to-end. If a third collection like
+this is ever added, remember its rule needs `hasOnly` to list every top-level field the
+client actually writes, not just `tested`.
 
 **Auth method: email/password, not Google Sign-In.** Google Sign-In was tried first
 (both popup and redirect flow) and reliably failed across Brave and Edge — the OAuth

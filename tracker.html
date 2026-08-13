@@ -752,12 +752,14 @@
           // Mutually exclusive with "bugged" on the same row — can't be
           // both "confirmed working" and "confirmed broken" at once.
           const writes = { [`tested.${name}`]: checked };
+          let buggedBox = null, buggedWasCleared = false;
           if (checked) {
-            const buggedBox = row.querySelector('.bugged-check');
+            buggedBox = row.querySelector('.bugged-check');
             if (buggedBox && buggedBox.checked) {
               buggedBox.checked = false;
               row.classList.remove('bugged');
               writes[`bugged.${name}`] = false;
+              buggedWasCleared = true;
             }
           }
 
@@ -769,6 +771,18 @@
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
+            // A failed write must never leave the UI showing state that
+            // isn't actually saved — undo everything this click
+            // optimistically changed, including the forced bugged-clear.
+            box.checked = !checked;
+            row.classList.toggle('tested', !checked);
+            if (buggedWasCleared && buggedBox) {
+              buggedBox.checked = true;
+              row.classList.add('bugged');
+            }
+            riUpdateTestedCount();
+            riUpdateChecksProgress();
+            riApplyFilters();
           }
         });
       });
@@ -789,12 +803,14 @@
 
           // Mutually exclusive with "bugged" on the SAME check.
           const writes = { [`tested.${parentName}.${checkId}`]: checked };
+          let buggedBox = null, buggedWasCleared = false;
           if (checked) {
-            const buggedBox = document.querySelector(`.bugged-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
+            buggedBox = document.querySelector(`.bugged-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
             if (buggedBox && buggedBox.checked) {
               buggedBox.checked = false;
               subrow.classList.remove('sub-bugged');
               writes[`bugged.${parentName}.${checkId}`] = false;
+              buggedWasCleared = true;
             }
           }
 
@@ -808,6 +824,19 @@
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
+            // A failed write must never leave the UI showing state that
+            // isn't actually saved — undo everything this click
+            // optimistically changed, including the forced bugged-clear.
+            box.checked = !checked;
+            subrow.classList.toggle('sub-tested', !checked);
+            if (buggedWasCleared && buggedBox) {
+              buggedBox.checked = true;
+              subrow.classList.add('sub-bugged');
+            }
+            riRecomputeParentRow(parentName);
+            riUpdateTestedCount();
+            riUpdateChecksProgress();
+            riApplyFilters();
           }
         });
       });
@@ -828,12 +857,14 @@
           row.classList.toggle('bugged', checked);
 
           const writes = { [`bugged.${name}`]: checked };
+          let testedBox = null, testedWasCleared = false;
           if (checked) {
-            const testedBox = row.querySelector('.tested-check');
+            testedBox = row.querySelector('.tested-check');
             if (testedBox && testedBox.checked) {
               testedBox.checked = false;
               row.classList.remove('tested');
               writes[`tested.${name}`] = false;
+              testedWasCleared = true;
             }
           }
 
@@ -845,6 +876,15 @@
           } catch (err) {
             console.error('Failed to save bugged state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
+            box.checked = !checked;
+            row.classList.toggle('bugged', !checked);
+            if (testedWasCleared && testedBox) {
+              testedBox.checked = true;
+              row.classList.add('tested');
+            }
+            riUpdateTestedCount();
+            riUpdateChecksProgress();
+            riApplyFilters();
           }
         });
       });
@@ -859,12 +899,14 @@
           subrow.classList.toggle('sub-bugged', checked);
 
           const writes = { [`bugged.${parentName}.${checkId}`]: checked };
+          let testedBox = null, testedWasCleared = false;
           if (checked) {
-            const testedBox = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
+            testedBox = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
             if (testedBox && testedBox.checked) {
               testedBox.checked = false;
               subrow.classList.remove('sub-tested');
               writes[`tested.${parentName}.${checkId}`] = false;
+              testedWasCleared = true;
             }
           }
 
@@ -878,6 +920,16 @@
           } catch (err) {
             console.error('Failed to save bugged state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
+            box.checked = !checked;
+            subrow.classList.toggle('sub-bugged', !checked);
+            if (testedWasCleared && testedBox) {
+              testedBox.checked = true;
+              subrow.classList.add('sub-tested');
+            }
+            riRecomputeParentRow(parentName);
+            riUpdateTestedCount();
+            riUpdateChecksProgress();
+            riApplyFilters();
           }
         });
       });

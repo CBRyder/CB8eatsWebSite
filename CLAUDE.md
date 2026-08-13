@@ -119,6 +119,30 @@ that cross-origin problem first (e.g. a custom authDomain matching the site's ow
 domain) — email/password sidesteps it entirely (no popup, no redirect, no cross-domain
 handoff) and is what's live now.
 
+## Staff Applications form (`apply.html`)
+
+A third Firebase-backed feature, same project, different collection:
+`staffApplications`. Public submission form (Discord username, position(s),
+experience, why-join, availability) plus an owner-only viewer of what's come in — the
+**inverse** of the trackers' access pattern (trackers: public-read/owner-write;
+this form: public-*create*/owner-read).
+
+Firestore rule required (add as its own `match` block alongside the tracker rules —
+**do not replace them**):
+
+```
+match /staffApplications/{appId} {
+  allow create: if true;
+  allow read: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
+  allow update, delete: if false;
+}
+```
+
+If submissions silently fail (status shows "Something went wrong submitting that"),
+check this rule is actually published — Firestore denies by default, so a missing
+`create` rule for this collection looks exactly like a broken form even though the
+code is fine.
+
 ### Known Firestore bug (fixed, don't reintroduce)
 
 An early version called `setDoc(docRef, { tested: {} }, { merge: true })` on every

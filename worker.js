@@ -50,6 +50,14 @@ async function handleSendConfirmation(request, env) {
     return jsonResponse({ error: 'Email sending is not configured' }, 500);
   }
 
+  // Dashboard-set vars on a Git-integration-managed Worker only take effect
+  // on the *next* deploy, not retroactively on whatever's already running —
+  // if this fires, the currently live deployment predates APPLY_FROM_EMAIL
+  // being set, and it's silently falling back to Resend's sandbox address.
+  if (!env.APPLY_FROM_EMAIL) {
+    console.warn('APPLY_FROM_EMAIL is not set — falling back to onboarding@resend.dev');
+  }
+
   const discordUsername = String(body?.discordUsername || '').slice(0, 200);
   const positions = Array.isArray(body?.positions) ? body.positions.map(String).slice(0, 10) : [];
   const experience = String(body?.experience || '').slice(0, 5000);

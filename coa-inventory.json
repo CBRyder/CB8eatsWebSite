@@ -1,25 +1,26 @@
 {
-  "compiled": "2026-08-11",
-  "source": "Cross-check of Source/COAVamp's actual C++ headers plus a real Content/ folder pass (Blueprint asset names, not just C++), against prior build notes — not a boot-test, this is a singleplayer UE5 project with no live server to boot. Re-run this diff any time new content is added to catch drift.",
+  "compiled": "2026-08-12",
+  "source": "Re-checked against the live Source/COAVamp + Content/Characters/ClanAssets tree — no structural changes since the 08-11 pass, but two known open GAS bugs have been added below.",
   "caveat": "\"Ready to test\" here means the underlying asset/code is confirmed present and, for C++, compiles clean — it does NOT mean confirmed working. This matters more than usual for the Blueprint-only items below: unlike C++, a .uasset's existence can't be \"compile-checked\" from outside the editor, so most Blueprint-only systems are marked warn (exists, completeness/wiring unverified) even where the feature is clearly substantial, rather than good. Status values: crit = investigated but not built, or confirmed likely broken; warn = exists (C++ complete, or a real Blueprint asset set on disk) but needs in-editor verification or wiring before it's confirmed working; good = either compiles clean with nothing further needed in C++, or has a specific prior confirmation of working correctly; planned = genuinely future work — a save-data schema or field exists for it, but no actual gameplay system has been built yet, confirmed by reading the code rather than assumed. Planned items' checks are build milestones/decisions still needed, not test steps, since there's no existing behavior yet to verify. Items with a checks list can be marked tested (or, for planned items, done) behavior-by-behavior.",
   "categories": [
     {
       "cat": "Core GAS Framework",
       "items": [
-        { "name": "ACOACharacterBase / ASC wiring", "status": "good", "desc": "Abstract base unifying ability code across ACOAPlayerCharacter and ACOAEnemyCharacter, the two sibling classes with no other common ancestor. Declares the pure-virtual GetCOAAttributeSet() every subclass implements.",
+        { "name": "ACOACharacterBase / ASC wiring", "status": "warn", "desc": "Abstract base unifying ability code across ACOAPlayerCharacter and ACOAEnemyCharacter, the two sibling classes with no other common ancestor. Declares the pure-virtual GetCOAAttributeSet() every subclass implements. Known open bug: InitAbilityActorInfo resolves the ASC's avatar to ACOAPlayerState instead of the player Character, so \"compiles clean\" no longer implies \"works\" here.",
           "checks": [
-            { "id": "player-asc-resolves", "label": "Player character's ASC resolves correctly through ACOAPlayerState in a live PIE session" },
+            { "id": "player-asc-resolves", "label": "Player character's ASC resolves its avatar to the Character (not ACOAPlayerState) in InitAbilityActorInfo, confirmed in a live PIE session" },
             { "id": "enemy-asc-resolves", "label": "Enemy character's own ASC activates abilities correctly when AI-possessed" },
             { "id": "attribute-set-correct", "label": "GetCOAAttributeSet() returns the right set on both subclasses" },
             { "id": "avatar-cast-works", "label": "Abilities correctly resolve the pawn via Cast<ACOACharacterBase>(GetAvatarActorFromActorInfo())" }
           ]
         },
-        { "name": "UCOAAttributeSet", "status": "good", "desc": "Health/MaxHealth, Blood/MaxBlood, AttackPower, StrideCharges/MaxStrideCharges. No Stamina (removed as dead/unreferenced). No XP attribute — the existing XP/Level system stays Blueprint-only by deliberate choice.",
+        { "name": "UCOAAttributeSet", "status": "warn", "desc": "Health/MaxHealth, Blood/MaxBlood, AttackPower, StrideCharges/MaxStrideCharges. No Stamina (removed as dead/unreferenced). No XP attribute — the existing XP/Level system stays Blueprint-only by deliberate choice. Known open bug: no GE_InitAttributes GameplayEffect exists yet, so every attribute currently defaults to 1.00 instead of its real starting value.",
           "checks": [
             { "id": "health-decreases", "label": "Health decreases correctly when a DamageEffectClass GE lands" },
             { "id": "clamping-correct", "label": "Health/Blood correctly clamp at 0 and at their Max" },
             { "id": "blood-cost-spends", "label": "Blood is spent correctly by an ability's CostEffectClass" },
-            { "id": "stride-charges-track", "label": "StrideCharges increases/decreases correctly through real gameplay" }
+            { "id": "stride-charges-track", "label": "StrideCharges increases/decreases correctly through real gameplay" },
+            { "id": "ge-init-attributes-exists", "label": "GE_InitAttributes authored and applied on spawn so attributes stop defaulting to 1.00" }
           ]
         },
         { "name": "UCOAGameplayAbility base + native tags", "status": "good", "desc": "Blueprintable/BlueprintSpawnable ability base class with an AbilityID FGameplayTag. Native gameplay tags declared in COAGameplayTags.h/.cpp under the COAGameplayTags:: namespace — no Config/DefaultGameplayTags.ini used, by deliberate choice.",

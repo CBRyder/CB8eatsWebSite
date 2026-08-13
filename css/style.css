@@ -278,6 +278,19 @@ p {
   .grid-3 { grid-template-columns: 1fr; }
 }
 
+/* Fixed 5-column layout, same reasoning as .grid-3 above. */
+.grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 860px) {
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .grid-5 { grid-template-columns: 1fr; }
+}
+
 .card {
   display: block;
   background: var(--card);

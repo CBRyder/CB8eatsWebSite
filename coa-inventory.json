@@ -89,7 +89,7 @@
     {
       "cat": "Feed & Recharge System",
       "items": [
-        { "name": "\"Feed to death\" Stride recharge buff", "status": "warn", "desc": "Killing a Crimson Resonance channel target, or landing a Crimson Harvest, should temporarily speed up passive Stride-charge recharge. C++ side is fully complete (GrantFedRechargeBuff(), the State.FedRechargeBoost tag, ACOAPlayerState's tag-change handler resetting recharge progress) — needs the 2 GameplayEffect assets authored and assigned in-editor before any of it can actually do anything yet.",
+        { "name": "Feed to death Stride recharge buff", "status": "warn", "desc": "Killing a Crimson Resonance channel target, or landing a Crimson Harvest, should temporarily speed up passive Stride-charge recharge. C++ side is fully complete (GrantFedRechargeBuff(), the State.FedRechargeBoost tag, ACOAPlayerState's tag-change handler resetting recharge progress) — needs the 2 GameplayEffect assets authored and assigned in-editor before any of it can actually do anything yet.",
           "checks": [
             { "id": "ge-authored", "label": "FedRechargeBuffEffectClass GE authored (Duration, Add modifier on StrideCharges, grants State.FedRechargeBoost)" },
             { "id": "ge-on-resonance", "label": "That GE assigned into Crimson Resonance's FedRechargeBuffEffectClass slot" },

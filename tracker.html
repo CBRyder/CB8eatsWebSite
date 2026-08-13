@@ -525,6 +525,42 @@
       riApplyFilters();
     }
 
+    // Recomputes a checks-based parent row's tested fraction/complete state
+    // AND bug-count badge from its live sub-checkboxes. Called after ANY
+    // sub-check (tested or bugged) changes, since tested and bugged are now
+    // mutually exclusive per check — ticking one force-clears the other on
+    // the SAME check, which can move either aggregate, not just the one
+    // that was directly clicked.
+    function riRecomputeParentRow(parentName) {
+      const checkIds = riChecksByName[parentName] || [];
+      const parentRow = document.querySelector(`.res-inv .res-row[data-name="${CSS.escape(parentName)}"]:not(.res-subrow)`);
+      if (!parentRow) return;
+
+      const doneCount = checkIds.filter(id => {
+        const b = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(id)}"]`);
+        return b && b.checked;
+      }).length;
+      const bugCount = checkIds.filter(id => {
+        const b = document.querySelector(`.bugged-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(id)}"]`);
+        return b && b.checked;
+      }).length;
+
+      const allDone = doneCount === checkIds.length;
+      parentRow.classList.toggle('tested', allDone);
+      parentRow.classList.toggle('has-bugs', bugCount > 0);
+
+      const frac = parentRow.querySelector('.checks-toggle .frac');
+      if (frac) {
+        frac.textContent = `${doneCount}/${checkIds.length}`;
+        frac.classList.toggle('complete', allDone);
+      }
+      const bugBadge = parentRow.querySelector('.checks-toggle .bug-badge');
+      if (bugBadge) {
+        bugBadge.textContent = bugCount > 0 ? `🐛${bugCount}` : '';
+        bugBadge.style.display = bugCount > 0 ? '' : 'none';
+      }
+    }
+
     let riActiveFilter = 'all';
     let riSearchTerm = '';
     let riUntestedOnly = false;
@@ -710,12 +746,26 @@
           if (!riIsAuthorized) { box.checked = !box.checked; return; }
           const name = box.getAttribute('data-name');
           const checked = box.checked;
-          box.closest('.res-row').classList.toggle('tested', checked);
+          const row = box.closest('.res-row');
+          row.classList.toggle('tested', checked);
+
+          // Mutually exclusive with "bugged" on the same row — can't be
+          // both "confirmed working" and "confirmed broken" at once.
+          const writes = { [`tested.${name}`]: checked };
+          if (checked) {
+            const buggedBox = row.querySelector('.bugged-check');
+            if (buggedBox && buggedBox.checked) {
+              buggedBox.checked = false;
+              row.classList.remove('bugged');
+              writes[`bugged.${name}`] = false;
+            }
+          }
+
           riUpdateTestedCount();
           riUpdateChecksProgress();
           riApplyFilters();
           try {
-            await updateDoc(testedDocRef, { [`tested.${name}`]: checked });
+            await updateDoc(testedDocRef, writes);
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
@@ -734,30 +784,27 @@
           const parentName = box.getAttribute('data-parent');
           const checkId = box.getAttribute('data-check-id');
           const checked = box.checked;
-          box.closest('.res-subrow').classList.toggle('sub-tested', checked);
+          const subrow = box.closest('.res-subrow');
+          subrow.classList.toggle('sub-tested', checked);
 
-          const checkIds = riChecksByName[parentName] || [];
-          const parentRow = document.querySelector(`.res-inv .res-row[data-name="${CSS.escape(parentName)}"]:not(.res-subrow)`);
-          if (parentRow) {
-            const doneCount = checkIds.filter(id => {
-              if (id === checkId) return checked;
-              const b = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(id)}"]`);
-              return b && b.checked;
-            }).length;
-            const allDone = doneCount === checkIds.length;
-            parentRow.classList.toggle('tested', allDone);
-            const frac = parentRow.querySelector('.checks-toggle .frac');
-            if (frac) {
-              frac.textContent = `${doneCount}/${checkIds.length}`;
-              frac.classList.toggle('complete', allDone);
+          // Mutually exclusive with "bugged" on the SAME check.
+          const writes = { [`tested.${parentName}.${checkId}`]: checked };
+          if (checked) {
+            const buggedBox = document.querySelector(`.bugged-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
+            if (buggedBox && buggedBox.checked) {
+              buggedBox.checked = false;
+              subrow.classList.remove('sub-bugged');
+              writes[`bugged.${parentName}.${checkId}`] = false;
             }
           }
+
+          riRecomputeParentRow(parentName);
           riUpdateTestedCount();
           riUpdateChecksProgress();
           riApplyFilters();
 
           try {
-            await updateDoc(testedDocRef, { [`tested.${parentName}.${checkId}`]: checked });
+            await updateDoc(testedDocRef, writes);
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
@@ -765,10 +812,11 @@
         });
       });
 
-      // "Didn't work / bugged" checkboxes — a fully separate signal from
-      // tested, same dot-path write pattern into a sibling top-level
-      // `bugged` map so the two never collide or overwrite each other.
-      // NOTE: this needs a matching Firestore security-rule update
+      // "Didn't work / bugged" checkboxes — mutually exclusive with tested
+      // on the same row/check (ticking one force-clears the other, in the
+      // UI and in the saved state — never just visually), same dot-path
+      // write pattern into a sibling top-level `bugged` map. NOTE: this
+      // needs a matching Firestore security-rule update
       // (hasOnly(['tested']) -> hasOnly(['tested','bugged'])) or every write
       // here fails with permission-denied — see the deploy notes.
       document.querySelectorAll('.res-inv .bugged-check:not(.sub-check)').forEach(box => {
@@ -776,10 +824,24 @@
           if (!riIsAuthorized) { box.checked = !box.checked; return; }
           const name = box.getAttribute('data-name');
           const checked = box.checked;
-          box.closest('.res-row').classList.toggle('bugged', checked);
+          const row = box.closest('.res-row');
+          row.classList.toggle('bugged', checked);
+
+          const writes = { [`bugged.${name}`]: checked };
+          if (checked) {
+            const testedBox = row.querySelector('.tested-check');
+            if (testedBox && testedBox.checked) {
+              testedBox.checked = false;
+              row.classList.remove('tested');
+              writes[`tested.${name}`] = false;
+            }
+          }
+
+          riUpdateTestedCount();
+          riUpdateChecksProgress();
           riApplyFilters();
           try {
-            await updateDoc(testedDocRef, { [`bugged.${name}`]: checked });
+            await updateDoc(testedDocRef, writes);
           } catch (err) {
             console.error('Failed to save bugged state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
@@ -793,27 +855,26 @@
           const parentName = box.getAttribute('data-parent');
           const checkId = box.getAttribute('data-check-id');
           const checked = box.checked;
-          box.closest('.res-subrow').classList.toggle('sub-bugged', checked);
+          const subrow = box.closest('.res-subrow');
+          subrow.classList.toggle('sub-bugged', checked);
 
-          const checkIds = riChecksByName[parentName] || [];
-          const parentRow = document.querySelector(`.res-inv .res-row[data-name="${CSS.escape(parentName)}"]:not(.res-subrow)`);
-          if (parentRow) {
-            const bugCount = checkIds.filter(id => {
-              if (id === checkId) return checked;
-              const b = document.querySelector(`.bugged-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(id)}"]`);
-              return b && b.checked;
-            }).length;
-            parentRow.classList.toggle('has-bugs', bugCount > 0);
-            const bugBadge = parentRow.querySelector('.checks-toggle .bug-badge');
-            if (bugBadge) {
-              bugBadge.textContent = bugCount > 0 ? `🐛${bugCount}` : '';
-              bugBadge.style.display = bugCount > 0 ? '' : 'none';
+          const writes = { [`bugged.${parentName}.${checkId}`]: checked };
+          if (checked) {
+            const testedBox = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
+            if (testedBox && testedBox.checked) {
+              testedBox.checked = false;
+              subrow.classList.remove('sub-tested');
+              writes[`tested.${parentName}.${checkId}`] = false;
             }
           }
+
+          riRecomputeParentRow(parentName);
+          riUpdateTestedCount();
+          riUpdateChecksProgress();
           riApplyFilters();
 
           try {
-            await updateDoc(testedDocRef, { [`bugged.${parentName}.${checkId}`]: checked });
+            await updateDoc(testedDocRef, writes);
           } catch (err) {
             console.error('Failed to save bugged state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);

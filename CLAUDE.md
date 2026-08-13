@@ -8,11 +8,23 @@ worked on this repo — this file is the shared memory across them.
 ## Live site
 
 - **Custom domain:** `www.iltep.cb8eats.com` (see `CNAME`)
-- **Deployment:** Cloudflare Workers (Workers Assets), config in `wrangler.jsonc`
-  (`"assets": { "directory": "." }` — serves the repo root as static assets, no build
-  step). This *replaced* an earlier GitHub Pages deployment
-  (`cbryder.github.io/CB8eatsWebSite/`) — GitHub Pages may still be enabled as a
-  fallback, but Cloudflare + the custom domain is the real live site now.
+- **Deployment:** Cloudflare Workers, config in `wrangler.jsonc`. **Cloudflare's Git
+  integration is connected** (Workers & Pages → this worker → Builds) — every push to
+  `main` auto-deploys, no manual `wrangler deploy` needed. This *replaced* an earlier
+  GitHub Pages deployment (`cbryder.github.io/CB8eatsWebSite/`) — GitHub Pages may
+  still be enabled as a fallback, but Cloudflare + the custom domain is the real live
+  site now.
+- **This sandbox cannot reach `api.cloudflare.com`** (blocked by network policy — a
+  403 at the egress proxy, not a token problem) — `wrangler deploy` cannot be run from
+  a Claude Code Remote session against this repo. Rely on the Git integration instead;
+  if it's ever disconnected, deploying needs to happen from a machine with normal
+  network access (the owner's, not this sandbox).
+- **Not pure static assets anymore** — `wrangler.jsonc` has `"main": "worker.js"` with
+  the site served through `env.ASSETS.fetch(request)` as the fallback path. The one
+  exception is `POST /api/send-application-confirmation` (see Staff Applications form
+  below), which `worker.js` intercepts itself. Keep that pattern — check the request
+  path first, fall through to `ASSETS` for everything else — rather than growing the
+  worker into something that re-implements static serving.
 - **Gotcha:** a Worker `html_handling: "strip"`-style setting was tried once to drop
   `.html` from URLs and it broke the homepage entirely (see commits "Disable the
   .html-stripping redirect on the Worker" / "Revert html_handling: none"). Current
@@ -159,6 +171,41 @@ match /acceptedApplications/{appId} {
   allow update: if false;
 }
 ```
+
+#### Applicant email confirmation
+
+The form has an **email** field and an opt-in **"Email me a copy of my answers"**
+checkbox. If checked, the client `fetch()`s `POST /api/send-application-confirmation`
+after the Firestore write succeeds — this is the one route `worker.js` intercepts
+before falling through to static assets (see the Deployment section above). That
+route calls the **Resend** API server-side to actually send the mail; the applicant's
+address never touches Resend from the client, and the API key never reaches the
+browser.
+
+Two pieces of config this needs, **neither of which lives in this repo**:
+- `RESEND_API_KEY` — a Worker **secret** (`wrangler secret put RESEND_API_KEY`, or set
+  via the Cloudflare dashboard → this worker → Settings → Variables and Secrets).
+  Cannot be set from a Claude Code Remote session against this repo, same
+  `api.cloudflare.com` block as `wrangler deploy` above — has to be done by the owner,
+  from their own machine or the dashboard.
+- `APPLY_FROM_EMAIL` — a plain (non-secret) var, already set in `wrangler.jsonc`'s
+  `vars` block to `noreply@cb8eats.com`.
+
+`noreply@cb8eats.com` must be a **Resend-verified sending domain** (Resend →
+Domains → Add Domain → add the SPF/DKIM records it gives you into Cloudflare DNS) —
+without verification, Resend can only deliver to the email on the Resend account
+itself, not to arbitrary applicants. Inbound (receiving mail sent *to*
+`noreply@cb8eats.com`, e.g. if someone replies) is a separate concern, handled via
+Cloudflare Email Routing forwarding it to the owner's personal inbox — not something
+Resend does. **If both Resend and Cloudflare Email Routing try to manage the
+domain's SPF TXT record, they need to be merged into one record, not two** — a
+domain can only have a single SPF TXT record; two will break deliverability for
+both sending and routing.
+
+The confirmation email failing is treated as a courtesy failure, not an application
+failure — the success message still shows even if the email send fails, just with an
+appended note. Don't change that coupling; a flaky Resend call should never make an
+applicant think their application didn't go through.
 
 ### Known Firestore bug (fixed, don't reintroduce)
 

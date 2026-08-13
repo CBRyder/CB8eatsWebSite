@@ -70,6 +70,21 @@
       height: 16px;
       cursor: pointer;
     }
+    .apply-copy-check {
+      display: flex !important;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 400 !important;
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+    .apply-copy-check input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      margin: 0;
+    }
     .apply-status {
       font-size: 0.9rem;
       color: var(--text-faint);
@@ -195,6 +210,12 @@
         </div>
 
         <div class="apply-field">
+          <label for="apply-email">Email</label>
+          <span class="hint">Only used to send you a copy of your answers, if you ask for one below.</span>
+          <input type="email" id="apply-email" required autocomplete="email">
+        </div>
+
+        <div class="apply-field">
           <label>Position(s) you're applying for</label>
           <div class="apply-checks">
             <label><input type="checkbox" name="position" value="Admin"> Admin</label>
@@ -217,6 +238,13 @@
           <label for="apply-availability">Availability</label>
           <span class="hint">Roughly how many hours a week, and what timezone.</span>
           <input type="text" id="apply-availability" required autocomplete="off">
+        </div>
+
+        <div class="apply-field">
+          <label class="apply-copy-check">
+            <input type="checkbox" id="apply-send-copy">
+            Email me a copy of my answers
+          </label>
         </div>
 
         <div class="btn-row" style="margin-top:0;">
@@ -305,14 +333,18 @@
         return;
       }
 
-      const payload = {
+      const email = document.getElementById('apply-email').value.trim();
+      const sendCopy = document.getElementById('apply-send-copy').checked;
+
+      const answers = {
         discordUsername: document.getElementById('apply-discord').value.trim(),
         positions,
         experience: document.getElementById('apply-experience').value.trim(),
         whyJoin: document.getElementById('apply-why').value.trim(),
         availability: document.getElementById('apply-availability').value.trim(),
-        submittedAt: serverTimestamp(),
       };
+
+      const payload = { ...answers, email, submittedAt: serverTimestamp() };
 
       submitBtn.disabled = true;
       statusEl.textContent = 'Submitting…';
@@ -323,6 +355,26 @@
         form.reset();
         statusEl.textContent = "Application submitted — thanks for your interest. You'll be reached out to on Discord.";
         statusEl.className = 'apply-status success';
+
+        // The confirmation email is a courtesy, not the application itself —
+        // its failure shouldn't read as the application having failed.
+        if (sendCopy) {
+          try {
+            const res = await fetch('/api/send-application-confirmation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, ...answers }),
+            });
+            if (res.ok) {
+              statusEl.textContent += ' A copy of your answers is on its way to your email.';
+            } else {
+              statusEl.textContent += " (Couldn't send you a copy of your answers, but the application went through.)";
+            }
+          } catch (err) {
+            console.error('Failed to request confirmation email:', err);
+            statusEl.textContent += " (Couldn't send you a copy of your answers, but the application went through.)";
+          }
+        }
       } catch (err) {
         console.error('Failed to submit application:', err);
         statusEl.textContent = 'Something went wrong submitting that — try again in a moment.';

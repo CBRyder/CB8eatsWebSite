@@ -1,11 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cb8eatswebsite",
+  "main": "worker.js",
   "compatibility_date": "2026-08-12",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "directory": "."
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    // Public/non-secret. The actual send credential is RESEND_API_KEY,
+    // set as a Worker secret (never here) — see CLAUDE.md.
+    "APPLY_FROM_EMAIL": "noreply@cb8eats.com"
   }
 }

@@ -504,7 +504,7 @@
     {
       "cat": "Admin Tools",
       "items": [
-        { "name": "tarboro-admin", "status": "good", "desc": "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands, /addmoney (new 2026-08-10, admin cash/bank/dirty grant, bypasses garnishment/bonus).", "note": "Extended repeatedly across this whole project. Injury commands are no longer orphaned now that tarboro-injuries actually runs.",
+        { "name": "tarboro-admin", "status": "good", "desc": "Teleport/goto/bring/coords, custom map blips, gathering-node move/delete, drug debug-give, injury commands, /addmoney, and a 3-tier permission system (Owner/Admin/Trainee) with a dynamic, in-game-manageable admin roster (new 2026-08-13).", "note": "Extended repeatedly across this whole project. Injury commands are no longer orphaned now that tarboro-injuries actually runs. NEW 2026-08-13 — replaced the old \"admin only via a hand-edited server.cfg line + restart\" model with a 3-tier system: Owner (a single hardcoded identifier — the same one already statically granted group.admin) sits above Admin (unchanged) and a new Trainee tier (tarboro.trainee ACE, a genuinely reduced scope — just /tp /tpm /goto /bring /coords, nothing else). Only the Owner can add/promote/remove via a new tarboro_admin_roster DB table; grants apply live (ExecuteCommand add_principal/remove_principal, no restart needed per person) and are replayed on every boot so they survive one. The phone's Blip Manager app is now the broader \"Admin\" app (app id changed adminblips -> admin — any admin who'd manually pinned the old icon needs to re-place it once, cosmetic only) with a new Admins tab: every admin sees a read-only roster with distinct Owner/orange, Admin/blue, Trainee/grey badges (a trainee is never shown as a plain admin), only the Owner sees Add/Promote/Remove controls, including a search-by-name flow over online players (a UI pattern that didn't exist anywhere else in this codebase before). Not live-tested yet — same blanket caveat as everything else on this list; see the approved plan's own checklist for the full manual run-through.",
           "checks": [
             { "id": "cmd-tp", "label": "/tp" },
             { "id": "cmd-tpm", "label": "/tpm" },
@@ -517,8 +517,21 @@
             { "id": "cmd-movenode", "label": "/movenode" },
             { "id": "cmd-delnode", "label": "/delnode" },
             { "id": "cmd-listnodes", "label": "/listnodes" },
-            { "id": "cmd-addmoney", "label": "/addmoney (new this session)" },
-            { "id": "ace-gating", "label": "ACE-gating denies a non-admin on every one of the above" }
+            { "id": "cmd-addmoney", "label": "/addmoney" },
+            { "id": "ace-gating", "label": "ACE-gating denies a non-admin on every one of the above" },
+            { "id": "trainee-scope-allowed", "label": "A Trainee account can use /tp /tpm /goto /bring /coords" },
+            { "id": "trainee-scope-denied", "label": "That same Trainee account is denied on every other admin command (/addmoney, /injury:*, blips, nodes, roster management)" },
+            { "id": "admin-app-merged", "label": "Phone's Admin app shows Blips / Add New / Gathering Nodes tabs behaving exactly as the old Blip Manager did before the merge" },
+            { "id": "admin-app-badges", "label": "Admins tab shows Owner/Admin/Trainee with distinct, correctly colored badges — never a Trainee shown as \"Admin\"" },
+            { "id": "admin-app-readonly", "label": "A second, non-Owner admin account sees the roster tab but has no Add/Promote/Remove controls anywhere" },
+            { "id": "admin-app-search", "label": "Owner's Add flow finds an online player by partial name and can add them as Trainee or Admin" },
+            { "id": "cmd-addtrainee", "label": "/addtrainee grants the Trainee tier and it works immediately, no restart" },
+            { "id": "cmd-addadmin", "label": "/addadmin grants full Admin and it works immediately, no restart" },
+            { "id": "cmd-promoteadmin", "label": "/promoteadmin (or the phone's Promote button) upgrades a Trainee to Admin live" },
+            { "id": "cmd-removeadmin", "label": "/removeadmin (or the phone's Remove button) revokes access immediately, no restart" },
+            { "id": "cmd-listadmins", "label": "/listadmins prints the current roster" },
+            { "id": "roster-survives-restart", "label": "After a full server restart, everyone still on the roster keeps working with no manual re-grant (boot replay actually fires)" },
+            { "id": "owner-only-gate", "label": "A regular Admin account (not the Owner) is denied by /addtrainee, /addadmin, /promoteadmin, and /removeadmin" }
           ]
         }
       ]

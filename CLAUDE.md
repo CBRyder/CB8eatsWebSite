@@ -133,8 +133,8 @@ Firestore rule required (add as its own `match` block alongside the tracker rule
 ```
 match /staffApplications/{appId} {
   allow create: if true;
-  allow read: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
-  allow update, delete: if false;
+  allow read, delete: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
+  allow update: if false;
 }
 ```
 

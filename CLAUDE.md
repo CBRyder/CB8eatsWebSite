@@ -107,6 +107,18 @@ map (absence == untested, same as an explicit `false`). Toggling **off** writes 
 explicit `false` rather than deleting the key, by design (so there's a record either
 way) — **do not** "optimize" this into a delete.
 
+**Second field, added 2026-08-13: `bugged`.** Same doc, a sibling top-level map with
+the identical shape and dotted-path-write convention as `tested`
+(`{ bugged: { "<resource-name>": true|false } }` for legacy items,
+`{ bugged: { "<name>": { "<checkId>": true|false } } }` for per-behavior items) — a
+fully independent signal, not a replacement or a sub-field of `tested`. Lets the owner
+mark a specific behavior as "tried it, it's broken" distinctly from either "untested" or
+"tested and works", so a bugged item can be found again later without re-reading every
+row. Rendered as a second checkbox next to the tested one on every row/sub-row
+(`.bugged-check` class, red accent vs. the tested checkbox's green, plus a "Bugged
+only" filter toggle and a 🐛 count badge on collapsed checks-based rows) — same
+sign-in-gated write pattern as `tested`.
+
 Security rules (Firebase console → Firestore → Rules, not stored in this repo) gate
 writes to the authorized email per collection, e.g.:
 
@@ -115,11 +127,22 @@ match /tarboroLife/testedResources {
   allow read: if true;
   allow write: if request.auth != null
                && request.auth.token.email == 'cbleo73@gmail.com'
-               && request.resource.data.keys().hasOnly(['tested'])
-               && request.resource.data.tested is map;
+               && request.resource.data.keys().hasOnly(['tested', 'bugged'])
+               && request.resource.data.tested is map
+               && (!('bugged' in request.resource.data) || request.resource.data.bugged is map);
 }
 ```
 (mirrored for `coaVamp/testedResources`).
+
+**⚠ MANUAL STEP NOT YET DONE, as of 2026-08-13:** the rule above (`hasOnly(['tested',
+'bugged'])`) is what BOTH collections need now that the `bugged` field exists in the
+HTML/JS — the live rule in the Firebase console still only has `hasOnly(['tested'])`
+for both. Until the owner updates both rule blocks by hand (this file is documentation,
+not the actual rule source), every write to a `bugged.*` field will fail with
+permission-denied — same "looks like a broken feature but the code is fine" gotcha
+already documented below for Staff Applications' missing `create` rule. **Existing
+`tested` checkbox writes are unaffected** (they don't introduce the `bugged` key), so
+this only blocks the new checkboxes specifically, not the whole tracker.
 
 **Auth method: email/password, not Google Sign-In.** Google Sign-In was tried first
 (both popup and redirect flow) and reliably failed across Brave and Edge — the OAuth

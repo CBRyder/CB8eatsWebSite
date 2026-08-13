@@ -348,7 +348,7 @@ p {
   margin: 0 auto;
 }
 
-/* Two regions, split down the middle — literal, not decorative: Asanaha
+/* Two regions, split down the middle — literal, not decorative: Asanha
    really is one world divided into two named halves around a shared
    capital. Each side takes one half of the site's own brand gradient. */
 .region-split {
@@ -378,9 +378,15 @@ p {
 .region-panel .region-name {
   font-family: var(--font-display);
   font-size: 1.3rem;
+  color: var(--region-color, var(--text));
+  margin: 0 0 0.75rem;
+}
+
+/* A region with no confirmed name yet keeps the old faint/italic "TBD" look —
+   toggle this class off once a real name replaces the placeholder text. */
+.region-panel .region-name.unnamed {
   color: var(--text-faint);
   font-style: italic;
-  margin: 0 0 0.75rem;
 }
 
 .region-divider {

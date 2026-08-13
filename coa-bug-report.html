@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report a Bug — COA: Vampire Knights — CB8eats</title>
+  <meta name="description" content="Report a bug for COA: Vampire Knights — Prep for Alpha.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/nav-scroll.js" defer></script>
+  <style>
+    /* ===== Bug report form (scoped) ===== */
+    .apply-form {
+      display: grid;
+      gap: 1.25rem;
+      max-width: 640px;
+      margin-top: 1.5rem;
+    }
+    .apply-field label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.92rem;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+    .apply-field .hint {
+      display: block;
+      font-weight: 400;
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      margin-top: 0.2rem;
+    }
+    .apply-field input[type="text"],
+    .apply-field input[type="url"],
+    .apply-field select,
+    .apply-field textarea {
+      width: 100%;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.7rem 0.9rem;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+    }
+    .apply-field select {
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--text-faint) 50%), linear-gradient(135deg, var(--text-faint) 50%, transparent 50%);
+      background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    .apply-field input:focus,
+    .apply-field select:focus,
+    .apply-field textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .apply-field textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .apply-status {
+      font-size: 0.9rem;
+      color: var(--text-faint);
+      min-height: 1.2em;
+    }
+    .apply-status.error { color: #e2574f; }
+    .apply-status.success { color: var(--accent-bright); }
+
+    /* ===== Owner-only reports viewer (scoped) ===== */
+    .apps-auth-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .apps-signin-form {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .apps-signin-form input {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.5rem 0.8rem;
+      color: var(--text);
+      font-size: 0.85rem;
+      width: 160px;
+    }
+    .apps-list {
+      display: grid;
+      gap: 1rem;
+    }
+    .apps-list .card {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.25rem;
+    }
+    .apps-card-body { flex: 1; min-width: 0; }
+    .apps-list .card p {
+      margin: 0.3rem 0;
+    }
+    .apps-list .card .label {
+      color: var(--text-faint);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .apps-card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      align-items: flex-end;
+    }
+    .apps-card-actions button {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .apps-card-actions .btn-resolve {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #06140c;
+    }
+    .apps-card-actions .btn-resolve:hover { filter: brightness(1.08); }
+    .apps-card-actions .btn-delete {
+      background: transparent;
+      border: 1px solid rgba(226, 87, 79, 0.4);
+      color: #e2574f;
+    }
+    .apps-card-actions .btn-delete:hover { background: rgba(226, 87, 79, 0.1); }
+
+    .apps-subheading {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      margin: 1.75rem 0 0.75rem;
+    }
+    .apps-subheading:first-of-type { margin-top: 0.5rem; }
+
+    .severity-chip {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      margin-bottom: 0.4rem;
+    }
+    .severity-chip.critical { background: rgba(226, 87, 79, 0.14); color: #e2574f; }
+    .severity-chip.high { background: rgba(232, 130, 58, 0.14); color: #e8823a; }
+    .severity-chip.medium { background: rgba(224, 184, 63, 0.14); color: #e0b83f; }
+    .severity-chip.low { background: rgba(0, 217, 95, 0.14); color: var(--accent-bright); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand"><a href="index.html">CB8eats</a></div>
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="designs.html">Designs</a></li>
+        <li><a href="music.html">Music</a></li>
+        <li><a href="coa.html" class="active">COA: Vampire Knights</a></li>
+        <li><a href="tarboro-life.html">Tarboro Life</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="coa.html">&larr; Back to COA: Vampire Knights</a>
+
+    <section class="hero">
+      <p class="eyebrow">COA: Vampire Knights</p>
+      <h1>Report a Bug</h1>
+      <p class="lede">Prep for Alpha — found something broken? Let us know what happened and how to reproduce
+        it.</p>
+      <div class="tags">
+        <span class="tag">Prep for Alpha</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Submit a Report</h2>
+      <form class="apply-form" id="apply-form">
+        <div class="apply-field">
+          <label for="apply-discord">Discord username</label>
+          <span class="hint">So we can follow up if we need more detail.</span>
+          <input type="text" id="apply-discord" required autocomplete="off">
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-title">Bug summary</label>
+          <input type="text" id="apply-title" placeholder="Short, one-line description" required autocomplete="off">
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-severity">Severity</label>
+          <select id="apply-severity" required>
+            <option value="" disabled selected>Pick one…</option>
+            <option value="critical">Critical — crashes, blocks progress, corrupts saves</option>
+            <option value="high">High — major feature broken</option>
+            <option value="medium">Medium — noticeable but has a workaround</option>
+            <option value="low">Low — cosmetic / minor</option>
+          </select>
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-description">Description</label>
+          <span class="hint">What happened? What did you expect instead?</span>
+          <textarea id="apply-description" required></textarea>
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-steps">Steps to reproduce</label>
+          <textarea id="apply-steps" required></textarea>
+        </div>
+
+        <div class="apply-field">
+          <label for="apply-link">Screenshot / video link</label>
+          <span class="hint">Optional — a link to an image, clip, or Discord message.</span>
+          <input type="url" id="apply-link" autocomplete="off">
+        </div>
+
+        <div class="btn-row" style="margin-top:0;">
+          <button type="submit" class="btn btn-primary" id="apply-submit-btn">Submit Report</button>
+        </div>
+        <div class="apply-status" id="apply-status"></div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Submitted Reports</h2>
+      <p class="lede">Owner-only — sign in to review what's come in.</p>
+
+      <div class="apps-auth-row" id="apps-auth-row">
+        <form id="apps-signin-form" class="apps-signin-form">
+          <input type="email" id="apps-email" placeholder="Email" autocomplete="username" required>
+          <input type="password" id="apps-password" placeholder="Password" autocomplete="current-password" required>
+          <button type="submit" class="filter-btn" id="apps-signin-btn">Sign in</button>
+        </form>
+        <button type="button" class="filter-btn" id="apps-signout-btn" style="display:none;">Sign out</button>
+        <span class="apply-status" id="apps-auth-note">Sign in as the site owner to view submitted reports.</span>
+      </div>
+
+      <h3 class="apps-subheading">Resolved</h3>
+      <div class="apps-list" id="resolved-list"></div>
+
+      <h3 class="apps-subheading">Open</h3>
+      <div class="apps-list" id="apps-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, query, orderBy, getDocs, doc, deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import {
+      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    // Same Firebase project as everything else on the site (tarborolifebackend)
+    // — separate top-level collections rather than a new project.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
+      authDomain: "tarborolifebackend.firebaseapp.com",
+      projectId: "tarborolifebackend",
+      storageBucket: "tarborolifebackend.firebasestorage.app",
+      messagingSenderId: "578368600107",
+      appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
+    };
+
+    const OWNER_EMAIL = 'cbleo73@gmail.com';
+    const SEVERITY_LABEL = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+    const auth = getAuth(firebaseApp);
+    const reportsCollection = collection(db, 'coaBugReports');
+    // Resolving moves a doc here (copy + delete from coaBugReports), it
+    // doesn't just flag the original — same pattern as Accept on the Staff
+    // Applications page. Owner-only for create/read/delete.
+    const resolvedCollection = collection(db, 'coaBugReportsResolved');
+
+    // ---------- Submission form ----------
+    const form = document.getElementById('apply-form');
+    const statusEl = document.getElementById('apply-status');
+    const submitBtn = document.getElementById('apply-submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        discordUsername: document.getElementById('apply-discord').value.trim(),
+        title: document.getElementById('apply-title').value.trim(),
+        severity: document.getElementById('apply-severity').value,
+        description: document.getElementById('apply-description').value.trim(),
+        steps: document.getElementById('apply-steps').value.trim(),
+        link: document.getElementById('apply-link').value.trim(),
+        submittedAt: serverTimestamp(),
+      };
+
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Submitting…';
+      statusEl.className = 'apply-status';
+
+      try {
+        await addDoc(reportsCollection, payload);
+        form.reset();
+        statusEl.textContent = 'Report submitted — thanks for helping test the Alpha.';
+        statusEl.className = 'apply-status success';
+      } catch (err) {
+        console.error('Failed to submit bug report:', err);
+        statusEl.textContent = 'Something went wrong submitting that — try again in a moment.';
+        statusEl.className = 'apply-status error';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // ---------- Owner-only reports viewer ----------
+    let isOwner = false;
+    // Keyed by doc id, holds the raw report data — needed at Resolve time
+    // to copy the full record into coaBugReportsResolved.
+    let openById = new Map();
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function reportCardBody(data) {
+      const when = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString()
+        : (data.resolvedAt && data.resolvedAt.toDate ? data.resolvedAt.toDate().toLocaleString() : 'Unknown time');
+      const severity = data.severity && SEVERITY_LABEL[data.severity] ? data.severity : '';
+      return `
+        <div class="apps-card-body">
+          ${severity ? `<span class="severity-chip ${severity}">${SEVERITY_LABEL[severity]}</span>` : ''}
+          <span class="label">${when}</span>
+          <h3>${escapeHtml(data.title || 'Untitled')}</h3>
+          <p><strong>Reported by:</strong> ${escapeHtml(data.discordUsername || 'Unknown')}</p>
+          <p><strong>Description:</strong> ${escapeHtml(data.description || '')}</p>
+          <p><strong>Steps to reproduce:</strong> ${escapeHtml(data.steps || '')}</p>
+          ${data.link ? `<p><strong>Link:</strong> <a href="${escapeHtml(data.link)}" target="_blank" rel="noopener">${escapeHtml(data.link)}</a></p>` : ''}
+        </div>`;
+    }
+
+    function renderOpen(docs) {
+      const list = document.getElementById('apps-list');
+      openById = new Map(docs.map(d => [d.id, d.data()]));
+      if (!docs.length) {
+        list.innerHTML = '<p class="note">No open reports.</p>';
+        return;
+      }
+      list.innerHTML = docs.map(d => `
+        <div class="card">
+          ${reportCardBody(d.data())}
+          <div class="apps-card-actions">
+            <button type="button" class="btn-resolve" data-resolve="${d.id}">Resolve</button>
+            <button type="button" class="btn-delete" data-delete="${d.id}">Delete</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function renderResolved(docs) {
+      const list = document.getElementById('resolved-list');
+      if (!docs.length) {
+        list.innerHTML = '<p class="note">No resolved reports yet.</p>';
+        return;
+      }
+      list.innerHTML = docs.map(d => `
+        <div class="card">
+          ${reportCardBody(d.data())}
+          <div class="apps-card-actions">
+            <button type="button" class="btn-delete" data-remove="${d.id}">Remove</button>
+          </div>
+        </div>`).join('');
+    }
+
+    async function loadOpen() {
+      const list = document.getElementById('apps-list');
+      list.innerHTML = '<p class="note">Loading…</p>';
+      try {
+        const q = query(reportsCollection, orderBy('submittedAt', 'desc'));
+        const snap = await getDocs(q);
+        renderOpen(snap.docs);
+      } catch (err) {
+        console.error('Failed to load bug reports:', err);
+        list.innerHTML = '<p class="note">Could not load reports — check the console.</p>';
+      }
+    }
+
+    async function loadResolved() {
+      const list = document.getElementById('resolved-list');
+      list.innerHTML = '<p class="note">Loading…</p>';
+      try {
+        const q = query(resolvedCollection, orderBy('resolvedAt', 'desc'));
+        const snap = await getDocs(q);
+        renderResolved(snap.docs);
+      } catch (err) {
+        console.error('Failed to load resolved reports:', err);
+        list.innerHTML = '<p class="note">Could not load resolved reports — check the console.</p>';
+      }
+    }
+
+    document.getElementById('apps-list').addEventListener('click', async (e) => {
+      const resolveId = e.target.getAttribute('data-resolve');
+      const deleteId = e.target.getAttribute('data-delete');
+
+      if (resolveId) {
+        const data = openById.get(resolveId);
+        if (!data) return;
+        e.target.disabled = true;
+        try {
+          const { submittedAt, ...rest } = data;
+          await addDoc(resolvedCollection, { ...rest, submittedAt: submittedAt || null, resolvedAt: serverTimestamp() });
+          await deleteDoc(doc(db, 'coaBugReports', resolveId));
+          loadOpen();
+          loadResolved();
+        } catch (err) {
+          console.error('Failed to resolve bug report:', err);
+          e.target.disabled = false;
+        }
+      } else if (deleteId) {
+        if (!confirm('Delete this report? This cannot be undone.')) return;
+        e.target.disabled = true;
+        try {
+          await deleteDoc(doc(db, 'coaBugReports', deleteId));
+          loadOpen();
+        } catch (err) {
+          console.error('Failed to delete bug report:', err);
+          e.target.disabled = false;
+        }
+      }
+    });
+
+    document.getElementById('resolved-list').addEventListener('click', async (e) => {
+      const removeId = e.target.getAttribute('data-remove');
+      if (!removeId) return;
+      if (!confirm('Remove this from resolved reports? This cannot be undone.')) return;
+      e.target.disabled = true;
+      try {
+        await deleteDoc(doc(db, 'coaBugReportsResolved', removeId));
+        loadResolved();
+      } catch (err) {
+        console.error('Failed to remove resolved report:', err);
+        e.target.disabled = false;
+      }
+    });
+
+    function updateAuthUI(user) {
+      const form = document.getElementById('apps-signin-form');
+      const signOutBtn = document.getElementById('apps-signout-btn');
+      const note = document.getElementById('apps-auth-note');
+      const list = document.getElementById('apps-list');
+      const resolvedList = document.getElementById('resolved-list');
+
+      if (user && user.email === OWNER_EMAIL) {
+        isOwner = true;
+        form.style.display = 'none';
+        signOutBtn.style.display = '';
+        note.textContent = `Signed in as ${user.email}.`;
+        loadOpen();
+        loadResolved();
+      } else {
+        isOwner = false;
+        form.style.display = '';
+        signOutBtn.style.display = 'none';
+        note.textContent = user
+          ? `Signed in as ${user.email}, but that account isn't authorized.`
+          : 'Sign in as the site owner to view submitted reports.';
+        list.innerHTML = '';
+        resolvedList.innerHTML = '';
+      }
+    }
+
+    onAuthStateChanged(auth, updateAuthUI);
+
+    document.getElementById('apps-signin-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('apps-email').value.trim();
+      const password = document.getElementById('apps-password').value;
+      const note = document.getElementById('apps-auth-note');
+      note.textContent = 'Signing in…';
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('apps-password').value = '';
+      } catch (err) {
+        console.error('Sign-in failed:', err);
+        note.textContent = `Sign-in error: ${err.code || err.message}`;
+      }
+    });
+
+    document.getElementById('apps-signout-btn').addEventListener('click', () => signOut(auth));
+  </script>
+
+</body>
+</html>

@@ -207,6 +207,39 @@ failure — the success message still shows even if the email send fails, just w
 appended note. Don't change that coupling; a flaky Resend call should never make an
 applicant think their application didn't go through.
 
+## COA Bug Reports (`coa-bug-report.html`)
+
+Same pattern as Staff Applications, adapted for bug reports instead of job
+applications — public submission form (Discord username, title, severity, description,
+steps to reproduce, optional screenshot/video link), owner-only viewer with per-report
+triage actions. Linked from `coa.html`'s card grid ("Report a Bug").
+
+- Public-create collection: `coaBugReports` — the open queue.
+- Owner-only collection: `coaBugReportsResolved` — **Resolve** (labeled that instead
+  of "Accept") moves a doc here the same way Accept does on Staff Applications: copy +
+  stamp `resolvedAt`, then delete the original. **Delete** removes an open report
+  outright (`confirm()` first). Resolved reports get their own **Remove** button.
+- Severity is one of `critical` / `high` / `medium` / `low`, rendered as a colored
+  chip (red/orange/yellow/green) on each card — reuses the same red-orange-yellow-green
+  vocabulary as the resource trackers' crit/warn/good statuses.
+- No email-confirmation step for this one (unlike Staff Applications) — reporters
+  aren't asked for an email, only a Discord username, since follow-up happens there.
+
+Firestore rules required (add alongside all the others, same Firebase project):
+
+```
+match /coaBugReports/{reportId} {
+  allow create: if true;
+  allow read, delete: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
+  allow update: if false;
+}
+
+match /coaBugReportsResolved/{reportId} {
+  allow read, create, delete: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
+  allow update: if false;
+}
+```
+
 ### Known Firestore bug (fixed, don't reintroduce)
 
 An early version called `setDoc(docRef, { tested: {} }, { merge: true })` on every

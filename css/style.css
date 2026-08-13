@@ -55,7 +55,7 @@ a {
 
 header {
   position: sticky;
-  top: -45px;
+  top: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -65,6 +65,14 @@ header {
   background: rgba(12, 12, 17, 0.97);
   border-bottom: 1px solid var(--border);
   z-index: 999;
+  transform: translateY(0);
+  transition: transform 0.25s ease;
+}
+
+/* Toggled by js/nav-scroll.js: hidden while scrolling down, removed the
+   instant you scroll up (even slightly) or reach the top of the page. */
+header.nav-hidden {
+  transform: translateY(-100%);
 }
 
 .brand {

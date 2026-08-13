@@ -428,6 +428,19 @@
     // resources. Drives every per-check lookup below.
     let riChecksByName = {};
 
+    // Escapes item/check data from resource-inventory.json before
+    // interpolating it into innerHTML. Without this, any '<'/'>' in a
+    // description or check label gets parsed as a real HTML tag, silently
+    // breaking that row and leaving the rest of the text floating outside
+    // it as a stray text node.
+    function riEscapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
     function riUpdateTestedCount() {
       const el = document.getElementById('ri-tested-count');
       if (el) el.textContent = document.querySelectorAll('.res-inv .res-row:not(.res-subrow).tested').length;
@@ -664,44 +677,45 @@
         const section = document.createElement('div');
         section.className = 'category';
         section.innerHTML = `
-          <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
+          <div class="category-head"><h3>${riEscapeHtml(group.cat)}</h3><span class="count">${group.items.length}</span></div>
           <table class="res-table"><tbody>
             ${group.items.map(it => {
               const hasChecks = Array.isArray(it.checks) && it.checks.length > 0;
               riChecksByName[it.name] = hasChecks ? it.checks.map(c => c.id) : null;
               const dotColor = it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good';
               const searchText = (it.name + ' ' + it.desc + ' ' + (it.note || '') + ' ' + (hasChecks ? it.checks.map(c => c.label).join(' ') : '')).toLowerCase();
+              const escName = riEscapeHtml(it.name);
 
               const testedCellHtml = hasChecks
-                ? `<button type="button" class="checks-toggle" data-toggle="${it.name}" title="Show/hide individual checks">
+                ? `<button type="button" class="checks-toggle" data-toggle="${escName}" title="Show/hide individual checks">
                      <span class="chev">▸</span><span class="frac">0/${it.checks.length}</span><span class="bug-badge" style="display:none"></span>
                    </button>`
-                : `<input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested / working">`;
+                : `<input type="checkbox" class="tested-check" data-name="${escName}" title="Mark as tested / working">`;
 
               // Checks-based resources have no PARENT-level bugged checkbox
               // (bugged state lives on the sub-checks, surfaced via the
               // bug-badge above instead) — same split as tested-vs-toggle.
               const buggedCellHtml = hasChecks
                 ? ``
-                : `<input type="checkbox" class="bugged-check" data-name="${it.name}" title="Mark as didn't work / bugged">`;
+                : `<input type="checkbox" class="bugged-check" data-name="${escName}" title="Mark as didn't work / bugged">`;
 
               const parentRow = `
-                <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${searchText}">
+                <tr class="res-row" data-status-val="${it.status}" data-name="${escName}" data-search="${riEscapeHtml(searchText)}">
                   <td class="tested-cell">${testedCellHtml}</td>
                   <td class="bugged-cell">${buggedCellHtml}</td>
-                  <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${it.name}</span></td>
+                  <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${escName}</span></td>
                   <td>
-                    <div class="res-desc">${it.desc}</div>
-                    ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
+                    <div class="res-desc">${riEscapeHtml(it.desc)}</div>
+                    ${it.note ? `<div class="res-note">${riEscapeHtml(it.note)}</div>` : ''}
                   </td>
                   <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
                 </tr>`;
 
               const subRows = hasChecks ? it.checks.map(chk => `
-                <tr class="res-row res-subrow" data-parent="${it.name}">
-                  <td class="tested-cell"><input type="checkbox" class="tested-check sub-check" data-parent="${it.name}" data-check-id="${chk.id}" title="Mark as tested / working"></td>
-                  <td class="bugged-cell"><input type="checkbox" class="bugged-check sub-check" data-parent="${it.name}" data-check-id="${chk.id}" title="Mark as didn't work / bugged"></td>
-                  <td colspan="3" class="sub-label">${chk.label}</td>
+                <tr class="res-row res-subrow" data-parent="${escName}">
+                  <td class="tested-cell"><input type="checkbox" class="tested-check sub-check" data-parent="${escName}" data-check-id="${chk.id}" title="Mark as tested / working"></td>
+                  <td class="bugged-cell"><input type="checkbox" class="bugged-check sub-check" data-parent="${escName}" data-check-id="${chk.id}" title="Mark as didn't work / bugged"></td>
+                  <td colspan="3" class="sub-label">${riEscapeHtml(chk.label)}</td>
                 </tr>
               `).join('') : '';
 

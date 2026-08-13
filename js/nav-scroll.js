@@ -2,6 +2,14 @@
 // upward scroll (even a single pixel) — and always keep it fully visible
 // at the very top of the page. Pairs with the `header` transform/transition
 // and `.nav-hidden` class in css/style.css.
+//
+// Separately (and independent of that direction-based show/hide): toggles
+// a `scrolled` class based on scroll POSITION, not direction, whenever
+// you're not right at the top. Subpages use that to reveal a compact
+// "back to X" pill in the header itself (see `.header-back` in
+// css/style.css) — otherwise getting back to the hub page means
+// scrolling all the way back to the top to find the one at the top of
+// the page body.
 (function () {
   const header = document.querySelector('header');
   if (!header) return;
@@ -11,6 +19,7 @@
 
   function update() {
     const y = window.scrollY;
+    header.classList.toggle('scrolled', y > 4);
 
     if (y <= 4) {
       // At the top — nothing to hide from, always show it fully.

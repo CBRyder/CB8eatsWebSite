@@ -103,6 +103,13 @@
       display: grid;
       gap: 1rem;
     }
+    .apps-list .card {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.25rem;
+    }
+    .apps-card-body { flex: 1; min-width: 0; }
     .apps-list .card p {
       margin: 0.3rem 0;
     }
@@ -112,6 +119,42 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+    .apps-card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .apps-card-actions button {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .apps-card-actions .btn-accept {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #06140c;
+    }
+    .apps-card-actions .btn-accept:hover { filter: brightness(1.08); }
+    .apps-card-actions .btn-delete {
+      background: transparent;
+      border: 1px solid rgba(226, 87, 79, 0.4);
+      color: #e2574f;
+    }
+    .apps-card-actions .btn-delete:hover { background: rgba(226, 87, 79, 0.1); }
+
+    .apps-subheading {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      margin: 1.75rem 0 0.75rem;
+    }
+    .apps-subheading:first-of-type { margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -196,6 +239,10 @@
         <span class="apply-status" id="apps-auth-note">Sign in as the site owner to view submitted applications.</span>
       </div>
 
+      <h3 class="apps-subheading">Accepted</h3>
+      <div class="apps-list" id="accepted-list"></div>
+
+      <h3 class="apps-subheading">Pending</h3>
       <div class="apps-list" id="apps-list"></div>
     </section>
   </main>
@@ -208,7 +255,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, serverTimestamp, query, orderBy, getDocs
+      getFirestore, collection, addDoc, serverTimestamp, query, orderBy, getDocs, doc, deleteDoc
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
       getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -237,6 +284,10 @@
     const db = getFirestore(firebaseApp);
     const auth = getAuth(firebaseApp);
     const appsCollection = collection(db, 'staffApplications');
+    // Accepting moves a doc here (copy + delete from staffApplications), it
+    // doesn't just flag the original. Owner-only for create/read/delete —
+    // see CLAUDE.md for the Firestore rule this needs.
+    const acceptedCollection = collection(db, 'acceptedApplications');
 
     // ---------- Submission form ----------
     const form = document.getElementById('apply-form');
@@ -282,32 +333,60 @@
 
     // ---------- Owner-only submissions viewer ----------
     let isOwner = false;
-
-    function renderApps(docs) {
-      const list = document.getElementById('apps-list');
-      if (!docs.length) {
-        list.innerHTML = '<p class="note">No applications yet.</p>';
-        return;
-      }
-      list.innerHTML = docs.map(d => {
-        const data = d.data();
-        const when = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : 'Unknown time';
-        return `
-          <div class="card">
-            <span class="label">${when}</span>
-            <h3>${escapeHtml(data.discordUsername || 'Unknown')}</h3>
-            <p><strong>Applying for:</strong> ${(data.positions || []).map(escapeHtml).join(', ')}</p>
-            <p><strong>Experience:</strong> ${escapeHtml(data.experience || '')}</p>
-            <p><strong>Why join:</strong> ${escapeHtml(data.whyJoin || '')}</p>
-            <p><strong>Availability:</strong> ${escapeHtml(data.availability || '')}</p>
-          </div>`;
-      }).join('');
-    }
+    // Keyed by doc id, holds the raw application data — needed at Accept
+    // time to copy the full record into acceptedApplications.
+    let pendingById = new Map();
 
     function escapeHtml(str) {
       const div = document.createElement('div');
       div.textContent = str;
       return div.innerHTML;
+    }
+
+    function appCardBody(data) {
+      const when = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString()
+        : (data.acceptedAt && data.acceptedAt.toDate ? data.acceptedAt.toDate().toLocaleString() : 'Unknown time');
+      return `
+        <div class="apps-card-body">
+          <span class="label">${when}</span>
+          <h3>${escapeHtml(data.discordUsername || 'Unknown')}</h3>
+          <p><strong>Applying for:</strong> ${(data.positions || []).map(escapeHtml).join(', ')}</p>
+          <p><strong>Experience:</strong> ${escapeHtml(data.experience || '')}</p>
+          <p><strong>Why join:</strong> ${escapeHtml(data.whyJoin || '')}</p>
+          <p><strong>Availability:</strong> ${escapeHtml(data.availability || '')}</p>
+        </div>`;
+    }
+
+    function renderApps(docs) {
+      const list = document.getElementById('apps-list');
+      pendingById = new Map(docs.map(d => [d.id, d.data()]));
+      if (!docs.length) {
+        list.innerHTML = '<p class="note">No pending applications.</p>';
+        return;
+      }
+      list.innerHTML = docs.map(d => `
+        <div class="card">
+          ${appCardBody(d.data())}
+          <div class="apps-card-actions">
+            <button type="button" class="btn-accept" data-accept="${d.id}">Accept</button>
+            <button type="button" class="btn-delete" data-delete="${d.id}">Delete</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function renderAccepted(docs) {
+      const list = document.getElementById('accepted-list');
+      if (!docs.length) {
+        list.innerHTML = '<p class="note">No accepted applications yet.</p>';
+        return;
+      }
+      list.innerHTML = docs.map(d => `
+        <div class="card">
+          ${appCardBody(d.data())}
+          <div class="apps-card-actions">
+            <button type="button" class="btn-delete" data-remove="${d.id}">Remove</button>
+          </div>
+        </div>`).join('');
     }
 
     async function loadApps() {
@@ -323,11 +402,73 @@
       }
     }
 
+    async function loadAccepted() {
+      const list = document.getElementById('accepted-list');
+      list.innerHTML = '<p class="note">Loading…</p>';
+      try {
+        const q = query(acceptedCollection, orderBy('acceptedAt', 'desc'));
+        const snap = await getDocs(q);
+        renderAccepted(snap.docs);
+      } catch (err) {
+        console.error('Failed to load accepted applications:', err);
+        list.innerHTML = '<p class="note">Could not load accepted applications — check the console.</p>';
+      }
+    }
+
+    // Event delegation on both lists — rows get re-rendered wholesale on
+    // every load/accept/delete, so binding once here beats rebinding
+    // per-button after every render.
+    document.getElementById('apps-list').addEventListener('click', async (e) => {
+      const acceptId = e.target.getAttribute('data-accept');
+      const deleteId = e.target.getAttribute('data-delete');
+
+      if (acceptId) {
+        const data = pendingById.get(acceptId);
+        if (!data) return;
+        e.target.disabled = true;
+        try {
+          const { submittedAt, ...rest } = data;
+          await addDoc(acceptedCollection, { ...rest, submittedAt: submittedAt || null, acceptedAt: serverTimestamp() });
+          await deleteDoc(doc(db, 'staffApplications', acceptId));
+          loadApps();
+          loadAccepted();
+        } catch (err) {
+          console.error('Failed to accept application:', err);
+          e.target.disabled = false;
+        }
+      } else if (deleteId) {
+        if (!confirm('Delete this application? This cannot be undone.')) return;
+        e.target.disabled = true;
+        try {
+          await deleteDoc(doc(db, 'staffApplications', deleteId));
+          loadApps();
+        } catch (err) {
+          console.error('Failed to delete application:', err);
+          e.target.disabled = false;
+        }
+      }
+    });
+
+    document.getElementById('accepted-list').addEventListener('click', async (e) => {
+      const removeId = e.target.getAttribute('data-remove');
+      if (!removeId) return;
+      if (!confirm('Remove this from accepted applications? This cannot be undone.')) return;
+      e.target.disabled = true;
+      try {
+        await deleteDoc(doc(db, 'acceptedApplications', removeId));
+        loadAccepted();
+      } catch (err) {
+        console.error('Failed to remove accepted application:', err);
+        e.target.disabled = false;
+      }
+    });
+
     function updateAuthUI(user) {
       const form = document.getElementById('apps-signin-form');
       const signOutBtn = document.getElementById('apps-signout-btn');
       const note = document.getElementById('apps-auth-note');
       const list = document.getElementById('apps-list');
+      const acceptedList = document.getElementById('accepted-list');
 
       if (user && user.email === OWNER_EMAIL) {
         isOwner = true;
@@ -335,6 +476,7 @@
         signOutBtn.style.display = '';
         note.textContent = `Signed in as ${user.email}.`;
         loadApps();
+        loadAccepted();
       } else {
         isOwner = false;
         form.style.display = '';
@@ -343,6 +485,7 @@
           ? `Signed in as ${user.email}, but that account isn't authorized.`
           : 'Sign in as the site owner to view submitted applications.';
         list.innerHTML = '';
+        acceptedList.innerHTML = '';
       }
     }
 

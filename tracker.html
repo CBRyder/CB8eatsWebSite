@@ -397,6 +397,26 @@
 
     const RI_STATUS_LABEL = { crit: "Not running", warn: "Thin / undocumented", good: "Documented" };
 
+    // Every piece of dynamic text below gets HTML-escaped before it's spliced
+    // into a template string — including values used only as HTML attributes
+    // (data-name, data-toggle, data-parent, data-search). Without this, a
+    // resource name containing a literal " (quote) prematurely closes the
+    // attribute it's sitting in, corrupting that row's data-name/data-parent
+    // in the actual DOM. The JS still reads the *intended* name from JSON
+    // fine, but every DOM lookup keyed off the (now-empty) attribute value
+    // misses — including the Firestore write path (tested.<name>.<checkId>),
+    // which ends up with an empty segment and silently fails to save. That's
+    // exactly what happened to the "Feed to death" Stride recharge buff item
+    // in coa-inventory.json — its checkbox looked clickable but could never
+    // actually persist a checked state. Escaping here fixes it and prevents
+    // any future item name/desc/label with a quote, &, or < from doing the
+    // same thing again.
+    function riEscapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
     const riRoot = document.getElementById('ri-categories');
 
     // Populated during riInit(): { resourceName: [checkId, checkId, ...] }
@@ -564,7 +584,7 @@
         const section = document.createElement('div');
         section.className = 'category';
         section.innerHTML = `
-          <div class="category-head"><h3>${group.cat}</h3><span class="count">${group.items.length}</span></div>
+          <div class="category-head"><h3>${riEscapeHtml(group.cat)}</h3><span class="count">${group.items.length}</span></div>
           <table class="res-table"><tbody>
             ${group.items.map(it => {
               const hasChecks = Array.isArray(it.checks) && it.checks.length > 0;
@@ -572,27 +592,34 @@
               const dotColor = it.status === 'crit' ? 'crit' : it.status === 'warn' ? 'warn' : 'good';
               const searchText = (it.name + ' ' + it.desc + ' ' + (it.note || '') + ' ' + (hasChecks ? it.checks.map(c => c.label).join(' ') : '')).toLowerCase();
 
+              // Everything below uses the ESCAPED name/desc/note/label for
+              // display and for attribute values — riChecksByName above and
+              // every querySelector lookup elsewhere key off the raw it.name
+              // string, never the DOM attribute, so escaping here doesn't
+              // touch that.
+              const safeName = riEscapeHtml(it.name);
+
               const testedCellHtml = hasChecks
-                ? `<button type="button" class="checks-toggle" data-toggle="${it.name}" title="Show/hide individual checks">
+                ? `<button type="button" class="checks-toggle" data-toggle="${safeName}" title="Show/hide individual checks">
                      <span class="chev">▸</span><span class="frac">0/${it.checks.length}</span>
                    </button>`
-                : `<input type="checkbox" class="tested-check" data-name="${it.name}" title="Mark as tested">`;
+                : `<input type="checkbox" class="tested-check" data-name="${safeName}" title="Mark as tested">`;
 
               const parentRow = `
-                <tr class="res-row" data-status-val="${it.status}" data-name="${it.name}" data-search="${searchText}">
+                <tr class="res-row" data-status-val="${it.status}" data-name="${safeName}" data-search="${riEscapeHtml(searchText)}">
                   <td class="tested-cell">${testedCellHtml}</td>
-                  <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${it.name}</span></td>
+                  <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${safeName}</span></td>
                   <td>
-                    <div class="res-desc">${it.desc}</div>
-                    ${it.note ? `<div class="res-note">${it.note}</div>` : ''}
+                    <div class="res-desc">${riEscapeHtml(it.desc)}</div>
+                    ${it.note ? `<div class="res-note">${riEscapeHtml(it.note)}</div>` : ''}
                   </td>
                   <td style="width:170px; text-align:right"><span class="chip ${it.status}">${RI_STATUS_LABEL[it.status]}</span></td>
                 </tr>`;
 
               const subRows = hasChecks ? it.checks.map(chk => `
-                <tr class="res-row res-subrow" data-parent="${it.name}">
-                  <td class="tested-cell"><input type="checkbox" class="tested-check sub-check" data-parent="${it.name}" data-check-id="${chk.id}" title="Mark as tested"></td>
-                  <td colspan="3" class="sub-label">${chk.label}</td>
+                <tr class="res-row res-subrow" data-parent="${safeName}">
+                  <td class="tested-cell"><input type="checkbox" class="tested-check sub-check" data-parent="${safeName}" data-check-id="${riEscapeHtml(chk.id)}" title="Mark as tested"></td>
+                  <td colspan="3" class="sub-label">${riEscapeHtml(chk.label)}</td>
                 </tr>
               `).join('') : '';
 

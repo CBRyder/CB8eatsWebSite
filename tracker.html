@@ -193,6 +193,19 @@
     .res-inv .res-row.expanded .checks-toggle .chev { transform: rotate(90deg); }
     .res-inv .checks-toggle .frac.complete { color: var(--ri-good); font-weight: 600; }
 
+    /* Sits in the bugged-cell of checks-based rows in place of the blank
+       gap that used to be there — same footprint as a bugged-check
+       checkbox, red-tinted like it, but visually distinct from an actual
+       checkbox (an ellipsis, not a box) so it doesn't imply "click to flag
+       this whole resource as bugged" — it only ever expands the row. */
+    .res-inv .bugged-hint {
+      background: none; border: 1px solid transparent; cursor: pointer; font-family: var(--ri-mono);
+      color: var(--ri-faint); font-size: 13px; line-height: 1; padding: 3px 6px;
+      border-radius: 4px; width: 15px; height: 15px; display: inline-flex;
+      align-items: center; justify-content: center;
+    }
+    .res-inv .bugged-hint:hover { color: var(--ri-crit); border-color: var(--ri-crit); background: var(--ri-crit-bg); }
+
     .res-inv .res-subrow td { padding: 7px 10px; }
     .res-inv .res-subrow .tested-cell { padding-left: 20px; }
     .res-inv .res-subrow .sub-label { color: var(--ri-muted); font-size: 12.5px; padding-left: 6px; }
@@ -695,8 +708,16 @@
               // Checks-based resources have no PARENT-level bugged checkbox
               // (bugged state lives on the sub-checks, surfaced via the
               // bug-badge above instead) — same split as tested-vs-toggle.
+              // This cell used to render completely empty for checks-based
+              // rows, which reads as "the bugged checkbox is broken/missing"
+              // rather than "expand the row, it's per-check in there" —
+              // exactly the report that came in. A small always-visible hint
+              // button fixes the discoverability gap without adding a second
+              // real bugged flag at the parent level (that stays intentional:
+              // "bugged" only ever means a specific behavior, never a whole
+              // multi-check resource at once).
               const buggedCellHtml = hasChecks
-                ? ``
+                ? `<button type="button" class="bugged-hint" data-expand-target="${escName}" title="Bugged is tracked per individual check below — click to expand">⋯</button>`
                 : `<input type="checkbox" class="bugged-check" data-name="${escName}" title="Mark as didn't work / bugged">`;
 
               const parentRow = `
@@ -749,6 +770,21 @@
         btn.addEventListener('click', () => {
           const row = btn.closest('.res-row');
           row.classList.toggle('expanded');
+          riSyncSubrowVisibility();
+        });
+      });
+
+      // The bugged-cell hint on checks-based rows always EXPANDS rather than
+      // toggling — it's a second entry point into the same row as the
+      // checks-toggle button, not a second independent toggle. If this also
+      // called classList.toggle('expanded'), clicking the hint right after
+      // the chevron would immediately re-collapse the row instead of doing
+      // nothing/staying open, which is exactly the kind of "nothing happens
+      // when I click it" behavior this fix exists to get rid of.
+      document.querySelectorAll('.res-inv .bugged-hint').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const row = btn.closest('.res-row');
+          row.classList.add('expanded');
           riSyncSubrowVisibility();
         });
       });

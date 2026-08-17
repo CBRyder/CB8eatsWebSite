@@ -119,6 +119,23 @@ row. Rendered as a second checkbox next to the tested one on every row/sub-row
 only" filter toggle and a 🐛 count badge on collapsed checks-based rows) — same
 sign-in-gated write pattern as `tested`.
 
+**Third field, added 2026-08-17: `na`.** Same doc, another sibling top-level map with
+the identical shape and dotted-path-write convention as `tested`/`bugged`
+(`{ na: { "<resource-name>": true|false } }` for legacy items,
+`{ na: { "<name>": { "<checkId>": true|false } } }` for per-behavior items) — marks
+something as "doesn't apply right now" (distinct from simply being untested — untested
+means "no info yet", N/A means "actively not relevant at the moment"). Rendered as a
+third checkbox, positioned right of the bugged checkbox and left of the item name
+(`.na-check` class, faint/gray accent — deliberately the quietest of the three colors,
+neither the tested checkbox's green nor the bugged checkbox's red). Same
+sign-in-gated write pattern as the other two. **All three states are mutually
+exclusive** — checking any one of tested/bugged/na force-clears the other two on that
+same row or check, both in the UI and in the saved Firestore state (not just visually),
+mirroring the tested↔bugged exclusion that already existed. Checks-based (dropdown)
+items have no parent-level bugged or na checkbox, same as before — that state lives on
+the individual sub-checks inside the expanded row, reached via the tested-cell's
+chevron+fraction+hint-dots toggle.
+
 Security rules (Firebase console → Firestore → Rules, not stored in this repo) gate
 writes to the authorized email per collection, e.g.:
 
@@ -127,23 +144,34 @@ match /tarboroLife/testedResources {
   allow read: if true;
   allow write: if request.auth != null
                && request.auth.token.email == 'cbleo73@gmail.com'
-               && request.resource.data.keys().hasOnly(['tested', 'bugged'])
+               && request.resource.data.keys().hasOnly(['tested', 'bugged', 'na'])
                && request.resource.data.tested is map
-               && (!('bugged' in request.resource.data) || request.resource.data.bugged is map);
+               && (!('bugged' in request.resource.data) || request.resource.data.bugged is map)
+               && (!('na' in request.resource.data) || request.resource.data.na is map);
 }
 ```
 (mirrored for `coaVamp/testedResources`).
 
-**Resolved 2026-08-13:** the rule above (`hasOnly(['tested', 'bugged'])`) was missing
-from the live Firebase console rules for a while after the `bugged` field shipped in the
-HTML/JS — both collections still had the old `hasOnly(['tested'])`, so every write to a
-`bugged.*` field failed with permission-denied (same "looks like a broken feature but
-the code is fine" gotcha already documented below for Staff Applications' missing
-`create` rule). The owner has since published the updated rule shown above for both
-`tarboroLife/testedResources` and `coaVamp/testedResources`, and both trackers'
-tested/bugged checkboxes are confirmed working end-to-end. If a third collection like
-this is ever added, remember its rule needs `hasOnly` to list every top-level field the
-client actually writes, not just `tested`.
+**⚠ ACTION NEEDED for `na` to actually work:** the same gotcha that hit `bugged` on
+2026-08-13 (see below) is guaranteed to hit `na` too, on both collections, until the
+owner manually republishes the rule above (with `'na'` added to `hasOnly`) in the
+Firebase console — this can't be done from a Claude Code Remote session, same as
+`wrangler deploy`. Until that happens, every click on an N/A checkbox will look like it
+takes (optimistic UI) and then silently revert with a permission-denied error in the
+console and "⚠ sync failed" in the sync-status line — checkboxes visibly clickable but
+not actually saving, same symptom as the original `bugged` gotcha.
+
+**Resolved 2026-08-13:** the rule above (`hasOnly(['tested', 'bugged'])` at the time,
+before `na` existed) was missing from the live Firebase console rules for a while after
+the `bugged` field shipped in the HTML/JS — both collections still had the old
+`hasOnly(['tested'])`, so every write to a `bugged.*` field failed with
+permission-denied (same "looks like a broken feature but the code is fine" gotcha
+already documented below for Staff Applications' missing `create` rule). The owner has
+since published the updated rule for both `tarboroLife/testedResources` and
+`coaVamp/testedResources`, and both trackers' tested/bugged checkboxes were confirmed
+working end-to-end — until `na` shipped and reopened the same gap (see the action item
+above). If a fourth field like this is ever added, remember its rule needs `hasOnly` to
+list every top-level field the client actually writes, not just the original ones.
 
 **Auth method: email/password, not Google Sign-In.** Google Sign-In was tried first
 (both popup and redirect flow) and reliably failed across Brave and Edge — the OAuth

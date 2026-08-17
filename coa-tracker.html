@@ -343,7 +343,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, doc, updateDoc, setDoc, getDoc, onSnapshot
+      getFirestore, doc, updateDoc, setDoc, getDoc, onSnapshot, FieldPath
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
       getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -489,6 +489,21 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    // updateDoc()'s "tested.<name>.<checkId>" dot-notation shorthand parses
+    // the STRING by splitting on '.', which means it also rejects '~', '*',
+    // '/', '[', and ']' anywhere in a segment — those are reserved for that
+    // shorthand's own syntax, not disallowed by Firestore itself. Any system
+    // name containing one (e.g. "ACOACharacterBase / ASC wiring") makes
+    // updateDoc() throw a synchronous invalid-argument error before any
+    // network call happens, which the write handlers below catch and treat
+    // as a failed save — rolling the checkbox back to unchecked. Confirmed
+    // against the real SDK: the FieldPath object form (explicit segments,
+    // no string-splitting) has no such restriction, so every write goes
+    // through this helper instead of a raw templated string key.
+    function riFieldPath(...segments) {
+      return new FieldPath(...segments);
     }
 
     function riUpdateTestedCount() {
@@ -818,14 +833,14 @@
 
           // Mutually exclusive with "bugged" on the same row — can't be
           // both "confirmed working" and "confirmed broken" at once.
-          const writes = { [`tested.${name}`]: checked };
+          const writes = [[riFieldPath('tested', name), checked]];
           let buggedBox = null, buggedWasCleared = false;
           if (checked) {
             buggedBox = row.querySelector('.bugged-check');
             if (buggedBox && buggedBox.checked) {
               buggedBox.checked = false;
               row.classList.remove('bugged');
-              writes[`bugged.${name}`] = false;
+              writes.push([riFieldPath('bugged', name), false]);
               buggedWasCleared = true;
             }
           }
@@ -834,7 +849,7 @@
           riUpdateChecksProgress();
           riApplyFilters();
           try {
-            await updateDoc(testedDocRef, writes);
+            await updateDoc(testedDocRef, ...writes.flat());
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
@@ -864,14 +879,14 @@
           subrow.classList.toggle('sub-tested', checked);
 
           // Mutually exclusive with "bugged" on the SAME check.
-          const writes = { [`tested.${parentName}.${checkId}`]: checked };
+          const writes = [[riFieldPath('tested', parentName, checkId), checked]];
           let buggedBox = null, buggedWasCleared = false;
           if (checked) {
             buggedBox = document.querySelector(`.bugged-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
             if (buggedBox && buggedBox.checked) {
               buggedBox.checked = false;
               subrow.classList.remove('sub-bugged');
-              writes[`bugged.${parentName}.${checkId}`] = false;
+              writes.push([riFieldPath('bugged', parentName, checkId), false]);
               buggedWasCleared = true;
             }
           }
@@ -882,7 +897,7 @@
           riApplyFilters();
 
           try {
-            await updateDoc(testedDocRef, writes);
+            await updateDoc(testedDocRef, ...writes.flat());
           } catch (err) {
             console.error('Failed to save tested state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
@@ -919,14 +934,14 @@
           const row = box.closest('.res-row');
           row.classList.toggle('bugged', checked);
 
-          const writes = { [`bugged.${name}`]: checked };
+          const writes = [[riFieldPath('bugged', name), checked]];
           let testedBox = null, testedWasCleared = false;
           if (checked) {
             testedBox = row.querySelector('.tested-check');
             if (testedBox && testedBox.checked) {
               testedBox.checked = false;
               row.classList.remove('tested');
-              writes[`tested.${name}`] = false;
+              writes.push([riFieldPath('tested', name), false]);
               testedWasCleared = true;
             }
           }
@@ -935,7 +950,7 @@
           riUpdateChecksProgress();
           riApplyFilters();
           try {
-            await updateDoc(testedDocRef, writes);
+            await updateDoc(testedDocRef, ...writes.flat());
           } catch (err) {
             console.error('Failed to save bugged state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);
@@ -961,14 +976,14 @@
           const subrow = box.closest('.res-subrow');
           subrow.classList.toggle('sub-bugged', checked);
 
-          const writes = { [`bugged.${parentName}.${checkId}`]: checked };
+          const writes = [[riFieldPath('bugged', parentName, checkId), checked]];
           let testedBox = null, testedWasCleared = false;
           if (checked) {
             testedBox = document.querySelector(`.tested-check.sub-check[data-parent="${CSS.escape(parentName)}"][data-check-id="${CSS.escape(checkId)}"]`);
             if (testedBox && testedBox.checked) {
               testedBox.checked = false;
               subrow.classList.remove('sub-tested');
-              writes[`tested.${parentName}.${checkId}`] = false;
+              writes.push([riFieldPath('tested', parentName, checkId), false]);
               testedWasCleared = true;
             }
           }
@@ -979,7 +994,7 @@
           riApplyFilters();
 
           try {
-            await updateDoc(testedDocRef, writes);
+            await updateDoc(testedDocRef, ...writes.flat());
           } catch (err) {
             console.error('Failed to save bugged state to Firestore:', err);
             riSetSyncStatus('⚠ sync failed — check console', true);

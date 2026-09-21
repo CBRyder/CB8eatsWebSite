@@ -41,6 +41,14 @@
       --ri-crit-bg: rgba(226, 87, 79, 0.14);
       --ri-planned: #4a90d9;
       --ri-planned-bg: rgba(74, 144, 217, 0.13);
+      /* Distinct from --ri-good on purpose: "good" means the JSON content
+         says this is built/documented — a manually-authored claim. This
+         means every individual check has actually been confirmed tested
+         live, right now, computed straight from Firestore state, never
+         hand-edited. Different color so the two are never visually
+         confused with each other at a glance. */
+      --ri-verified: #2dd4bf;
+      --ri-verified-bg: rgba(45, 212, 191, 0.14);
       --ri-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
 
       background: var(--ri-bg);
@@ -211,6 +219,7 @@
     .res-inv .chip.warn { background: var(--ri-warn-bg); color: var(--ri-warn); }
     .res-inv .chip.good { background: var(--ri-good-bg); color: var(--ri-good); }
     .res-inv .chip.planned { background: var(--ri-planned-bg); color: var(--ri-planned); }
+    .res-inv .chip.verified { background: var(--ri-verified-bg); color: var(--ri-verified); }
 
     .res-inv .res-row[data-status="hidden"] { display: none; }
 
@@ -488,12 +497,39 @@
     });
 
     const RI_STATUS_LABEL = { crit: "Not built", warn: "Needs in-editor work", good: "Built, untested", planned: "Planned / future work" };
+    const RI_VERIFIED_LABEL = "Confirmed working";
 
     const riRoot = document.getElementById('ri-categories');
 
     // Populated during riInit(): { systemName: [checkId, checkId, ...] } for
     // items with a checks[] array, or null for legacy single-flag items.
     let riChecksByName = {};
+
+    // The status chip is normally whatever coa-inventory.json says (a
+    // manually-authored build-status claim), but the whole point of this is
+    // that it stops being trustworthy once every individual check has
+    // actually been confirmed tested live — a fully-checked item used to
+    // just sit there still reading "Built, Untested" forever, since nothing
+    // ever wrote back to the JSON. Rather than requiring a manual edit,
+    // every place that already recomputes a row's tested/bugged state calls
+    // this afterward to keep the chip an honest reflection of it: fully
+    // tested (doneCount === total, or the legacy row is .tested) overrides
+    // the JSON status with a distinct "Confirmed working" chip; anything
+    // less than 100% falls back to the original JSON status exactly as
+    // authored, read back from the row's own data-status-val rather than
+    // needing it threaded through as a parameter everywhere.
+    function riUpdateStatusChip(row, allDone) {
+      const chip = row.querySelector('.chip');
+      if (!chip) return;
+      if (allDone) {
+        chip.className = 'chip verified';
+        chip.textContent = RI_VERIFIED_LABEL;
+      } else {
+        const status = row.getAttribute('data-status-val');
+        chip.className = `chip ${status}`;
+        chip.textContent = RI_STATUS_LABEL[status];
+      }
+    }
 
     // Escapes item/check data from coa-inventory.json before interpolating
     // it into innerHTML. Without this, any '<'/'>' in a description or check
@@ -598,6 +634,7 @@
           const allDone = doneCount === checkIds.length;
           row.classList.toggle('tested', allDone);
           row.classList.toggle('has-bugs', bugCount > 0);
+          riUpdateStatusChip(row, allDone);
           const frac = row.querySelector('.checks-toggle .frac');
           if (frac) {
             frac.textContent = `${doneCount}/${checkIds.length}`;
@@ -615,6 +652,7 @@
           row.classList.toggle('tested', isTested);
           row.classList.toggle('bugged', isBugged);
           row.classList.toggle('na', isNa);
+          riUpdateStatusChip(row, isTested);
           const box = row.querySelector('.tested-check');
           if (box) box.checked = isTested;
           const bbox = row.querySelector('.bugged-check');
@@ -651,6 +689,7 @@
       const allDone = doneCount === checkIds.length;
       parentRow.classList.toggle('tested', allDone);
       parentRow.classList.toggle('has-bugs', bugCount > 0);
+      riUpdateStatusChip(parentRow, allDone);
 
       const frac = parentRow.querySelector('.checks-toggle .frac');
       if (frac) {
@@ -849,6 +888,7 @@
           const checked = box.checked;
           const row = box.closest('.res-row');
           row.classList.toggle('tested', checked);
+          riUpdateStatusChip(row, checked);
 
           // Mutually exclusive with "bugged" AND "na" on the same row — a
           // resource is only ever in one of these three states at a time.
@@ -885,6 +925,7 @@
             // optimistically changed, including any forced clears.
             box.checked = !checked;
             row.classList.toggle('tested', !checked);
+            riUpdateStatusChip(row, !checked);
             if (buggedWasCleared && buggedBox) {
               buggedBox.checked = true;
               row.classList.add('bugged');
@@ -996,6 +1037,7 @@
               naWasCleared = true;
             }
           }
+          riUpdateStatusChip(row, row.classList.contains('tested'));
 
           riUpdateTestedCount();
           riUpdateChecksProgress();
@@ -1015,6 +1057,7 @@
               naBox.checked = true;
               row.classList.add('na');
             }
+            riUpdateStatusChip(row, row.classList.contains('tested'));
             riUpdateTestedCount();
             riUpdateChecksProgress();
             riApplyFilters();
@@ -1113,6 +1156,7 @@
               buggedWasCleared = true;
             }
           }
+          riUpdateStatusChip(row, row.classList.contains('tested'));
 
           riUpdateTestedCount();
           riUpdateChecksProgress();
@@ -1132,6 +1176,7 @@
               buggedBox.checked = true;
               row.classList.add('bugged');
             }
+            riUpdateStatusChip(row, row.classList.contains('tested'));
             riUpdateTestedCount();
             riUpdateChecksProgress();
             riApplyFilters();

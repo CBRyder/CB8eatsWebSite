@@ -136,6 +136,25 @@ items have no parent-level bugged or na checkbox, same as before — that state 
 the individual sub-checks inside the expanded row, reached via the tested-cell's
 chevron+fraction+hint-dots toggle.
 
+**The status chip auto-upgrades to "Confirmed working" once fully tested, added
+2026-09-21.** `it.status` (crit/warn/good/planned) is a manually-authored claim in the
+JSON about build state — it was never wired to update itself, so an item could sit
+fully checked off (every behavior confirmed tested live) while its chip still read
+"Built, Untested" forever, a visibly contradictory signal nobody had gone back to fix.
+Rather than requiring a JSON edit, the chip is now partly computed: `riUpdateStatusChip(row,
+allDone)` — called from every place that already recomputes a row's tested state
+(`riApplyState`'s two branches, `riRecomputeParentRow`, and optimistically inside each
+legacy tested/bugged/na change handler) — swaps the chip to a distinct `.chip.verified`
+style (`--ri-verified`, teal, deliberately not reusing `--ri-good`'s green so the two
+are never confused at a glance) reading "Confirmed working" whenever every check on
+that item is tested (or, for legacy items, whenever the single tested flag is true).
+Anything less than 100% falls back to rendering `it.status`/`RI_STATUS_LABEL[status]`
+exactly as authored, read back from the row's own `data-status-val` attribute rather
+than needing the original status threaded through as a parameter everywhere. This is
+purely a display computation — `it.status` in the JSON is never overwritten, so the
+override disappears the moment a check gets unmarked, no data loss, nothing to revert
+by hand.
+
 Security rules (Firebase console → Firestore → Rules, not stored in this repo) gate
 writes to the authorized email per collection, e.g.:
 

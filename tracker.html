@@ -177,7 +177,14 @@
     .res-inv .na-cell { width: 30px; text-align: center; }
     .res-inv .na-check { width: 15px; height: 15px; accent-color: var(--ri-faint); cursor: pointer; }
 
-    .res-inv .res-name { font-weight: 600; font-size: 13.5px; color: var(--ri-text); white-space: nowrap; }
+    .res-inv .res-name-cell { width: 190px; }
+    /* Long names (e.g. "Phantom Stride (dash/blink) — Blueprint-only, newly
+       found") used to force this column wider than its 190px hint instead
+       of wrapping, since a table cell's width is only a suggestion once its
+       content refuses to break — the name just slid out past the column
+       into the description text. white-space: normal lets it wrap onto
+       2-3 lines as needed instead, left-aligned like everything else. */
+    .res-inv .res-name { font-weight: 600; font-size: 13.5px; color: var(--ri-text); white-space: normal; }
     .res-inv .res-name .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; position: relative; top: -1px; }
     .res-inv .res-desc { color: var(--ri-muted); font-size: 13px; line-height: 1.5; max-width: 46ch; }
     .res-inv .res-note { color: var(--ri-faint); font-size: 12px; line-height: 1.5; margin-top: 5px; max-width: 44ch; }
@@ -753,7 +760,7 @@
                   <td class="tested-cell">${testedCellHtml}</td>
                   <td class="bugged-cell">${buggedCellHtml}</td>
                   <td class="na-cell">${naCellHtml}</td>
-                  <td style="width:190px"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${escName}</span></td>
+                  <td class="res-name-cell"><span class="res-name"><span class="dot" style="background:var(--ri-${dotColor})"></span>${escName}</span></td>
                   <td>
                     <div class="res-desc">${riEscapeHtml(it.desc)}</div>
                     ${it.note ? `<div class="res-note">${riEscapeHtml(it.note)}</div>` : ''}

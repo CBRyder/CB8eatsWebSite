@@ -13,6 +13,15 @@
   <style>
     /* ===== System Inventory (scoped) — same component as tarboro-life.html,
        reused as-is since its class names were never Tarboro-specific. ===== */
+
+    /* Site-wide `main { max-width: var(--max-width) }` (1100px, css/style.css)
+       is sized for prose pages and was silently capping .res-inv .wrap's own
+       1600px below — this page's <main> holds nothing but the tracker (the
+       back-link and .lede above it don't need the room and .lede already
+       caps its own reading width at 65ch independently), so it's safe to
+       widen just here rather than touch the shared site-wide value. */
+    main { max-width: 1600px; }
+
     .res-inv {
       --ri-bg: #10141c;
       --ri-surface: #171d28;
@@ -47,7 +56,7 @@
     .res-inv a { color: var(--ri-accent); }
     .res-inv :focus-visible { outline: 2px solid var(--ri-accent); outline-offset: 2px; }
 
-    .res-inv .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 28px 56px; }
+    .res-inv .wrap { max-width: 1600px; margin: 0 auto; padding: 40px 28px 56px; }
 
     .res-inv header.top {
       /* Overriding position/top/z-index/background explicitly: the site-wide
@@ -190,8 +199,8 @@
        2-3 lines as needed instead, left-aligned like everything else. */
     .res-inv .res-name { font-weight: 600; font-size: 13.5px; color: var(--ri-text); white-space: normal; }
     .res-inv .res-name .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; position: relative; top: -1px; }
-    .res-inv .res-desc { color: var(--ri-muted); font-size: 13px; line-height: 1.5; max-width: 46ch; }
-    .res-inv .res-note { color: var(--ri-faint); font-size: 12px; line-height: 1.5; margin-top: 5px; max-width: 44ch; }
+    .res-inv .res-desc { color: var(--ri-muted); font-size: 13px; line-height: 1.5; max-width: 76ch; }
+    .res-inv .res-note { color: var(--ri-faint); font-size: 12px; line-height: 1.5; margin-top: 5px; max-width: 70ch; }
 
     .res-inv .chip {
       display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;

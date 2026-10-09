@@ -372,7 +372,10 @@ and **Theme**.
   WFCD `warframe-items` `Warframes.json`, current to 23 Sep 2026 (Narin); a new frame is `frame-<slug>`
   (`frame-<slug>-prime` for its Prime), kept A to Z. **`doneDefault: true` on a part means "ticked until
   CB changes it"** (his saved `done.<id>` wins, and unticking writes an explicit false); it is how owned
-  things get pre-ticked from a scan, because Claude cannot write to Firestore. Also in Collection:
+  things get pre-ticked from a scan, because Claude cannot write to Firestore. The frames were scanned
+  from the in-game Arsenal (Swap list) on 9 Oct 2026: 34 owned and pre-ticked (24 base, 9 Prime, Excalibur
+  Umbra), no Necramech yet. Rescan by reading that list again; the unowned ones sit after the owned ones and
+  show a platinum price. Also in Collection:
   **Own all the Necramech mods** (`allnecra`, 28 from `Mods.json` where `compatName` is Necramech; the 9
   from the 8 Oct scan start ticked) and **Own all the Umbral mods** (`allumbral`, 3, all ticked). Keep the
   ticked ones in step with `/topics/warframe-mods.md` when the mod list is rescanned.

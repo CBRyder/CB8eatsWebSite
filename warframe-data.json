@@ -62,7 +62,7 @@
     "id": "frames",
     "group": "Collection",
     "text": "Own every Warframe",
-    "note": "Frames with Forma in them are kept. Tick the ones you own: the base frames, their Prime versions, Excalibur Umbra and the two Necramechs. Most can be built in the Foundry, and many are sold for platinum in the Market.",
+    "note": "Frames with Forma in them are kept. Tick the ones you own: the base frames, their Prime versions, Excalibur Umbra and the two Necramechs. Pre-ticked from your 9 Oct Arsenal scan (34 frames: 24 base, 9 Prime and Excalibur Umbra; no Necramech yet). Most can be built in the Foundry, and many are sold for platinum in the Market.",
     "tags": [
      "plat",
      "foundry"
@@ -74,7 +74,8 @@
       "parts": [
        {
         "id": "frame-ash",
-        "text": "Ash"
+        "text": "Ash",
+        "doneDefault": true
        },
        {
         "id": "frame-atlas",
@@ -82,7 +83,8 @@
        },
        {
         "id": "frame-banshee",
-        "text": "Banshee"
+        "text": "Banshee",
+        "doneDefault": true
        },
        {
         "id": "frame-baruuk",
@@ -102,15 +104,18 @@
        },
        {
         "id": "frame-cyte-09",
-        "text": "Cyte-09"
+        "text": "Cyte-09",
+        "doneDefault": true
        },
        {
         "id": "frame-dagath",
-        "text": "Dagath"
+        "text": "Dagath",
+        "doneDefault": true
        },
        {
         "id": "frame-dante",
-        "text": "Dante"
+        "text": "Dante",
+        "doneDefault": true
        },
        {
         "id": "frame-ember",
@@ -122,11 +127,13 @@
        },
        {
         "id": "frame-excalibur",
-        "text": "Excalibur"
+        "text": "Excalibur",
+        "doneDefault": true
        },
        {
         "id": "frame-follie",
-        "text": "Follie"
+        "text": "Follie",
+        "doneDefault": true
        },
        {
         "id": "frame-frost",
@@ -194,11 +201,13 @@
        },
        {
         "id": "frame-limbo",
-        "text": "Limbo"
+        "text": "Limbo",
+        "doneDefault": true
        },
        {
         "id": "frame-loki",
-        "text": "Loki"
+        "text": "Loki",
+        "doneDefault": true
        },
        {
         "id": "frame-mag",
@@ -226,11 +235,13 @@
        },
        {
         "id": "frame-nidus",
-        "text": "Nidus"
+        "text": "Nidus",
+        "doneDefault": true
        },
        {
         "id": "frame-nokko",
-        "text": "Nokko"
+        "text": "Nokko",
+        "doneDefault": true
        },
        {
         "id": "frame-nova",
@@ -238,11 +249,13 @@
        },
        {
         "id": "frame-nyx",
-        "text": "Nyx"
+        "text": "Nyx",
+        "doneDefault": true
        },
        {
         "id": "frame-oberon",
-        "text": "Oberon"
+        "text": "Oberon",
+        "doneDefault": true
        },
        {
         "id": "frame-octavia",
@@ -262,15 +275,18 @@
        },
        {
         "id": "frame-revenant",
-        "text": "Revenant"
+        "text": "Revenant",
+        "doneDefault": true
        },
        {
         "id": "frame-rhino",
-        "text": "Rhino"
+        "text": "Rhino",
+        "doneDefault": true
        },
        {
         "id": "frame-saryn",
-        "text": "Saryn"
+        "text": "Saryn",
+        "doneDefault": true
        },
        {
         "id": "frame-sevagoth",
@@ -278,7 +294,8 @@
        },
        {
         "id": "frame-sirius-orion",
-        "text": "Sirius & Orion"
+        "text": "Sirius & Orion",
+        "doneDefault": true
        },
        {
         "id": "frame-styanax",
@@ -286,11 +303,13 @@
        },
        {
         "id": "frame-temple",
-        "text": "Temple"
+        "text": "Temple",
+        "doneDefault": true
        },
        {
         "id": "frame-titania",
-        "text": "Titania"
+        "text": "Titania",
+        "doneDefault": true
        },
        {
         "id": "frame-trinity",
@@ -298,15 +317,18 @@
        },
        {
         "id": "frame-uriel",
-        "text": "Uriel"
+        "text": "Uriel",
+        "doneDefault": true
        },
        {
         "id": "frame-valkyr",
-        "text": "Valkyr"
+        "text": "Valkyr",
+        "doneDefault": true
        },
        {
         "id": "frame-vauban",
-        "text": "Vauban"
+        "text": "Vauban",
+        "doneDefault": true
        },
        {
         "id": "frame-volt",
@@ -322,7 +344,8 @@
        },
        {
         "id": "frame-wukong",
-        "text": "Wukong"
+        "text": "Wukong",
+        "doneDefault": true
        },
        {
         "id": "frame-xaku",
@@ -330,7 +353,8 @@
        },
        {
         "id": "frame-yareli",
-        "text": "Yareli"
+        "text": "Yareli",
+        "doneDefault": true
        },
        {
         "id": "frame-zephyr",
@@ -396,7 +420,8 @@
        },
        {
         "id": "frame-gauss-prime",
-        "text": "Gauss Prime"
+        "text": "Gauss Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-grendel-prime",
@@ -448,7 +473,8 @@
        },
        {
         "id": "frame-mesa-prime",
-        "text": "Mesa Prime"
+        "text": "Mesa Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-mirage-prime",
@@ -456,7 +482,8 @@
        },
        {
         "id": "frame-nekros-prime",
-        "text": "Nekros Prime"
+        "text": "Nekros Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-nezha-prime",
@@ -464,7 +491,8 @@
        },
        {
         "id": "frame-nidus-prime",
-        "text": "Nidus Prime"
+        "text": "Nidus Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-nova-prime",
@@ -476,7 +504,8 @@
        },
        {
         "id": "frame-oberon-prime",
-        "text": "Oberon Prime"
+        "text": "Oberon Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-octavia-prime",
@@ -500,7 +529,8 @@
        },
        {
         "id": "frame-sevagoth-prime",
-        "text": "Sevagoth Prime"
+        "text": "Sevagoth Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-styanax-prime",
@@ -524,7 +554,8 @@
        },
        {
         "id": "frame-volt-prime",
-        "text": "Volt Prime"
+        "text": "Volt Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-voruna-prime",
@@ -540,7 +571,8 @@
        },
        {
         "id": "frame-xaku-prime",
-        "text": "Xaku Prime"
+        "text": "Xaku Prime",
+        "doneDefault": true
        },
        {
         "id": "frame-yareli-prime",
@@ -548,13 +580,15 @@
        },
        {
         "id": "frame-zephyr-prime",
-        "text": "Zephyr Prime"
+        "text": "Zephyr Prime",
+        "doneDefault": true
        }
       ]
      },
      {
       "id": "frame-excalibur-umbra",
-      "text": "Excalibur Umbra"
+      "text": "Excalibur Umbra",
+      "doneDefault": true
      },
      {
       "id": "frames-mechs",

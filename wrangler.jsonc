@@ -11,10 +11,20 @@
     "binding": "ASSETS",
     // By default a request that matches a static file (like "/" -> index.html)
     // is served straight from the files and never reaches worker.js. Run the
-    // Worker first for "/" only, so worker.js can show the Dev hub at the root
-    // of dev.cb8eats.com. For every other host it falls through to ASSETS and
-    // returns the normal home page.
-    "run_worker_first": ["/"]
+    // Worker first only for the paths listed here:
+    //  - "/" so worker.js can show the Dev hub at the root of dev.cb8eats.com
+    //    (every other host falls through to ASSETS and gets the home page);
+    //  - the dev pages and their data files, so worker.js can keep them off
+    //    every hostname except the dev one (the one Cloudflare Access protects).
+    // Keep this list in step with DEV_PAGES / DEV_DATA in worker.js.
+    "run_worker_first": [
+      "/",
+      "/dev", "/dev.html",
+      "/tracker", "/tracker.html",
+      "/coa-tracker", "/coa-tracker.html",
+      "/warframe", "/warframe.html",
+      "/resource-inventory.json", "/coa-inventory.json", "/warframe-data.json"
+    ]
   },
   "vars": {
     // Public/non-secret. The actual send credential is RESEND_API_KEY,

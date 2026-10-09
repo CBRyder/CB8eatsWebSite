@@ -10,9 +10,9 @@
 // ('owner', 'dev' or none), remembers it in localStorage, and shows or hides
 // the tab. Every other page just reads that remembered role when it loads.
 //
-// This only controls whether the LINK is shown. It is not security: /dev.html
-// can still be opened by anyone who types the address, and what it can change
-// is decided by the Firestore rules, never by this file. The remembered role
+// This only controls whether the LINK is shown. It is not security: the real
+// lock is Cloudflare Access in front of the dev hostname, and what anyone can
+// change is decided by the Firestore rules, never by this file. The remembered role
 // holds no email address, only the word 'owner' or 'dev'.
 (function () {
   const OWNER = 'cbleo73@gmail.com';
@@ -23,6 +23,9 @@
   const DEVS = [];
   const KEY = 'cb8eats-viewer-v1';
   const DEV_HREF = 'dev.html';
+  // The dev pages only exist on the dev hostname (the public site redirects them
+  // there), so the tab links straight to it.
+  const DEV_URL = 'https://www.dev.cb8eats.com/';
 
   function roleFor(user) {
     const email = user && user.email ? String(user.email).toLowerCase() : '';
@@ -50,11 +53,11 @@
     const mine = ul.querySelector('li[data-members-tab]');
     if (!role) { if (mine) mine.remove(); return; }
     // Already there? The dev pages carry their own link to the hub.
-    if (mine || ul.querySelector('[data-dev-tab], a[href="' + DEV_HREF + '"]')) return;
+    if (mine || ul.querySelector('[data-dev-tab], a[href="' + DEV_HREF + '"], a[href="' + DEV_URL + '"]')) return;
     const li = document.createElement('li');
     li.setAttribute('data-members-tab', '');
     const a = document.createElement('a');
-    a.href = DEV_HREF;
+    a.href = DEV_URL;
     a.textContent = 'Dev';
     li.appendChild(a);
     ul.appendChild(li);

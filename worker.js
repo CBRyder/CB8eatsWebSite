@@ -1,7 +1,8 @@
 // Cloudflare Worker entry point. Almost everything is served as a static
 // asset (see wrangler.jsonc's "assets" config) — this script only exists to
-// intercept one API route (sending the applicant a copy of their answers)
-// before falling through to the static site for every other request.
+// intercept one API route (sending the applicant a copy of their answers), show
+// the Dev hub at the root of the dev hostnames, and keep the dev pages off every
+// other hostname, before falling through to the static site for everything else.
 //
 // Required secret (set via `wrangler secret put RESEND_API_KEY`, or the
 // Cloudflare dashboard — Workers & Pages -> this worker -> Settings ->
@@ -19,14 +20,36 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // The Dev hub has its own hostname, with or without the www. Visiting
 // dev.cb8eats.com (the bare address, nothing after the slash) shows the same
-// page that lives at /dev on the main site: three cards for the Tarboro Life
-// tracker, the COA tracker and Warframe. Every other path on that hostname
-// (css, js, the tracker pages, warframe-data.json) falls through to the normal
-// static assets, so the pages' relative links keep working. The hostnames
-// themselves are attached to this Worker in the Cloudflare dashboard
-// (Domains & Routes), not here.
+// page that lives at /dev: three cards for the Tarboro Life tracker, the COA
+// tracker and Warframe. Every other path on that hostname (css, js, the tracker
+// pages, warframe-data.json) falls through to the normal static assets, so the
+// pages' relative links keep working. The hostnames themselves are attached to
+// this Worker in the Cloudflare dashboard (Domains & Routes), not here.
 const DEV_HOSTS = new Set(['dev.cb8eats.com', 'www.dev.cb8eats.com']);
+const DEV_ORIGIN = 'https://www.dev.cb8eats.com';
 const DEV_PAGE = '/dev'; // extensionless on purpose: /dev.html would 307-redirect to /dev
+
+// The dev pages exist ONLY on the dev hostnames, because that is the hostname
+// Cloudflare Access puts its login wall in front of. On any other hostname
+// (the public site, the workers.dev address) the dev pages redirect to the dev
+// hostname, and the dev data files are simply not served. Keys are lowercase
+// paths with no trailing slash; every path here must also be listed in
+// wrangler.jsonc's assets.run_worker_first, or this check never runs for it.
+const DEV_PAGES = new Map([
+  ['/dev', '/'], ['/dev.html', '/'],
+  ['/tracker', '/tracker'], ['/tracker.html', '/tracker'],
+  ['/coa-tracker', '/coa-tracker'], ['/coa-tracker.html', '/coa-tracker'],
+  ['/warframe', '/warframe'], ['/warframe.html', '/warframe'],
+]);
+const DEV_DATA = new Set(['/resource-inventory.json', '/coa-inventory.json', '/warframe-data.json']);
+
+// Decode %xx, collapse repeated slashes, drop a trailing slash and lowercase,
+// so /%64ev, //dev and /Dev/ cannot slip past the exact-match lists above.
+function normalizePath(pathname) {
+  let decoded;
+  try { decoded = decodeURIComponent(pathname); } catch { return null; }
+  return (decoded.replace(/\/{2,}/g, '/').replace(/\/+$/, '') || '/').toLowerCase();
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -36,14 +59,24 @@ export default {
       return handleSendConfirmation(request, env);
     }
 
-    if (
-      DEV_HOSTS.has(url.hostname) &&
-      url.pathname === '/' &&
-      (request.method === 'GET' || request.method === 'HEAD')
-    ) {
+    const isRead = request.method === 'GET' || request.method === 'HEAD';
+    const onDevHost = DEV_HOSTS.has(url.hostname);
+
+    if (onDevHost && url.pathname === '/' && isRead) {
       const pageUrl = new URL(DEV_PAGE, url);
       pageUrl.search = url.search;
       return env.ASSETS.fetch(new Request(pageUrl, request));
+    }
+
+    if (!onDevHost) {
+      const path = normalizePath(url.pathname);
+      if (path !== null && DEV_PAGES.has(path)) {
+        // 302 (not 301) so browsers never cache it: where the dev pages live may change.
+        return Response.redirect(DEV_ORIGIN + DEV_PAGES.get(path) + url.search, 302);
+      }
+      if (path !== null && DEV_DATA.has(path)) {
+        return new Response('Not found', { status: 404, headers: { 'cache-control': 'no-store' } });
+      }
     }
 
     return env.ASSETS.fetch(request);

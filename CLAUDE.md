@@ -363,9 +363,18 @@ match /warframe/progress {
   drive every CSS variable on the page, computed by a small script in `<head>` before
   paint. Saved per device in `localStorage` (`cb8eats-warframe-theme-v1`); when the
   owner is signed in it also syncs to `warframe/progress.theme`.
-- **Address:** served at `/warframe`. A `warframe.cb8eats.com` hostname is planned but
-  **not wired up yet** (needs a hostname check in `worker.js` plus a custom domain in
-  the Cloudflare dashboard).
+- **Address:** served at `/warframe`, and at the bare root of `warframe.cb8eats.com`.
+  `worker.js` checks `url.hostname === 'warframe.cb8eats.com'` and `pathname === '/'`
+  (GET/HEAD only) and fetches `/warframe` from `env.ASSETS` instead (extensionless on
+  purpose, since `/warframe.html` 307-redirects). Every other path on that hostname
+  falls through to the normal assets, so the page's relative `css/`, `js/` and
+  `warframe-data.json` links work. The hostname itself is attached in the Cloudflare
+  dashboard (Workers & Pages -> `cb8eatswebsite` -> Settings -> Domains & Routes ->
+  Add -> Custom domain), **not** in `wrangler.jsonc`, same as `www.iltep.cb8eats.com`.
+  Cannot be done from a Claude Code Remote session (api.cloudflare.com is blocked), so
+  the owner does it. If sign-in fails only on the new hostname, check Firebase console
+  -> Authentication -> Settings -> Authorized domains and the web API key's website
+  restrictions in Google Cloud.
 
 ## Conventions
 

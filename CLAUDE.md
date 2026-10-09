@@ -444,16 +444,27 @@ content. They live together under one hub page with three big cards (`dev.html`;
   also need a Firebase email/password account, and any write access means changing the
   Firestore rules (which live in the Firebase console, not this repo). Public visitors
   never load Firebase for this.
-- **The sign-in button (`js/dev-auth.js`, `css/dev-base.css`):** one button at the very
-  top right of every dev page's header ("Sign in", or "Signed in" with a green dot),
-  opening a small `<dialog>` with email/password; once signed in the dialog shows who is
-  signed in and a Sign out button. It wraps the `<nav>` in `.cb8-header-right` (at
-  phone width it is pinned to the header's top right corner). It lazy-loads Firebase
-  Auth with a dynamic `import()` and shares the page's default app via
-  `getApps().length ? getApp() : initializeApp(CFG)` (`initializeApp` with identical
-  options returns the existing default app, so the page's own module is unaffected). The
-  old per-page sign-in forms on the trackers and Warframe were removed — **don't
-  re-add them**. Claude must never type the password.
+- **The sign-in button (`js/dev-auth.js`, `css/cb8-auth.css`) — on EVERY page, public site
+  included:** one button at the very top right of the header ("Sign in", or "Signed in"
+  with a green dot), opening a small `<dialog>` with email/password; once signed in the
+  dialog shows who is signed in and a Sign out button. It wraps the `<nav>` in
+  `.cb8-header-right`. Normally it sits inline, right of the menu; when the menu drops to
+  a second row (phones, narrow tablets) the script adds `.cb8-pin` to the header
+  (re-checked on resize, font load and header size change) and the button is pinned to the
+  header's top right corner with the menu on its own row below. **Dev pages** load
+  Firebase right away (`<script src="js/dev-auth.js" defer>`); **public pages** use
+  `<script src="js/dev-auth.js" defer data-lazy>` so Firebase Auth is NOT downloaded until
+  the button is tapped, unless the browser already remembers an owner/dev sign-in (the
+  `cb8eats-viewer-v1` hint). An ordinary visitor who never taps it loads nothing extra.
+  Both `apply.html` and `coa-bug-report.html` also keep their own in-page sign-in for the
+  owner viewer; the two share the same Firebase default app, so they stay in step. The
+  script lazy-loads Firebase Auth with a dynamic `import()` and shares the page's default
+  app via `getApps().length ? getApp() : initializeApp(CFG)` (`initializeApp` with
+  identical options returns the existing default app, so the page's own module is
+  unaffected). The old per-page sign-in forms on the trackers and Warframe were removed —
+  **don't re-add them**. A new public page needs both tags: `css/cb8-auth.css` after
+  `style.css`, and the two scripts (`members-nav.js`, then `dev-auth.js` with `data-lazy`).
+  Claude must never type the password.
 - **Shared theme (`js/theme.js`, loaded synchronously in `<head>` so there is no flash):**
   four base colors (forest green, royal purple, neon green, neon purple) -> every CSS
   variable (`--bg`, `--bg-alt`, `--card`, `--card-hover`, `--border`, `--border-soft`,
@@ -471,7 +482,7 @@ content. They live together under one hub page with three big cards (`dev.html`;
   the `not-found` fallback; writes only the `theme` field, so `hasOnly` in the
   `warframe/progress` rule is unchanged).
 - **Shared look:** `css/dev-base.css` (page background wash, header, nav pill, buttons,
-  sign-in button and dialog, slim header at <=420px) is loaded by all four dev pages;
+  slim header at <=420px; load it after `css/cb8-auth.css`) is loaded by all four dev pages;
   `css/dev-widgets.css` (cards, inputs, toast, theme editor) only by the hub and
   Warframe, because the trackers define colliding class names. The trackers' `.res-inv`
   panel maps its own `--ri-*` variables onto the theme (`--ri-bg: var(--bg-alt)`,

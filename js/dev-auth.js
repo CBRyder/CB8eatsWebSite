@@ -1,7 +1,12 @@
-// The one sign-in for the dev pages: a "Sign in" button at the very top right
-// of the header (Dev hub, both trackers, Warframe). It opens a small dialog for
-// email and password, and once signed in it turns into "Signed in" with a
-// green dot; tapping it then offers Sign out.
+// The one sign-in for the whole site: a "Sign in" button at the very top right
+// of the header (every public page, the Dev hub, both trackers, Warframe). It
+// opens a small dialog for email and password, and once signed in it turns into
+// "Signed in" with a green dot; tapping it then offers Sign out.
+//
+// On the dev pages Firebase loads right away (they all use it anyway). On the
+// public pages the script tag has `data-lazy`: Firebase is NOT downloaded until
+// the button is tapped, unless this browser already remembers an owner/dev
+// sign-in. So an ordinary visitor who never taps it loads nothing extra.
 //
 // It uses the same Firebase default app as the page's own code, so the page's
 // onAuthStateChanged handler hears about every sign-in and sign-out without
@@ -12,6 +17,7 @@
 // is what makes the "Dev" tab appear in the main site's menu on this browser.
 //
 // Load order: js/members-nav.js first, then this (both plain `defer` scripts).
+// Styles: css/cb8-auth.css (the button and dialog).
 (function () {
   var CFG = {
     apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
@@ -23,6 +29,8 @@
   };
   var BASE = 'https://www.gstatic.com/firebasejs/10.7.1/';
 
+  var me = document.currentScript || document.querySelector('script[src$="dev-auth.js"]');
+  var lazy = !!(me && me.hasAttribute('data-lazy'));
   var header = document.querySelector('header');
   var nav = header && header.querySelector('nav');
   if (!header || !nav) return;
@@ -51,6 +59,19 @@
   }
   paintButton(!!remembered);
   group.appendChild(btn);
+
+  // Where the button sits. Normally inline, right of the menu. If the menu has
+  // dropped to a second row (phones, narrow tablets), pin the button to the top
+  // right corner instead so it is still at the very top right.
+  function place() {
+    header.classList.remove('cb8-pin');
+    var first = header.firstElementChild;
+    if (first && btn.getBoundingClientRect().top - first.getBoundingClientRect().top > 24) header.classList.add('cb8-pin');
+  }
+  place();
+  if (window.ResizeObserver) new ResizeObserver(place).observe(header);
+  window.addEventListener('resize', place);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
 
   /* ---------- the dialog ---------- */
   var dlg = el('dialog', 'cb8-auth-dlg');
@@ -97,13 +118,13 @@
   document.body.appendChild(dlg);
 
   var state = { user: null, ready: false };
+  var submitting = false;
 
   function show(which) {
     form.hidden = which !== 'form';
     acct.hidden = which !== 'acct';
   }
-  function openDlg() {
-    err.textContent = '';
+  function render() {
     if (state.user) {
       who.textContent = 'Signed in as ' + state.user.email + '.';
       var role = members ? members.roleFor(state.user) : null;
@@ -114,17 +135,24 @@
     } else {
       show('form');
     }
+  }
+  function openDlg() {
+    err.textContent = '';
+    render();
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
     if (!state.user) email.focus();
   }
   function closeDlg() {
     if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
   }
-  btn.addEventListener('click', openDlg);
+  btn.addEventListener('click', function () {
+    if (lazy) load();   // first tap on a public page: start downloading Firebase now
+    openDlg();
+  });
   cancel.addEventListener('click', closeDlg);
   close.addEventListener('click', closeDlg);
 
-  /* ---------- Firebase (loads on every dev page, they all use it anyway) ---------- */
+  /* ---------- Firebase (dev pages: right away; public pages: on first tap) ---------- */
   var loading = null;
   function load() {
     if (loading) return loading;
@@ -144,7 +172,10 @@
     state.ready = true;
     if (members) members.setUser(user);
     paintButton(!!user);
-    if (user && dlg.open && !form.hidden) closeDlg();   // just signed in
+    if (dlg.open) {
+      if (user && submitting) closeDlg();   // just signed in
+      else render();                        // the saved sign-in arrived while the dialog was already open
+    }
   }
 
   function friendly(e) {
@@ -160,6 +191,7 @@
     ev.preventDefault();
     err.textContent = '';
     submit.disabled = true;
+    submitting = true;
     submit.textContent = 'Signing in…';
     load().then(function (a) {
       return a.signIn(a.auth, email.value.trim(), pass.value);
@@ -170,6 +202,7 @@
       if (!(e && /^auth\/(invalid-credential|wrong-password|user-not-found|invalid-email)$/.test(e.code))) console.error('Sign-in failed:', e);
       err.textContent = loading && !state.ready && !(e && e.code) ? 'Could not load the sign-in service. Check your connection and reload.' : friendly(e);
     }).then(function () {
+      submitting = false;
       submit.disabled = false;
       submit.textContent = 'Sign in';
     });
@@ -181,5 +214,10 @@
     });
   });
 
-  load();
+  // Signed in or out in another tab, before Firebase has loaded here: follow the hint.
+  window.addEventListener('storage', function (ev) {
+    if (ev.key === 'cb8eats-viewer-v1' && !state.ready && members) paintButton(!!members.getRole());
+  });
+
+  if (!lazy || remembered) load();
 })();

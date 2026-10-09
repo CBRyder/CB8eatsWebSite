@@ -1,0 +1,107 @@
+/* The sign-in button at the very top right of the header, and its dialog.
+   Used by js/dev-auth.js on EVERY page: the public pages, the Dev hub, both
+   trackers and Warframe. Only uses variables css/style.css (or js/theme.js on
+   the dev pages) already defines, so it takes on whichever colors the page has.
+   Class names are prefixed cb8- so they cannot collide with a page's own CSS. */
+
+/* ---------- Sign-in button (very top right of the header) ---------- */
+
+/* js/dev-auth.js wraps the nav and the button in this group. */
+.cb8-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cb8-auth-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-height: 40px;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+.cb8-auth-btn:hover { border-color: var(--accent); }
+.cb8-auth-btn.on { border-color: var(--accent); color: var(--accent-bright); }
+.cb8-auth-btn.on::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* When the menu drops below the brand (a phone, or a narrow tablet), js/dev-auth.js
+   adds .cb8-pin to the header: the button is then pinned to the header's top right
+   corner, level with the brand, and the menu sits underneath. On a wide screen the
+   button just sits inline, right of the menu. */
+.cb8-pin .cb8-header-right { display: contents; }
+.cb8-pin .cb8-header-right > nav { width: 100%; }   /* the menu always gets its own row underneath */
+.cb8-pin .cb8-auth-btn { position: absolute; top: 0.9rem; right: 2rem; }
+
+/* ---------- Sign-in dialog ---------- */
+
+dialog.cb8-auth-dlg {
+  width: min(92vw, 24rem);
+  padding: 1.2rem 1.3rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--accent-2);
+  border-radius: var(--radius);
+  box-shadow: 0 0 30px var(--glow);
+  color-scheme: dark;
+}
+dialog.cb8-auth-dlg::backdrop { background: rgba(0, 0, 0, 0.68); }
+.cb8-auth-dlg h2 { margin: 0 0 0.2rem; font-size: 1.25rem; }
+.cb8-auth-dlg p { margin: 0.3rem 0 0; font-size: 0.92rem; color: var(--text-dim); }
+.cb8-auth-dlg .cb8-field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.9rem 0 0; }
+.cb8-auth-dlg .cb8-field > span {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+  font-weight: 600;
+}
+.cb8-auth-dlg input {
+  font: inherit;
+  font-size: 1rem;
+  min-height: 44px;
+  padding: 0.5rem 0.8rem;
+  color: var(--text);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color-scheme: dark;
+}
+.cb8-auth-dlg .cb8-err { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.5rem 0 0; }
+.cb8-auth-dlg .cb8-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; margin-top: 0.8rem; }
+.cb8-auth-dlg .cb8-btn {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.cb8-auth-dlg .cb8-btn:hover { border-color: var(--accent); }
+.cb8-auth-dlg .cb8-btn.primary {
+  color: var(--on-grad, #fff);
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+}
+.cb8-auth-dlg [hidden] { display: none !important; }

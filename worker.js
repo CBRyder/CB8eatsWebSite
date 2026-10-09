@@ -17,13 +17,14 @@
 const APPLY_EMAIL_ROUTE = '/api/send-application-confirmation';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// The Warframe page has its own hostname. Visiting warframe.cb8eats.com (the
-// bare address, nothing after the slash) shows the same page that lives at
-// /warframe on the main site. Every other path on that hostname (css, js,
-// images, warframe-data.json) falls through to the normal static assets, so the
-// page's relative links keep working. The hostname itself is attached to this
-// Worker in the Cloudflare dashboard (Domains & Routes), not here.
-const WARFRAME_HOST = 'warframe.cb8eats.com';
+// The Warframe page has its own hostname, with or without the www. Visiting
+// warframe.cb8eats.com (the bare address, nothing after the slash) shows the
+// same page that lives at /warframe on the main site. Every other path on that
+// hostname (css, js, images, warframe-data.json) falls through to the normal
+// static assets, so the page's relative links keep working. The hostnames
+// themselves are attached to this Worker in the Cloudflare dashboard
+// (Domains & Routes), not here.
+const WARFRAME_HOSTS = new Set(['warframe.cb8eats.com', 'www.warframe.cb8eats.com']);
 const WARFRAME_PAGE = '/warframe'; // extensionless on purpose: /warframe.html would 307-redirect to /warframe
 
 export default {
@@ -35,7 +36,7 @@ export default {
     }
 
     if (
-      url.hostname === WARFRAME_HOST &&
+      WARFRAME_HOSTS.has(url.hostname) &&
       url.pathname === '/' &&
       (request.method === 'GET' || request.method === 'HEAD')
     ) {

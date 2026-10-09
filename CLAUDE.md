@@ -391,8 +391,9 @@ published the original three-field rule, adding goals fails with permission-deni
   drive every CSS variable on the page, computed by a small script in `<head>` before
   paint. Saved per device in `localStorage` (`cb8eats-warframe-theme-v1`); when the
   owner is signed in it also syncs to `warframe/progress.theme`.
-- **Address:** served at `/warframe`, and at the bare root of `warframe.cb8eats.com`.
-  `worker.js` checks `url.hostname === 'warframe.cb8eats.com'` and `pathname === '/'`
+- **Address:** served at `/warframe`, and at the bare root of `warframe.cb8eats.com`
+  and `www.warframe.cb8eats.com` (the owner attached the `www.` one in the dashboard,
+  so both are accepted). `worker.js` checks `WARFRAME_HOSTS.has(url.hostname)` and `pathname === '/'`
   (GET/HEAD only) and fetches `/warframe` from `env.ASSETS` instead (extensionless on
   purpose, since `/warframe.html` 307-redirects). Every other path on that hostname
   falls through to the normal assets, so the page's relative `css/`, `js/` and

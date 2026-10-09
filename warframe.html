@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warframe — CB8eats</title>
+  <meta name="description" content="Warframe farm list, mod collection and saved builds. Live checklist, searchable mods, customizable theme.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+  <script src="js/nav-scroll.js" defer></script>
+
+  <style>
+    /* ===== Warframe page (scoped to this page only) =====
+       Theme: forest green + royal purple for the dark surfaces, neon green +
+       neon purple for the accents. The four base colors live in the Theme tab
+       and are turned into the variables below by the script in <head>, so the
+       shared css/style.css (header, buttons, tabs) follows the same palette. */
+    :root {
+      --text: #e9f3ec;
+      --text-dim: #a3bbac;
+      --text-faint: #6f8878;
+      --max-width: 920px;
+    }
+    body {
+      background:
+        radial-gradient(ellipse 900px 500px at 12% -10%, var(--wash-a), transparent 60%),
+        radial-gradient(ellipse 900px 500px at 88% 0%, var(--wash-b), transparent 55%),
+        var(--bg);
+      background-attachment: fixed;
+    }
+    [hidden] { display: none !important; }
+    header { background: var(--bg-alt); border-bottom-color: var(--border); }
+    .nav-tabs li a.active { color: var(--on-grad); }
+    .btn-primary { color: var(--on-grad); }
+    main.wf { padding-top: 2.2rem; padding-inline: 1rem; }
+    @media (min-width: 640px) { main.wf { padding-inline: 2rem; } }
+    .wf h1 { margin-bottom: 0.6rem; }
+    .wf .lede { margin-bottom: 1.4rem; }
+    .wf-top { margin-bottom: 1.6rem; }
+
+    /* At-a-glance strip */
+    .glance {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.6rem;
+    }
+    .glance .cell { padding: 0.8rem 0.9rem; min-width: 0; }
+    .glance .cell + .cell { border-left: 1px solid var(--border); }
+    .glance .lbl { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; }
+    .glance .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.05rem, 4.4vw, 1.5rem); color: var(--accent-bright); font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 0.2rem; }
+    .glance .sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.1rem; }
+    .syncline { font-size: 0.8rem; color: var(--text-faint); margin: 0 0 1.2rem; }
+    .syncline.err { color: #ff8a8a; }
+
+    /* Owner sign-in */
+    details.wf-auth { margin-bottom: 1.4rem; font-size: 0.9rem; }
+    details.wf-auth > summary { cursor: pointer; color: var(--text-faint); font-size: 0.85rem; min-height: 44px; display: flex; align-items: center; text-decoration: underline dotted; text-underline-offset: 4px; }
+    details.wf-auth > summary:hover { color: var(--accent-bright); }
+    .signin { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.4rem; }
+    .signin input { flex: 1 1 11rem; min-width: 0; }
+    input[type="email"], input[type="password"], input[type="search"] {
+      font: inherit; font-size: 1rem; min-height: 44px; padding: 0.5rem 0.8rem;
+      color: var(--text); background: var(--bg-alt); border: 1px solid var(--border); border-radius: 10px;
+    }
+    input::placeholder { color: var(--text-faint); }
+    .btn-sm { font: inherit; font-size: 0.9rem; font-weight: 600; min-height: 44px; padding: 0.5rem 1.1rem; border-radius: 999px; cursor: pointer;
+      color: var(--text); background: transparent; border: 1px solid var(--border); }
+    .btn-sm:hover { border-color: var(--accent); }
+    .btn-sm.primary { color: var(--on-grad); border-color: transparent; background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+    .authnote { font-size: 0.85rem; color: var(--text-faint); margin: 0.5rem 0 0; }
+
+    /* Section tabs */
+    .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.4rem; }
+    .tab { font: inherit; font-size: 0.92rem; font-weight: 600; min-height: 44px; padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
+      color: var(--text-dim); background: transparent; border: 1px solid var(--border); }
+    .tab:hover { color: var(--text); background: var(--card); }
+    .tab[aria-selected="true"] { color: var(--on-grad); border-color: transparent; background: linear-gradient(120deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px var(--glow); }
+    :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+
+    .wfcard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; margin-bottom: 1.2rem; }
+    .wfcard h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+    .muted { color: var(--text-dim); font-size: 0.92rem; margin: 0.4rem 0 0; }
+    .big { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; margin: 0.2rem 0 0.6rem; color: var(--text); font-variant-numeric: tabular-nums; }
+    .big small { font-size: 0.95rem; color: var(--text-dim); font-family: var(--font-body); font-weight: 500; }
+    .bar { height: 10px; border-radius: 6px; background: var(--bg-alt); overflow: hidden; border: 1px solid var(--border); }
+    .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s ease; }
+    .stepper { display: flex; gap: 0.6rem; margin-top: 0.9rem; flex-wrap: wrap; }
+    .stepper .btn-sm { min-width: 48px; }
+    .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+
+    .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
+    .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
+      padding: 0.8rem 0; min-height: 48px; cursor: pointer; }
+    .task .box { flex: none; width: 24px; height: 24px; margin-top: 2px; border: 2px solid var(--text-faint); border-radius: 7px; position: relative; }
+    .task.done .box { background: var(--accent); border-color: var(--accent); }
+    .task.done .box::after { content: ""; position: absolute; left: 6px; top: 1px; width: 6px; height: 12px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+    .task .tx { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+    .task .tt { font-weight: 500; }
+    .task .nt { font-size: 0.85rem; color: var(--text-dim); }
+    .tag { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.5rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      border-radius: 999px; border: 1px solid var(--accent-2); color: var(--accent-2); vertical-align: 0.1em; white-space: nowrap; }
+    .tag-foundry { border-color: var(--accent); color: var(--accent); }
+    .wfcard .seg { margin: 0.4rem 0 0.6rem; }
+    .task.done .tt { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+    .flash { min-height: 1.3rem; font-size: 0.88rem; color: var(--accent-bright); margin: 0.6rem 0 0; }
+
+    /* Mods */
+    .tools { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 0.8rem; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+    .seg button { font: inherit; font-weight: 600; font-size: 0.92rem; min-height: 44px; padding: 0.4rem 1.2rem; color: var(--text-dim); background: transparent; border: 0; cursor: pointer; }
+    .seg button[aria-pressed="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+    .tools input[type="search"] { flex: 1 1 12rem; min-width: 0; }
+    .legend { font-size: 0.82rem; color: var(--text-faint); margin: 0 0 0.3rem; max-width: 70ch; }
+    .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); margin-right: 0.3rem; }
+    .count { font-size: 0.85rem; color: var(--text-dim); margin: 0 0 0.8rem; }
+    details.grp { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); margin-bottom: 0.6rem; }
+    details.grp > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.8rem 1rem; min-height: 48px; cursor: pointer; font-weight: 600; }
+    details.grp > summary::-webkit-details-marker { display: none; }
+    details.grp > summary::after { content: "+"; color: var(--accent-bright); font-size: 1.2rem; margin-left: auto; padding-left: 0.6rem; }
+    details.grp[open] > summary::after { content: "–"; }
+    .gcount { font-size: 0.82rem; color: var(--text-dim); font-variant-numeric: tabular-nums; font-weight: 500; }
+    .gnote { font-size: 0.85rem; color: var(--text-dim); margin: 0 1rem 0.5rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.2rem 1rem 1rem; }
+    .chip { display: inline-flex; align-items: baseline; gap: 0.4rem; padding: 0.25rem 0.7rem; font-size: 0.9rem; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--bg-alt); max-width: 100%; overflow-wrap: anywhere; }
+    .chip.max::before { content: ""; align-self: center; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 6px var(--accent-2); }
+    .chip .n { color: var(--text-dim); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+    .chip .nt { color: var(--text-faint); font-size: 0.78rem; }
+    .empty { color: var(--text-dim); }
+
+    /* Builds */
+    .build h2 { margin-bottom: 0.1rem; }
+    .build .meta { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 0.8rem; }
+    .pill { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.15rem 0.6rem; border-radius: 999px;
+      color: var(--accent-bright); border: 1px solid var(--accent); margin-bottom: 0.6rem; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin: 0.8rem 0 0.4rem; }
+    .stat { border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; background: var(--bg-alt); min-width: 0; }
+    .stat .k { font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; }
+    .stat .v { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .fine { font-size: 0.8rem; color: var(--text-faint); margin: 0.2rem 0 1rem; }
+    .label { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1rem 0 0.4rem; }
+    .modrow { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .modrow .chip.out { opacity: 0.6; border-style: dashed; }
+    .blist { margin: 0.2rem 0 0; padding-left: 1.1rem; color: var(--text-dim); font-size: 0.92rem; }
+    .blist li { margin-bottom: 0.3rem; }
+    .kv { margin: 0.2rem 0 0; font-size: 0.95rem; }
+    .kv dt { color: var(--accent-bright); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-top: 0.8rem; }
+    .kv dd { margin: 0.15rem 0 0; color: var(--text); }
+
+    /* Theme tab */
+    .swatches { display: grid; gap: 0.8rem; margin: 0.6rem 0 1rem; }
+    .swatch { display: grid; grid-template-columns: 56px 1fr; gap: 0.8rem; align-items: center; }
+    .swatch input[type="color"] { width: 56px; height: 44px; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-alt); cursor: pointer; }
+    .swatch .nm { font-weight: 600; }
+    .swatch .hint { display: block; font-size: 0.82rem; color: var(--text-dim); font-weight: 400; }
+    .btnrow { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .savednote { font-size: 0.85rem; color: var(--text-dim); margin: 0.9rem 0 0; }
+
+    @media (max-width: 420px) {
+      header { padding: 0.8rem 1rem; gap: 0.6rem; }
+      .brand { font-size: 1.25rem; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .glance .cell { padding: 0.7rem 0.6rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+  </style>
+
+  <script>
+    /* Theme engine. Runs before the page paints so there is no color flash.
+       Four base colors in, every CSS variable the page needs out. Saved on
+       this device in localStorage; the site owner's choice is also synced
+       through Firestore (see the module script at the bottom). */
+    (function () {
+      var DEF = { forest: '#1f5f3a', royal: '#5b2d9e', neonGreen: '#39ff14', neonPurple: '#b44cff' };
+      var KEY = 'cb8eats-warframe-theme-v1';
+      function isHex(h) { return typeof h === 'string' && /^#[0-9a-f]{6}$/i.test(h); }
+      function rgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+      function toHex(a) {
+        return '#' + a.map(function (v) {
+          v = Math.max(0, Math.min(255, Math.round(v)));
+          return (v < 16 ? '0' : '') + v.toString(16);
+        }).join('');
+      }
+      function mix(a, b, t) {
+        var x = rgb(a), y = rgb(b);
+        return toHex([x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t]);
+      }
+      function lum(h) {
+        var c = rgb(h).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      }
+      function rgba(h, a) { var c = rgb(h); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+      function dark(h) { return lum(h) <= 0.35; }
+      function derive(t) {
+        var k = '#000000';
+        return {
+          '--bg': mix(t.forest, k, 0.80),
+          '--bg-alt': mix(t.forest, k, 0.72),
+          '--card': mix(mix(t.forest, t.royal, 0.22), k, 0.62),
+          '--card-hover': mix(mix(t.forest, t.royal, 0.32), k, 0.52),
+          '--border': mix(mix(t.royal, t.forest, 0.2), k, 0.30),
+          '--accent': t.neonGreen,
+          '--accent-bright': mix(t.neonGreen, '#ffffff', 0.18),
+          '--accent-2': t.neonPurple,
+          '--glow': rgba(t.neonGreen, 0.35),
+          '--wash-a': rgba(t.neonPurple, 0.14),
+          '--wash-b': rgba(t.neonGreen, 0.12),
+          '--on-accent': dark(t.neonGreen) ? '#ffffff' : '#06100a',
+          '--on-grad': (lum(t.neonGreen) + lum(t.neonPurple)) / 2 > 0.3 ? '#06100a' : '#ffffff'
+        };
+      }
+      function sanitize(o) {
+        var r = {};
+        Object.keys(DEF).forEach(function (k) { r[k] = (o && isHex(o[k])) ? o[k].toLowerCase() : DEF[k]; });
+        return r;
+      }
+      function apply(t) {
+        var v = derive(sanitize(t)), s = document.documentElement.style;
+        Object.keys(v).forEach(function (k) { s.setProperty(k, v[k]); });
+      }
+      function readLocal() {
+        try { var raw = localStorage.getItem(KEY); return raw ? sanitize(JSON.parse(raw)) : null; } catch (e) { return null; }
+      }
+      function writeLocal(t) { try { localStorage.setItem(KEY, JSON.stringify(sanitize(t))); } catch (e) {} }
+      function clearLocal() { try { localStorage.removeItem(KEY); } catch (e) {} }
+      window.WFTheme = { DEF: DEF, sanitize: sanitize, apply: apply, readLocal: readLocal, writeLocal: writeLocal, clearLocal: clearLocal };
+      apply(readLocal() || DEF);
+    })();
+  </script>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="brand"><a href="https://www.iltep.cb8eats.com/">CB8eats</a></div>
+    </div>
+
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="https://www.iltep.cb8eats.com/">Main site</a></li>
+        <li><a href="#goals" class="active">Warframe</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="wf">
+    <div class="wf-top">
+      <p class="eyebrow">Warframe</p>
+      <h1>Farm, mods and builds</h1>
+      <p class="lede" id="wf-lede">Loading…</p>
+    </div>
+
+    <div class="glance" id="wf-glance" aria-label="At a glance"></div>
+    <p class="syncline" id="wf-sync">connecting…</p>
+
+    <details class="wf-auth" id="wf-auth">
+      <summary>Owner sign-in</summary>
+      <form class="signin" id="wf-signin">
+        <input type="email" id="wf-email" placeholder="Email" autocomplete="username" aria-label="Email" required>
+        <input type="password" id="wf-password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
+        <button class="btn-sm primary" type="submit">Sign in</button>
+      </form>
+      <button class="btn-sm" type="button" id="wf-signout" hidden>Sign out</button>
+      <p class="authnote" id="wf-authnote">Anyone can view this page. Only the site owner can tick items off.</p>
+    </details>
+
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="t-goals" data-tab="goals" aria-selected="true" aria-controls="p-goals">Goals</button>
+      <button class="tab" role="tab" id="t-mods" data-tab="mods" aria-selected="false" aria-controls="p-mods">Mods</button>
+      <button class="tab" role="tab" id="t-builds" data-tab="builds" aria-selected="false" aria-controls="p-builds">Builds</button>
+      <button class="tab" role="tab" id="t-theme" data-tab="theme" aria-selected="false" aria-controls="p-theme">Theme</button>
+    </div>
+
+    <div id="p-goals" role="tabpanel" aria-labelledby="t-goals"></div>
+
+    <div id="p-mods" role="tabpanel" aria-labelledby="t-mods" hidden>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="Owned or missing">
+          <button type="button" id="v-owned" aria-pressed="true">Owned</button>
+          <button type="button" id="v-missing" aria-pressed="false">Missing</button>
+        </div>
+        <input type="search" id="wf-q" placeholder="Search mods" autocomplete="off" aria-label="Search mods">
+      </div>
+      <div class="tools" id="wf-modfilter" hidden>
+        <div class="seg" role="group" aria-label="Filter missing mods">
+          <button type="button" id="mf-all" aria-pressed="true">All missing</button>
+          <button type="button" id="mf-plat" aria-pressed="false">Buy with plat</button>
+        </div>
+      </div>
+      <p class="legend" id="wf-legend"></p>
+      <p class="count" id="wf-count" aria-live="polite"></p>
+      <div id="wf-groups"></div>
+    </div>
+
+    <div id="p-builds" role="tabpanel" aria-labelledby="t-builds" hidden></div>
+
+    <div id="p-theme" role="tabpanel" aria-labelledby="t-theme" hidden>
+      <div class="wfcard">
+        <h2>Theme</h2>
+        <p class="muted">Four colors drive the whole page. Dark surfaces come from forest green and royal purple, and the accents come from the two neons.</p>
+        <div class="swatches">
+          <label class="swatch"><input type="color" id="c-forest" aria-label="Forest green"><span class="nm">Forest green<span class="hint">Page and card backgrounds</span></span></label>
+          <label class="swatch"><input type="color" id="c-royal" aria-label="Royal purple"><span class="nm">Royal purple<span class="hint">Borders and panel tint</span></span></label>
+          <label class="swatch"><input type="color" id="c-neonGreen" aria-label="Neon green"><span class="nm">Neon green<span class="hint">Main accent, progress, checks</span></span></label>
+          <label class="swatch"><input type="color" id="c-neonPurple" aria-label="Neon purple"><span class="nm">Neon purple<span class="hint">Second accent, gradients, max-rank dots</span></span></label>
+        </div>
+        <div class="btnrow" id="wf-presets"></div>
+        <p class="savednote" id="wf-themenote" aria-live="polite"></p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script type="module">
+    /* Page logic. Content comes from warframe-data.json (replace the file and
+       push to update the lists). Checklist progress and the owner's theme sync
+       through Firestore doc warframe/progress: everyone can read, only the
+       owner can write. If Firebase can't load, the page still renders. */
+    const T = window.WFTheme;
+    const OWNER = 'cbleo73@gmail.com';
+    const CFG = {
+      apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
+      authDomain: "tarborolifebackend.firebaseapp.com",
+      projectId: "tarborolifebackend",
+      storageBucket: "tarborolifebackend.firebasestorage.app",
+      messagingSenderId: "578368600107",
+      appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
+    };
+    const UI_KEY = 'cb8eats-warframe-ui-v1';
+    const TABS = ['goals', 'mods', 'builds', 'theme'];
+    const TAG_LABEL = { plat: 'Buy with plat', foundry: 'Foundry' };
+    const GOAL_FILTERS = [['all', 'All'], ['plat', 'Buy with plat'], ['foundry', 'Foundry']];
+    const PRESETS = [
+      { name: 'Forest and neon', t: { forest: '#1f5f3a', royal: '#5b2d9e', neonGreen: '#39ff14', neonPurple: '#b44cff' } },
+      { name: 'Deep forest', t: { forest: '#14452c', royal: '#3d2478', neonGreen: '#2fe06a', neonPurple: '#9a5cf0' } },
+      { name: 'Max neon', t: { forest: '#0d4a2a', royal: '#6a1fd6', neonGreen: '#00ff66', neonPurple: '#e040ff' } },
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    function el(tag, cls, text) {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+
+    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all' };
+    try {
+      const raw = localStorage.getItem(UI_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && TABS.includes(p.tab)) ui.tab = p.tab;
+        if (p && (p.view === 'owned' || p.view === 'missing')) ui.view = p.view;
+        if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
+        if (p && (p.modFilter === 'all' || p.modFilter === 'plat')) ui.modFilter = p.modFilter;
+      }
+    } catch (e) {}
+    function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
+
+    const S = { data: null, done: {}, runs: 0, owner: false, remoteTheme: null, sync: null };
+    const openGroups = {};
+
+    /* ---------- helpers ---------- */
+    function parseChip(s) {
+      let tags = [];
+      if (s && typeof s === 'object') { tags = s.tags || []; s = s.t; }
+      let rank = null, count = null, max = false, note = '', t = s;
+      t = t.replace(/\(r(\d+)\/(\d+)\)/, (m, a, b) => { rank = 'r' + a + '/' + b; return ''; });
+      t = t.replace(/\sx(\d+)\b/, (m, a) => { count = a; return ''; });
+      t = t.replace('*', () => { max = true; return ''; });
+      t = t.replace(/\(([^)]*)\)/, (m, a) => { note = a; return ''; });
+      return { name: t.replace(/\s+/g, ' ').trim(), rank, count, max, note, tags };
+    }
+    function chipEl(c, extraCls) {
+      const n = el('span', 'chip' + (c.max ? ' max' : '') + (extraCls ? ' ' + extraCls : ''));
+      n.appendChild(document.createTextNode(c.name));
+      if (c.count) n.appendChild(el('span', 'n', '×' + c.count));
+      if (c.rank) n.appendChild(el('span', 'n', c.rank));
+      if (c.note) n.appendChild(el('span', 'nt', c.note));
+      return n;
+    }
+    function tokens() { return S.runs * S.data.farm.perRun; }
+    function flash(msg) { const f = $('wf-flash'); if (f) f.textContent = msg; }
+    function setSync(msg, isErr) {
+      const s = $('wf-sync');
+      s.textContent = msg;
+      s.classList.toggle('err', !!isErr);
+    }
+
+    /* ---------- render: glance + farm ---------- */
+    function renderGlance() {
+      const g = $('wf-glance'); g.textContent = '';
+      const cells = [
+        ['Tokens', tokens() + ' / ' + S.data.farm.target, S.runs + ' of ' + S.data.farm.runsNeeded + ' runs'],
+        ['Burston Prime', isDone('bp30') ? 'Rank 30' : 'Needs rank 30', isDone('rebuild') ? 'Build redone' : 'Rebuild waits'],
+        ['Mods', S.data.meta.types + ' types', S.data.meta.cards.toLocaleString('en-US') + ' cards'],
+      ];
+      cells.forEach((c) => {
+        const d = el('div', 'cell');
+        d.appendChild(el('div', 'lbl', c[0]));
+        d.appendChild(el('div', 'val', c[1]));
+        d.appendChild(el('div', 'sub', c[2]));
+        g.appendChild(d);
+      });
+    }
+
+    function daysUntil(iso) {
+      const ms = new Date(iso).getTime() - Date.now();
+      return Math.ceil(ms / 86400000);
+    }
+
+    function isDone(id) {
+      if (S.done[id] !== undefined) return !!S.done[id];
+      const t = S.data.farm.tasks.find((x) => x.id === id);
+      return !!(t && t.doneDefault);
+    }
+
+    function renderGoals() {
+      const f = S.data.farm, p = $('p-goals'); p.textContent = '';
+      const card = el('div', 'wfcard');
+      card.appendChild(el('h2', null, 'Mother Tokens'));
+      const big = el('p', 'big'); big.appendChild(document.createTextNode(String(tokens())));
+      big.appendChild(el('small', null, ' of ' + f.target));
+      card.appendChild(big);
+      const bar = el('div', 'bar'); const fill = document.createElement('i');
+      fill.style.width = Math.min(100, tokens() / f.target * 100) + '%';
+      bar.appendChild(fill); card.appendChild(bar);
+      card.appendChild(el('p', 'muted', S.runs + ' of ' + f.runsNeeded + ' ' + f.runLabel + ', ' + f.perRun + ' tokens each. Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').'));
+      const d = daysUntil(f.shopRefresh);
+      card.appendChild(el('p', 'muted', d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.'));
+      const row = el('div', 'stepper');
+      const minus = el('button', 'btn-sm', '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'Remove one run');
+      const plus = el('button', 'btn-sm primary', 'Run done'); plus.type = 'button';
+      [minus, plus].forEach((b) => { if (!S.owner) b.setAttribute('aria-disabled', 'true'); });
+      minus.onclick = () => changeRuns(-1);
+      plus.onclick = () => changeRuns(1);
+      row.appendChild(minus); row.appendChild(plus);
+      card.appendChild(row);
+      p.appendChild(card);
+
+      const wrap = el('div', 'wfcard');
+      wrap.appendChild(el('h2', null, 'Grind goals'));
+      const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Filter goals');
+      GOAL_FILTERS.forEach((fl) => {
+        const b = el('button', null, fl[1]); b.type = 'button';
+        b.setAttribute('aria-pressed', ui.goalFilter === fl[0] ? 'true' : 'false');
+        b.onclick = () => { ui.goalFilter = fl[0]; saveUi(); renderGoals(); };
+        seg.appendChild(b);
+      });
+      wrap.appendChild(seg);
+      const visible = f.tasks.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
+      const open = visible.filter((t) => !isDone(t.id)).length;
+      wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + (ui.goalFilter === 'plat' ? ' Buy with plat means you can get it from the Market or from other players.' : '') + (ui.goalFilter === 'foundry' ? ' Foundry means you build it there from a blueprint and parts.' : '')));
+      (f.groupOrder || ['Next', 'Later']).forEach((grp) => {
+        const items = visible.filter((t) => t.group === grp);
+        if (!items.length) return;
+        wrap.appendChild(el('p', 'group-label', grp));
+        items.forEach((t) => wrap.appendChild(taskEl(t)));
+      });
+      if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
+      wrap.appendChild(el('p', 'flash', '')).id = 'wf-flash';
+      p.appendChild(wrap);
+    }
+
+    function taskEl(t) {
+      const done = isDone(t.id);
+      const b = el('button', 'task' + (done ? ' done' : ''));
+      b.type = 'button';
+      b.setAttribute('role', 'checkbox');
+      b.setAttribute('aria-checked', done ? 'true' : 'false');
+      if (!S.owner) b.setAttribute('aria-disabled', 'true');
+      b.appendChild(el('span', 'box'));
+      const w = el('span', 'tx');
+      const title = el('span', 'tt', t.text);
+      (t.tags || []).forEach((tag) => title.appendChild(el('span', 'tag tag-' + tag, TAG_LABEL[tag] || tag)));
+      w.appendChild(title);
+      if (t.note) w.appendChild(el('span', 'nt', t.note));
+      b.appendChild(w);
+      b.onclick = () => toggleTask(t.id);
+      return b;
+    }
+
+    function needOwner() {
+      flash(S.sync ? 'Sign in as the owner to change this.' : 'Sync is not connected, so this cannot be saved right now.');
+    }
+
+    async function toggleTask(id) {
+      if (!S.owner || !S.sync) return needOwner();
+      const prev = isDone(id), next = !prev;
+      S.done[id] = next; renderLive();
+      try {
+        await S.sync.write({ ['done.' + id]: next }, { done: S.done, runs: S.runs });
+      } catch (e) {
+        S.done[id] = prev; renderLive(); writeFailed(e);
+      }
+    }
+    async function changeRuns(delta) {
+      if (!S.owner || !S.sync) return needOwner();
+      const prev = S.runs, next = Math.max(0, prev + delta);
+      if (next === prev) return;
+      S.runs = next; renderLive();
+      try {
+        await S.sync.write({ runs: next }, { done: S.done, runs: next });
+      } catch (e) {
+        S.runs = prev; renderLive(); writeFailed(e);
+      }
+    }
+    function writeFailed(e) {
+      console.error('Write failed:', e);
+      const code = (e && e.code) || '';
+      flash(code === 'permission-denied'
+        ? 'The server refused that write. The warframe/progress Firestore rule may not be published yet.'
+        : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
+    }
+    function renderLive() { renderGlance(); renderGoals(); }
+
+    /* ---------- render: mods ---------- */
+    function renderMods() {
+      const q = $('wf-q').value.trim().toLowerCase();
+      const groups = S.data.mods[ui.view];
+      const box = $('wf-groups'); box.textContent = '';
+      let shown = 0, total = 0;
+      groups.forEach((g) => {
+        const chips = g.items.map(parseChip); total += chips.length;
+        const pool = (ui.view === 'missing' && ui.modFilter === 'plat') ? chips.filter((c) => c.tags.includes('plat')) : chips;
+        const hits = q ? pool.filter((c) => (c.name + ' ' + c.note).toLowerCase().includes(q)) : pool;
+        if ((q || pool.length !== chips.length) && !hits.length) return;
+        shown += hits.length;
+        const d = document.createElement('details'); d.className = 'grp';
+        const key = ui.view + ':' + g.id;
+        const filtering = !!q || pool.length !== chips.length;
+        d.open = filtering ? true : !!openGroups[key];
+        d.addEventListener('toggle', () => { if (!filtering) openGroups[key] = d.open; });
+        const sm = document.createElement('summary');
+        sm.appendChild(el('span', null, g.name));
+        sm.appendChild(el('span', 'gcount', hits.length !== chips.length ? hits.length + ' of ' + chips.length : String(chips.length)));
+        d.appendChild(sm);
+        if (g.note) d.appendChild(el('p', 'gnote', g.note));
+        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c))); d.appendChild(wrap);
+        box.appendChild(d);
+      });
+      const platOn = ui.view === 'missing' && ui.modFilter === 'plat';
+      $('wf-count').textContent = (q || platOn) ? shown + ' of ' + total + ' entries match' : total + ' entries in ' + groups.length + ' groups';
+      $('wf-modfilter').hidden = ui.view !== 'missing';
+      $('mf-all').setAttribute('aria-pressed', ui.modFilter === 'all' ? 'true' : 'false');
+      $('mf-plat').setAttribute('aria-pressed', ui.modFilter === 'plat' ? 'true' : 'false');
+      if (!shown) box.appendChild(el('p', 'empty', 'No mods match "' + q + '".'));
+      $('v-owned').setAttribute('aria-pressed', ui.view === 'owned' ? 'true' : 'false');
+      $('v-missing').setAttribute('aria-pressed', ui.view === 'missing' ? 'true' : 'false');
+      const lg = $('wf-legend'); lg.textContent = '';
+      if (ui.view === 'owned') {
+        lg.appendChild(el('span', 'dot'));
+        lg.appendChild(document.createTextNode('Has a max-rank copy (judged from the drain number, so approximate). ×N is copies owned. r7/10 is the best rank seen. Scanned ' + S.data.meta.scannedLabel + '.'));
+      } else {
+        lg.textContent = 'Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.';
+      }
+    }
+
+    /* ---------- render: builds ---------- */
+    function renderBuilds() {
+      const p = $('p-builds'); p.textContent = '';
+      S.data.builds.forEach((b) => {
+        const c = el('div', 'wfcard build');
+        c.appendChild(el('span', 'pill', b.status));
+        c.appendChild(el('h2', null, b.name));
+        c.appendChild(el('p', 'meta', b.config + ' · ' + b.goal));
+        if (b.stats) {
+          const g = el('div', 'stats');
+          b.stats.forEach((s) => {
+            const x = el('div', 'stat'); x.appendChild(el('div', 'k', s[0])); x.appendChild(el('div', 'v', s[1])); g.appendChild(x);
+          });
+          c.appendChild(g);
+          if (b.statsNote) c.appendChild(el('p', 'fine', b.statsNote));
+        }
+        if (b.mods) {
+          c.appendChild(el('p', 'label', 'Mods'));
+          const r = el('div', 'modrow');
+          b.mods.forEach((m) => {
+            const ch = el('span', 'chip' + (m[2] === 'max' ? ' max' : '') + (m[1] === 'out' ? ' out' : ''));
+            ch.appendChild(document.createTextNode(m[0]));
+            if (m[2] && m[2] !== 'max') ch.appendChild(el('span', 'nt', m[2]));
+            if (m[1] === 'out') ch.appendChild(el('span', 'nt', 'out for now'));
+            r.appendChild(ch);
+          });
+          c.appendChild(r);
+        }
+        if (b.slots) { c.appendChild(el('p', 'label', 'Slot polarities')); c.appendChild(el('p', 'muted', b.slots)); }
+        if (b.notes) {
+          c.appendChild(el('p', 'label', 'What we learned'));
+          const ul = el('ul', 'blist'); b.notes.forEach((n) => ul.appendChild(el('li', null, n))); c.appendChild(ul);
+        }
+        if (b.next) { c.appendChild(el('p', 'label', 'Next')); c.appendChild(el('p', 'muted', b.next)); }
+        if (b.lists) {
+          const dl = el('dl', 'kv');
+          b.lists.forEach((l) => { dl.appendChild(el('dt', null, l[0])); dl.appendChild(el('dd', null, l[1])); });
+          c.appendChild(dl);
+        }
+        p.appendChild(c);
+      });
+    }
+
+    /* ---------- theme tab ---------- */
+    function currentTheme() { return T.readLocal() || S.remoteTheme || T.DEF; }
+    function themeFromInputs() {
+      return T.sanitize({
+        forest: $('c-forest').value, royal: $('c-royal').value,
+        neonGreen: $('c-neonGreen').value, neonPurple: $('c-neonPurple').value,
+      });
+    }
+    function fillInputs(t) {
+      $('c-forest').value = t.forest; $('c-royal').value = t.royal;
+      $('c-neonGreen').value = t.neonGreen; $('c-neonPurple').value = t.neonPurple;
+    }
+    let themeTimer = null;
+    function themeChanged(t) {
+      T.apply(t); T.writeLocal(t);
+      const note = $('wf-themenote');
+      note.textContent = 'Saved on this device.';
+      clearTimeout(themeTimer);
+      if (S.owner && S.sync) {
+        themeTimer = setTimeout(async () => {
+          try {
+            await S.sync.write({ theme: t }, { done: S.done, runs: S.runs, theme: t });
+            note.textContent = 'Saved on this device and on the site for every device.';
+          } catch (e) { writeFailed(e); note.textContent = 'Saved on this device. The site copy failed to save.'; }
+        }, 700);
+      } else {
+        note.textContent += ' Sign in as the owner to also save it for every device.';
+      }
+    }
+    function initTheme() {
+      fillInputs(currentTheme());
+      ['c-forest', 'c-royal', 'c-neonGreen', 'c-neonPurple'].forEach((id) => {
+        $(id).addEventListener('input', () => themeChanged(themeFromInputs()));
+      });
+      const row = $('wf-presets');
+      PRESETS.forEach((pr) => {
+        const b = el('button', 'btn-sm', pr.name); b.type = 'button';
+        b.onclick = () => { fillInputs(pr.t); themeChanged(T.sanitize(pr.t)); };
+        row.appendChild(b);
+      });
+      const reset = el('button', 'btn-sm', 'Use the site theme'); reset.type = 'button';
+      reset.onclick = () => {
+        T.clearLocal();
+        const t = S.remoteTheme || T.DEF;
+        T.apply(t); fillInputs(t);
+        $('wf-themenote').textContent = 'This device now follows the site theme.';
+      };
+      row.appendChild(reset);
+    }
+
+    /* ---------- tabs ---------- */
+    function showTab(name) {
+      if (!TABS.includes(name)) name = 'goals';
+      ui.tab = name; saveUi();
+      TABS.forEach((t) => {
+        $('p-' + t).hidden = t !== name;
+        $('t-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false');
+      });
+      try { history.replaceState(null, '', '#' + name); } catch (e) {}
+    }
+    function initTabs() {
+      TABS.forEach((t) => $('t-' + t).addEventListener('click', () => showTab(t)));
+      const h = location.hash.slice(1);
+      showTab(TABS.includes(h) ? h : ui.tab);
+      $('v-owned').addEventListener('click', () => { ui.view = 'owned'; saveUi(); renderMods(); });
+      $('v-missing').addEventListener('click', () => { ui.view = 'missing'; saveUi(); renderMods(); });
+      $('mf-all').addEventListener('click', () => { ui.modFilter = 'all'; saveUi(); renderMods(); });
+      $('mf-plat').addEventListener('click', () => { ui.modFilter = 'plat'; saveUi(); renderMods(); });
+      $('wf-q').addEventListener('input', renderMods);
+    }
+
+    /* ---------- Firebase sync (optional layer) ---------- */
+    async function startSync() {
+      let fa, fs, au;
+      try {
+        const base = 'https://www.gstatic.com/firebasejs/10.7.1/';
+        [fa, fs, au] = await Promise.all([
+          import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js'), import(base + 'firebase-auth.js'),
+        ]);
+      } catch (e) {
+        console.error('Firebase failed to load:', e);
+        setSync('⚠ live sync unavailable (could not load Firebase)', true);
+        return;
+      }
+      const app = fa.initializeApp(CFG);
+      const db = fs.getFirestore(app);
+      const ref = fs.doc(db, 'warframe', 'progress');
+      const auth = au.getAuth(app);
+      S.sync = {
+        async write(fields, full) {
+          try { await fs.updateDoc(ref, fields); }
+          catch (e) { if (e && e.code === 'not-found') await fs.setDoc(ref, full); else throw e; }
+        },
+        async signIn(email, pw) { return au.signInWithEmailAndPassword(auth, email, pw); },
+        async signOut() { return au.signOut(auth); },
+      };
+
+      au.onAuthStateChanged(auth, (user) => {
+        S.owner = !!(user && user.email === OWNER);
+        const note = $('wf-authnote');
+        $('wf-signin').hidden = !!user;
+        $('wf-signout').hidden = !user;
+        if (S.owner) note.textContent = 'Signed in as ' + user.email + '. Checklist and theme saves are unlocked.';
+        else if (user) note.textContent = 'Signed in as ' + user.email + ', but that account is not authorized.';
+        else note.textContent = 'Anyone can view this page. Only the site owner can tick items off.';
+        renderLive();
+      });
+
+      try {
+        fs.onSnapshot(ref, (snap) => {
+          const d = snap.data() || {};
+          S.done = d.done && typeof d.done === 'object' ? d.done : {};
+          S.runs = Number.isInteger(d.runs) ? d.runs : 0;
+          S.remoteTheme = d.theme ? T.sanitize(d.theme) : null;
+          if (!T.readLocal()) { const t = S.remoteTheme || T.DEF; T.apply(t); fillInputs(t); }
+          setSync('☁ synced live');
+          renderLive();
+        }, (err) => {
+          console.error('Firestore listen error:', err);
+          setSync('⚠ sync error: ' + (err.code || 'check console'), true);
+        });
+      } catch (e) {
+        console.error('Firestore init error:', e);
+        setSync('⚠ could not connect to the sync backend', true);
+      }
+
+      $('wf-signin').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const note = $('wf-authnote');
+        note.textContent = 'Signing in…';
+        try {
+          await S.sync.signIn($('wf-email').value.trim(), $('wf-password').value);
+          $('wf-password').value = '';
+        } catch (e) {
+          console.error('Sign-in failed:', e);
+          note.textContent = 'Sign-in error: ' + (e.code || e.message);
+        }
+      });
+      $('wf-signout').addEventListener('click', () => S.sync.signOut());
+    }
+
+    /* ---------- boot ---------- */
+    async function boot() {
+      initTheme();
+      try {
+        const res = await fetch('warframe-data.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        S.data = await res.json();
+      } catch (e) {
+        console.error('Could not load warframe-data.json:', e);
+        $('wf-lede').textContent = 'Could not load the data file. Try reloading.';
+        setSync('⚠ data file missing', true);
+        return;
+      }
+      $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
+      renderLive(); renderMods(); renderBuilds(); initTabs();
+      await startSync();
+    }
+    boot();
+  </script>
+
+</body>
+</html>

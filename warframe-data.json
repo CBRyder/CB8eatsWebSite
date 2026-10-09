@@ -1,0 +1,2442 @@
+{
+ "updated": "2026-10-09",
+ "updatedLabel": "9 Oct 2026",
+ "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. Builds and the farm list are kept by hand.",
+ "caveat": "Mod categories come from a database current to about March 2025, so newer mods may be filed loosely. A dot means at least one max-rank copy, judged from the drain number, so it is approximate.",
+ "meta": {
+  "types": 394,
+  "cards": 1264,
+  "scannedLabel": "8 Oct 2026"
+ },
+ "farm": {
+  "perRun": 27,
+  "target": 520,
+  "runsNeeded": 20,
+  "runLabel": "tier 3 Isolation Vault runs",
+  "picks": [
+   "#1",
+   "#10",
+   "#15",
+   "#16"
+  ],
+  "pickCosts": "45 + 125 + 150 + 200",
+  "shopRefresh": "2026-11-03T09:00:00Z",
+  "tasks": [
+   {
+    "id": "bp30",
+    "group": "Next",
+    "text": "Level Burston Prime back to rank 30",
+    "note": "The Omni Forma reset it to rank 0, so capacity is 44 until then."
+   },
+   {
+    "id": "rebuild",
+    "group": "Next",
+    "text": "Redo the Burston Prime crit build",
+    "note": "At rank 30 the same 8 mods need 55 of 60 capacity, leaving 5 spare."
+   },
+   {
+    "id": "picks",
+    "group": "Next",
+    "text": "Spend 520 Mother Tokens on shop picks #1, #10, #15 and #16",
+    "note": "45 + 125 + 150 + 200 = 520."
+   },
+   {
+    "id": "frames",
+    "group": "Collection",
+    "text": "Own every Warframe",
+    "note": "Frames with Forma in them are kept. The missing frames have not been scanned yet. Most can be built in the Foundry, and many are sold for platinum in the Market.",
+    "tags": [
+     "plat",
+     "foundry"
+    ]
+   },
+   {
+    "id": "allprimed",
+    "group": "Collection",
+    "text": "Own all the Primed mods",
+    "note": "Warframe ones are listed below. The weapon and companion sets have their own goals under More mods.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "allarchon",
+    "group": "Collection",
+    "text": "Own all the Archon mods",
+    "note": "Chipper at Kahl's Garrison sells them, and players trade them.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "archon-intensify",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Archon Intensify",
+    "note": "Chipper, Kahl's Garrison (40 Stock at Fort rank 3). Rank 10 gives +30% Ability Strength.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "archon-stretch",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Archon Stretch",
+    "note": "Chipper, Kahl's Garrison.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "archon-flow",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Archon Flow",
+    "note": "Chipper, Kahl's Garrison.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "archon-vitality",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Archon Vitality",
+    "note": "Chipper, Kahl's Garrison.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-continuity",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Continuity",
+    "note": "Baro Ki'Teer for 350 Ducats and 100,000 credits, or from players.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-flow",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Flow",
+    "note": "Baro or the vault. No sure source, so players trade it.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-redirection",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Redirection",
+    "note": "Baro or the vault. No sure source, so players trade it.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-fastdef",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Fast Deflection",
+    "note": "Baro or the vault. No sure source, so players trade it.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-streamline",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Streamline",
+    "note": "Baro or the vault. No sure source, so players trade it.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-surefooted",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Sure Footed",
+    "note": "Baro or the vault. No sure source, so players trade it.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-vigor",
+    "group": "Archon and Primed Warframe mods",
+    "text": "Primed Vigor",
+    "note": "Baro or the vault. No sure source, so players trade it.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "bladed",
+    "group": "More mods",
+    "text": "Bladed Rounds for extra crit damage",
+    "note": "Cambion Drift bounties or Duviri Endless, or about 15 to 20 plat from players.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "narrow",
+    "group": "More mods",
+    "text": "Narrow Minded",
+    "note": "Orokin Derelict Vault, rotation A, about 4%. Rank 10 gives +99% duration and -66% range.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-rifle",
+    "group": "More mods",
+    "text": "Primed rifle and sniper mods",
+    "note": "Bane of Corpus, Grineer, Infested and Orokin, Cryo Rounds, Fast Hands, Firestorm, Magazine Warp, Shred, Stabilizer, Chamber, Charged Chamber, Sniper Ammo Mutation.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-shotgun",
+    "group": "More mods",
+    "text": "Primed shotgun mods",
+    "note": "Ammo Stock, Blunderbuss, Charged Shell, Chilling Grasp, Cleanse (four), Counterbalance, Point Blank, Ravage, Shotgun Ammo Mutation, Tactical Pump.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-pistol",
+    "group": "More mods",
+    "text": "Primed pistol mods",
+    "note": "Convulsion, Expel (four), Fulmination, Heated Charge, Pistol Ammo Mutation, Pistol Gambit, Quickdraw, Slip Magazine, Steady Hands, Target Cracker.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-melee",
+    "group": "More mods",
+    "text": "Primed melee mods",
+    "note": "Fever Strike, Fury, Heavy Trauma, Pressure Point, Reach, Smite (four).",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "primed-companion",
+    "group": "More mods",
+    "text": "Primed companion mods",
+    "note": "Animal Instinct, Pack Leader, Regen.",
+    "tags": [
+     "plat"
+    ]
+   },
+   {
+    "id": "maw",
+    "group": "Weapons and companions",
+    "text": "Collect 19 more Maw Fang",
+    "note": "For the Burston Prime Incarnon Genesis. Maw Fang comes from Maw Feeding in The Duviri Experience."
+   },
+   {
+    "id": "ax52",
+    "group": "Weapons and companions",
+    "text": "AX-52 from Amir",
+    "note": "Blueprint from Amir, then build it in the Foundry. Per the item database it needs 60 Efervon Sample, 60 Höllvanian Pitchweave Fragment, 25 Techrot Chitin, 5 Techrot Motherboard and 25,000 credits. Spends currency, so confirm before buying.",
+    "tags": [
+     "foundry"
+    ]
+   },
+   {
+    "id": "vulpaphyla",
+    "group": "Weapons and companions",
+    "text": "Finish the 6- or 8-stack Panzer Vulpaphyla",
+    "note": "A viral priming pet. Combine every Mutagen and Antigen type, with the last one set to the look you want to keep. The first one is done."
+   },
+   {
+    "id": "steelpath",
+    "group": "Weapons and companions",
+    "text": "Better Steel Path survivability for the builds"
+   },
+   {
+    "id": "redveil",
+    "group": "Syndicates",
+    "text": "Rank up Red Veil",
+    "note": "Rank 5 as of 1 Oct (84,217 of 132,000 standing)."
+   },
+   {
+    "id": "entrati",
+    "group": "Syndicates",
+    "text": "Entrati rank 4 for the Helminth segment",
+    "note": "Done. Mother Tokens went into it.",
+    "doneDefault": true
+   },
+   {
+    "id": "forma",
+    "group": "Resources and Foundry",
+    "text": "Collect Forma blueprints from relics",
+    "note": "Forma is built in the Foundry and takes about 23 hours. Omni Forma needs 4 Forma, 10 Nitain Extract and an Argon Crystal (item database, about March 2025).",
+    "tags": [
+     "foundry"
+    ]
+   },
+   {
+    "id": "octavia",
+    "group": "Resources and Foundry",
+    "text": "Farm Salvage for the Octavia Chassis",
+    "note": "The chassis is built in the Foundry.",
+    "tags": [
+     "foundry"
+    ]
+   },
+   {
+    "id": "index",
+    "group": "Resources and Foundry",
+    "text": "Run The Index for credits",
+    "note": "About 2.1M credits."
+   }
+  ],
+  "groupOrder": [
+   "Next",
+   "Collection",
+   "Archon and Primed Warframe mods",
+   "More mods",
+   "Weapons and companions",
+   "Syndicates",
+   "Resources and Foundry"
+  ]
+ },
+ "mods": {
+  "owned": [
+   {
+    "id": "wf-good",
+    "name": "Warframe, maxed or good",
+    "items": [
+     "Archon Continuity*",
+     "Umbral Fiber*",
+     "Precision Intensify*",
+     "Intensify* x2",
+     "Streamline* x3",
+     "Flow* x5",
+     "Continuity* x3",
+     "Stretch* x4",
+     "Overextended*",
+     "Energy Nexus* x2",
+     "Augur Accord*",
+     "Augur Message*",
+     "Augur Reach*",
+     "Natural Talent*",
+     "Rage*",
+     "Power Drift*",
+     "Master Thief*",
+     "Quick Thinking*",
+     "Rush* x6",
+     "Fast Deflection* x8",
+     "Sure Footed*",
+     "Aero Vantage*",
+     "Aviator* x4",
+     "Carnis Carapace* x6",
+     "Gladiator Finesse*",
+     "Boreal's Hatred*",
+     "Nira's Hatred*",
+     "Nira's Anguish*",
+     "Motus Signal* x5"
+    ]
+   },
+   {
+    "id": "wf-part",
+    "name": "Warframe, not yet maxed",
+    "items": [
+     "Transient Fortitude (r8/10)",
+     "Umbral Intensify (r8/10)",
+     "Umbral Vitality (r6/10)",
+     "Vitality (r7/10) x6",
+     "Redirection (r6/10) x4",
+     "Adaptation (r6/10)",
+     "Blind Rage (r5/10)",
+     "Equilibrium (r7/10) x2",
+     "Rolling Guard (r5/10)",
+     "Firewalker (r5/10)",
+     "Thief's Wit (r3/5) x6",
+     "Steel Fiber (r1/10) x4"
+    ]
+   },
+   {
+    "id": "wf-raw",
+    "name": "Warframe, unranked",
+    "items": [
+     "Handspring",
+     "Mobilize x2",
+     "Enemy Sense x2",
+     "Diamond Skin x3",
+     "Antitoxin",
+     "Heavy Impact x3",
+     "Insulation",
+     "Lightning Rod x2",
+     "Maglev x2",
+     "Pain Threshold x11",
+     "Patagium x2",
+     "Piercing Step",
+     "Reflection x3",
+     "Retribution x2",
+     "Undying Will x2",
+     "Warm Coat x4",
+     "Toxic Flight",
+     "Flame Repellent x2"
+    ]
+   },
+   {
+    "id": "auras",
+    "name": "Auras",
+    "items": [
+     "Worthy Comradery x5 (ranks vary)",
+     "Corrosive Projection",
+     "Rifle Amp",
+     "Energy Siphon",
+     "Physique",
+     "Ready Steel",
+     "Dreamer's Bond x2",
+     "Summoner's Wrath x3"
+    ]
+   },
+   {
+    "id": "augments",
+    "name": "Frame augments",
+    "items": [
+     "Deceptive Bond (Loki)",
+     "Hushed Invisibility (Loki)",
+     "Abundant Mutation (Nidus)",
+     "Blending Talons (Garuda)",
+     "Conductor (Octavia)",
+     "Loyal Merulina (Yareli)",
+     "Razorwing Blitz (Titania)",
+     "Regenerative Molt (Saryn)",
+     "Venom Dose (Saryn)",
+     "Seeking Shuriken (Ash)",
+     "Thrall Pact (Revenant)"
+    ]
+   },
+   {
+    "id": "melee",
+    "name": "Melee",
+    "items": [
+     "Condition Overload*",
+     "Berserker Fury*",
+     "Fury* x9",
+     "Fever Strike* x4",
+     "Blood Rush (r5/10)",
+     "Weeping Wounds*",
+     "Organ Shatter* x5",
+     "Pressure Point* x11",
+     "True Steel* x13",
+     "Relentless Combination* x8",
+     "Molten Impact* x4",
+     "Shocking Touch* x4",
+     "Sundering Strike* x4",
+     "Seismic Wave* x2",
+     "North Wind* x7",
+     "Quickening* x2",
+     "Melee Prowess* x8",
+     "Life Strike*",
+     "Jagged Edge*",
+     "Volcanic Edge*",
+     "Carnis Mandible* x6",
+     "Sacrificial Steel (r7/10)",
+     "Sacrificial Pressure (r7/10)",
+     "Reach (r3/5) x8",
+     "Healing Return (r4/10) x2",
+     "Finishing Touch x8",
+     "Reflex Coil x10",
+     "Killing Blow",
+     "Heavy Trauma x3",
+     "Smite Grineer x3",
+     "Smite Infested x3",
+     "Shattering Impact x5",
+     "Lasting Sting x5",
+     "Energy Channel",
+     "Dispatch Overdrive x3",
+     "Mentor's Legacy",
+     "Vicious Frost",
+     "True Punishment",
+     "Static Discharge x9",
+     "Toxic Blight"
+    ]
+   },
+   {
+    "id": "thrown",
+    "name": "Thrown melee",
+    "items": [
+     "Power Throw x4",
+     "Quick Return x4",
+     "Volatile Quick Return x7",
+     "Whirlwind"
+    ]
+   },
+   {
+    "id": "stances",
+    "name": "Stances",
+    "items": [
+     "Fists: Fracturing Wind",
+     "Fists: Seismic Palm",
+     "Fists: Gaia's Tragedy",
+     "Swords: Iron Phoenix",
+     "Swords: Swooping Falcon",
+     "Dual Swords: Crossing Snakes",
+     "Dual Swords: Swirling Tiger",
+     "Nikanas: Blind Justice",
+     "Nikanas: Decisive Judgement",
+     "Whips: Burning Wasp",
+     "Whips: Coiling Viper",
+     "Polearms: Bleeding Willow",
+     "Polearms: Shimmering Blight",
+     "Warfans: Slicing Feathers",
+     "Warfans: Votive Onslaught",
+     "Dual Daggers: Sinking Talon",
+     "Dual Daggers: Spinning Needle",
+     "Daggers: Pointed Wind",
+     "Hammers: Crushing Ruin",
+     "Claws: Four Riders",
+     "Scythes: Reaping Spiral",
+     "Rapiers: Vulpine Mask",
+     "Tonfas: Gemini Cross",
+     "Staves: Clashing Forest",
+     "Sword and Shield: Eleventh Storm",
+     "Machetes: Sundering Weave",
+     "Nunchaku: Atlantis Vulcan",
+     "Sparring: Grim Fury",
+     "Dual Nikanas: Mountain's Edge",
+     "Blade and Whip: Defiled Snapdragon",
+     "Posture: Balanced Posture"
+    ]
+   },
+   {
+    "id": "rifle",
+    "name": "Rifle and other primary",
+    "items": [
+     "Serration* x10",
+     "Split Chamber* x2",
+     "Vital Sense*",
+     "Critical Delay*",
+     "Point Strike* x9",
+     "Piercing Hit* x4",
+     "Speed Trigger* x9",
+     "Fast Hands* x15",
+     "Magazine Warp* x13",
+     "Ammo Drum* x6",
+     "Stormbringer* x13",
+     "Infected Clip* x6",
+     "Cryo Rounds* x9",
+     "Hellfire* x2",
+     "Hush* x5",
+     "Magnetic Capacity* x4",
+     "Metal Auger* x3",
+     "Proton Jet* x3",
+     "Terminal Velocity* x2",
+     "Twitch*",
+     "Rifle Aptitude* x2",
+     "Galvanized Aptitude (r5/10)",
+     "Primary Acuity (r5/10) x2",
+     "Bane of Corpus/Grineer/Infested (r2/3)",
+     "Stabilizer (r3/5)",
+     "Combustion Beam (r4/5)",
+     "Sawtooth Clip x13",
+     "Rupture x3",
+     "Eagle Eye x5",
+     "Argon Scope x2",
+     "Internal Bleeding",
+     "Malignant Force",
+     "Radiated Reload",
+     "Continuous Misery x3",
+     "Overview* x3",
+     "Hammer Shot* (r3/3)",
+     "Spring-Loaded Chamber (r4/5)",
+     "Sinister Reach* x5",
+     "Thunderbolt* x4 (bow)",
+     "Charged Chamber x2 (sniper)",
+     "Sniper Ammo Mutation (sniper)"
+    ]
+   },
+   {
+    "id": "shotgun",
+    "name": "Shotgun",
+    "items": [
+     "Point Blank* x13",
+     "Hell's Chamber* x2",
+     "Fatal Acceleration* x13",
+     "Shotgun Barrage* x6",
+     "Atomic Fallout* x2",
+     "Charged Shell*",
+     "Chilling Grasp* x3",
+     "Incendiary Coat* x4",
+     "Blunderbuss (r2/3) x5",
+     "Shotgun Savvy (r2/3) x5",
+     "Cleanse Corpus/Grineer/Infested/Orokin",
+     "Disruptor x4",
+     "Flechette x7",
+     "Shredder x13",
+     "Lingering Torment x6",
+     "Broad Eye x9",
+     "Magnetic Welt x4",
+     "Full Contact",
+     "Seeking Fury x2",
+     "Narrow Barrel",
+     "Nano-Applicator",
+     "Tactical Pump x3",
+     "Snap Shot",
+     "Shell Compression",
+     "Chilling Reload x2",
+     "Toxic Barrage"
+    ]
+   },
+   {
+    "id": "pistol",
+    "name": "Pistol",
+    "items": [
+     "Barrel Diffusion*",
+     "Galvanized Diffusion (r6/10)",
+     "Hornet Strike* x5",
+     "Heated Charge* x8",
+     "Pistol Gambit* x6",
+     "Target Cracker* x5",
+     "Trick Mag* x16",
+     "Suppress* x12",
+     "Slip Magazine* x5",
+     "Accelerated Isotope*",
+     "Convulsion* x3",
+     "Deep Freeze* x2",
+     "Ice Storm* x2",
+     "Pathogen Rounds* x4",
+     "Magnetic Might*",
+     "Pressurized Magazine*",
+     "Reflex Draw* x2",
+     "Seeker* x2",
+     "Stunning Speed*",
+     "Expel Corpus/Grineer/Infested (r2/3)",
+     "Gunslinger x3",
+     "Hawk Eye x3",
+     "Pistol Acuity x2",
+     "Pistol Ammo Mutation",
+     "Quickdraw x7",
+     "Razor Shot x6",
+     "No Return x5",
+     "Concussion Rounds x4",
+     "Air Recon x5",
+     "Hemorrhage",
+     "Perpetual Agony x4",
+     "Lethal Momentum",
+     "Steady Hands",
+     "Synth Charge",
+     "Spry Sights x4",
+     "Ruinous Extension",
+     "Embedded Catalyzer"
+    ]
+   },
+   {
+    "id": "companion",
+    "name": "Companion",
+    "items": [
+     "Calculated Redirection (r8/10) x6",
+     "Enhanced Vitality (r8/10) x5",
+     "Link Vitality (r8/10)",
+     "Metal Fiber (r6/10) x14",
+     "Medi-Pet Kit* x17",
+     "Pack Leader* x3",
+     "Duplex Bond*",
+     "Loyal Companion",
+     "Radon Claws*",
+     "Fatal Attraction x4",
+     "Thumper x3",
+     "Vaporize x6",
+     "Whiplash Mine*",
+     "Anti-Grav Grenade",
+     "Molecular Conversion",
+     "Crowd Dispersion x2",
+     "Ammo Case x3"
+    ]
+   },
+   {
+    "id": "sentinel",
+    "name": "Sentinel and robotic",
+    "items": [
+     "Shield Charger* x20",
+     "Guardian* x4",
+     "Accelerated Deflection* x4",
+     "Spare Parts* x4",
+     "Vacuum* x2",
+     "Regen* x5",
+     "Repair Kit* x4",
+     "Assault Mode* x4",
+     "Medi-Ray"
+    ]
+   },
+   {
+    "id": "beast",
+    "name": "Beast, Kavat, Vulpaphyla and Shade",
+    "items": [
+     "Fetch x5",
+     "Scavenge",
+     "Shelter",
+     "Retrieve*",
+     "Neutralize",
+     "Pounce",
+     "Sharpened Claws x3",
+     "Fear Sense",
+     "Territorial Aggression",
+     "Charm",
+     "Reflect x2",
+     "Swipe*",
+     "Panzer Devolution*",
+     "Viral Quills*",
+     "Proboscis",
+     "Trample",
+     "Ghost* x5",
+     "Revenge* x12"
+    ]
+   },
+   {
+    "id": "necramech",
+    "name": "Necramech",
+    "items": [
+     "Necramech Blitz",
+     "Necramech Deflection",
+     "Necramech Efficiency",
+     "Necramech Friction x3",
+     "Necramech Fury x6",
+     "Necramech Reach",
+     "Necramech Redirection",
+     "Necramech Streamline x2",
+     "Necramech Stretch x2"
+    ]
+   },
+   {
+    "id": "archwing",
+    "name": "Archwing, Arch-Gun and Arch-Melee",
+    "items": [
+     "Argon Plating x2",
+     "Auxiliary Power x2",
+     "Efficient Transferral",
+     "Energy Inversion",
+     "Enhanced Durability",
+     "Superior Defenses*",
+     "Cold Snap",
+     "Modified Munitions*",
+     "Parallax Scope*",
+     "Polar Magazine",
+     "Rubedo-Lined Barrel*",
+     "Bleeding Edge",
+     "Conductive Blade x9",
+     "Cutting Edge x2",
+     "Extend x5",
+     "Furor",
+     "Sudden Impact x3",
+     "Tempered Blade x2"
+    ]
+   },
+   {
+    "id": "parazon",
+    "name": "Parazon",
+    "items": [
+     "Blood For Ammo x5",
+     "Blood For Life x2",
+     "Live Wire",
+     "Out of Sight",
+     "Intruder x4"
+    ]
+   },
+   {
+    "id": "railjack",
+    "name": "Plexus and Railjack",
+    "items": [
+     "Hyperstrike*",
+     "Predator* x2",
+     "Indomitable/Ironclad/Onslaught/Orgone Tuning/Raider Matrix (r4/5)",
+     "Section Density (r4/5)",
+     "Ion Burn x6",
+     "Sentient Scalpel x5",
+     "Overloader x2",
+     "Fire Suppression x2",
+     "Countermeasures",
+     "Munitions Vortex",
+     "Phoenix Blaze",
+     "Cruising Speed",
+     "Protective Shots",
+     "Revo Reducer",
+     "Ripload",
+     "Scourging Warheads",
+     "Warhead x2",
+     "Waveband Disruptor"
+    ]
+   },
+   {
+    "id": "weapon",
+    "name": "Weapon-specific",
+    "items": [
+     "Flux Overdrive x14 (Flux Rifle)",
+     "Kinetic Ricochet x17 (Tetra)",
+     "Tether Grenades x13 (Penta)",
+     "Thermagnetic Shells x10 (Detron)",
+     "Gilded Truth (Burston Prime)",
+     "Adhesive Blast x2",
+     "Biotic Rounds (AX-52)",
+     "Amalgam Argonak Metal Auger",
+     "Motus Setup x2",
+     "Concealed Explosives x2",
+     "Deadly Maneuvers (Magnus)"
+    ]
+   },
+   {
+    "id": "special",
+    "name": "Newer or special",
+    "items": [
+     "Dreadful Killshot",
+     "Esti Vel-Ikha",
+     "Grakata Hexa-insimag",
+     "Harrowing Spire",
+     "Lashta-Vak",
+     "Magnetic Claws x5",
+     "Magnetic Rush x9",
+     "Metem-Hakh",
+     "Necrophagic Vigor",
+     "Amp: Hok-Kaal",
+     "Amp: Hayan-Dabor",
+     "Amp: Evir-Ti x2",
+     "Amp: Ulashta-Shol x3",
+     "Pistol Riven Mod",
+     "Rifle Riven Mod",
+     "Focus Way: Lightning Dash"
+    ]
+   }
+  ],
+  "missing": [
+   {
+    "id": "m-top",
+    "name": "Top Warframe stat mods",
+    "note": "Archon mods each replace their normal mod family.",
+    "items": [
+     {
+      "t": "Archon Intensify (Chipper at Kahl's Garrison - 40 Stock at Fort rank 3 - rank 10 gives +30% Ability Strength)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Archon Stretch (Chipper)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Archon Flow (Chipper)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Archon Vitality (Chipper)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Continuity (Baro Ki'Teer - 350 Ducats + 100,000 credits - tradable)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Flow (Baro or vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Redirection (Baro or vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Fast Deflection (Baro or vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Streamline (Baro or vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     "Primed Sure Footed (Baro or vault)",
+     "Primed Vigor (Baro or vault)"
+    ]
+   },
+   {
+    "id": "m-other",
+    "name": "Other Warframe mods",
+    "items": [
+     {
+      "t": "Narrow Minded (Orokin Derelict Vault rotation A, about 4% - rank 10 gives +99% duration and -66% range)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Fleeting Expertise (Derelict Vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Fortitude (Derelict Vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Catalyzing Shields (Derelict Vault)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Constitution (Nightmare mission rewards)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Armored Agility (Nightmare mission rewards)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Streamlined Form (Nightmare mission rewards)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vigor (Thrax)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Augur Secrets",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Reflex Guard",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Rapid Resilience",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shock Absorbers",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Synth Reflex",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Mecha Pulse",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tek Collateral",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Strain Consume",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Energy Conversion (Simaris)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Health Conversion (Simaris)",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-exilus",
+    "name": "Exilus-style Warframe mods",
+    "items": [
+     {
+      "t": "Speed Drift",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Stealth Drift",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Endurance Drift",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Cunning Drift",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Agility Drift",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Coaction Drift",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Resilient Focus",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vigorous Swap",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Preparation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Gale Kick",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Kavat's Grace",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Ice Spring",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Amar's Anguish",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Boreal's Anguish",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Gladiator Aegis",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Hunter Adrenaline",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vigilante Vigor",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Gladiator Resolve",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vigilante Pursuit",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Battering Maneuver",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Provoked",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Rending Turn",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-aura",
+    "name": "Auras",
+    "items": [
+     {
+      "t": "Steel Charge",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Growing Power",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Combat Discipline",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Aerodynamic",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Empowered Blades",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Melee Guidance",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Power Donation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shepherd",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Swift Momentum",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Mecha Empowered (Arbitrations or specters)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Dead Eye",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Pistol Amp",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shotgun Amp",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Holster Amp",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Brief Respite",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Rejuvenation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Stand United",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shield Disruption",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Sprint Boost",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Infested Impedance",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Enemy Radar",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Loot Detector",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Emp Aura",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Toxin Resistance",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Pistol Scavenger",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Rifle Scavenger",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shotgun Scavenger",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Sniper Scavenger",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-rifle",
+    "name": "Rifle and sniper",
+    "items": [
+     {
+      "t": "Heavy Caliber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Bladed Rounds (uncommon crit damage mod - Cambion Drift bounties and Duviri Endless - about 15 to 20 plat from players)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vile Acceleration",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vile Precision",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Chamber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Scope",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Piercing Caliber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "High Voltage",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Wildfire",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Firestorm",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Rime Rounds",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Thermite Rounds",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Cautious Shot",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Crash Course",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Fanged Fusillade",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Aerial Ace",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Amalgam Serration",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Spectral Serration",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Bane of Corpus/Grineer/Infested/Orokin",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Cryo Rounds",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Fast Hands",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Firestorm",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Magazine Warp",
+      "tags": [
+       "plat"
+      ]
+     },
+     "Primed Shred",
+     {
+      "t": "Primed Stabilizer",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Chamber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Charged Chamber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Sniper Ammo Mutation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Sharpshooter",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Target Acquired",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-shotgun",
+    "name": "Shotgun",
+    "items": [
+     {
+      "t": "Galvanized Acceleration",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Hell",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Savvy",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Amalgam Shotgun Barrage",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Accelerated Blast",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Blaze",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Breach Loader",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Burdened Magazine",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Counterbalance",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Critical Deceleration",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Frigid Blast",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Ravage",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Scattering Inferno",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Seeking Force",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shell Shock",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shotgun Ammo Mutation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Sweeping Serration",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tainted Shell",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vicious Spread",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Ammo Stock",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Blunderbuss",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Charged Shell",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Chilling Grasp",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Cleanse Corpus/Grineer/Infested/Orokin",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Counterbalance",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Point Blank",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Ravage",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Shotgun Ammo Mutation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Tactical Pump",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-pistol",
+    "name": "Pistol",
+    "items": [
+     {
+      "t": "Galvanized Crosshairs",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Shot",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Amalgam Barrel Diffusion",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Hollow Point",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Magnum Force",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Maim",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Lethal Torrent",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Fulmination",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Frostbite",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Jolt",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Scorch",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Pummel",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tainted Clip",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Augur Seeker",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Bore",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Cannonade",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Creeping Bullseye",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Merciless Gunfight",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Pistol Pestilence",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Convulsion",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Expel Corpus/Grineer/Infested/Orokin",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Fulmination",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Heated Charge",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Pistol Ammo Mutation",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Pistol Gambit",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Quickdraw",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Slip Magazine",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Steady Hands",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Target Cracker",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-melee",
+    "name": "Melee and thrown melee",
+    "items": [
+     {
+      "t": "Galvanized Steel",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Reflex",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Galvanized Elementalist",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Amalgam Organ Shatter",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Maiming Strike",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Rending Strike",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Spoiled Strike",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Virulent Scourge",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Voltaic Strike",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Strain Infection",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Spring-Loaded Blade",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Proton Snap",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Focus Energy",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Focus Radon",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Buzz Kill",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Collision Force",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Corrupt Charge",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Discipline's Merit",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Dreamer's Wrath",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Drifting Contact",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Gladiator Vice",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Harrowed Hook",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Auger Strike",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Air Martial",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tek Gravity",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Fever Strike",
+      "tags": [
+       "plat"
+      ]
+     },
+     "Primed Fury",
+     {
+      "t": "Primed Heavy Trauma",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Pressure Point",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Reach",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Smite Corpus/Grineer/Infested/Orokin",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Combo Fury",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Mark of the Beast",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Volatile Rebound",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-companion",
+    "name": "Companion and Necramech",
+    "items": [
+     {
+      "t": "Primed Animal Instinct",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Pack Leader",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Regen",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Animal Instinct",
+      "tags": [
+       "plat"
+      ]
+     },
+     "Bond family: Aerial/Astral/Contagious/Covert/Momentous/Mystic/Reinforced/Restorative/Seismic/Tenacious/Vicious",
+     {
+      "t": "Synth Fiber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Synth Deconstruct",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Aerial Prospectus",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Diversified Denial",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Equilibrium Audit",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Evasive Denial",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Focused Prospectus",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Null Audit",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Reflex Denial",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Repo Audit",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Synergized Prospectus",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Bite",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Burning Claws",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Chilling Claws",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shocking Claws",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Sepsis Claws",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Flame Gland",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Frost Jaw",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Shock Collar",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Venom Teeth",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Necramech Flow",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Necramech Intensify",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Necramech Pressure Point",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Necramech Seismic Wave",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Necramech Thrusters",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-arch",
+    "name": "Arch-Gun and Parazon",
+    "items": [
+     "Archgun Ace",
+     "Automatic Trigger",
+     "Ballista Measure",
+     "Charged Bullets",
+     "Critical Focus",
+     "Deadly Efficiency",
+     "Dual Rounds",
+     "Hollowed Bullets",
+     "Magma Chamber",
+     "Sabot Rounds",
+     "Zodiac Shred",
+     {
+      "t": "Primed Deadly Efficiency",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Dual Rounds",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Rubedo-Lined Barrel",
+      "tags": [
+       "plat"
+      ]
+     },
+     "Anti-V",
+     "Computer Cop",
+     "Failsafe",
+     "Hard Reset",
+     "Malicious Code",
+     "Runtime",
+     "Soft Safe",
+     "Untraceable",
+     "Requiem set: Fass/Jahu/Khra/Lohk/Netra/Ris/Vome/Xata/Oull (plus Tome Canticle and Invocation versions)"
+    ]
+   },
+   {
+    "id": "m-stance",
+    "name": "Stances",
+    "note": "Conclave-only mods are left out on purpose.",
+    "items": [
+     {
+      "t": "Astral Twilight",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Gleaming Talon (Glaives)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Bullet Dance",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "High Noon (Gunblade)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Cleaving Whirlwind",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tempo Royale (Heavy Blade)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Crimson Dervish",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vengeful Revenant (Swords)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Malicious Raptor",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vermillion Storm (Claws)",
+      "tags": [
+       "plat"
+      ]
+     },
+     "About a dozen more one-per-weapon stances"
+    ]
+   }
+  ]
+ },
+ "builds": [
+  {
+   "id": "burston",
+   "name": "Burston Prime",
+   "config": "Config C",
+   "goal": "Max crit chance and damage",
+   "status": "Waiting on rank 30",
+   "stats": [
+    [
+     "Total damage",
+     "302.7"
+    ],
+    [
+     "Crit chance",
+     "54%"
+    ],
+    [
+     "Crit damage",
+     "3.2x"
+    ],
+    [
+     "Fire rate",
+     "8"
+    ],
+    [
+     "Status",
+     "30%"
+    ],
+    [
+     "Multishot",
+     "1 (locked)"
+    ]
+   ],
+   "statsNote": "Read on 8 Oct 2026, before the Omni Forma reset. The panel leaves out weak points and conditional mods.",
+   "mods": [
+    [
+     "Serration",
+     "in"
+    ],
+    [
+     "Critical Delay",
+     "in"
+    ],
+    [
+     "Argon Scope",
+     "in",
+     "rank 0 copy"
+    ],
+    [
+     "Gilded Truth",
+     "in"
+    ],
+    [
+     "Hellfire",
+     "in",
+     "max"
+    ],
+    [
+     "Infected Clip",
+     "in",
+     "max"
+    ],
+    [
+     "Primary Acuity",
+     "out",
+     "about rank 8"
+    ],
+    [
+     "Vital Sense",
+     "out"
+    ]
+   ],
+   "slots": "Slot 1 Madurai, slot 7 Naramon, locked Exilus Naramon, slot 5 Omni (Hellfire drains 6 instead of 11), the rest neutral.",
+   "notes": [
+    "Removing Gilded Truth halves the fire rate (8 to 4).",
+    "At 60 capacity, maxed Hellfire and Infected Clip beat Hammer Shot on total damage.",
+    "Critical Delay gives +200% crit chance for -20% fire rate.",
+    "Argon Scope gives +135% crit chance for 9 seconds after a headshot while aiming (database current to about March 2025)."
+   ],
+   "next": "At rank 30 Argon Scope at rank 5 fits exactly. Bladed Rounds would add crit damage (on kill, +120% for 9 seconds while aiming)."
+  },
+  {
+   "id": "cyte",
+   "name": "Cyte-09",
+   "config": "Config B",
+   "goal": "Built for the Cyte-09 request",
+   "status": "Built, Config A untouched and active",
+   "lists": [
+    [
+     "Aura",
+     "Worthy Comradery"
+    ],
+    [
+     "Mods",
+     "Transient Fortitude, Precision Intensify, Adaptation, Augur Accord, Augur Message, Archon Continuity, Augur Reach, Energy Nexus"
+    ],
+    [
+     "Arcanes",
+     "Crepuscular (rank 1), Molt Efficiency"
+    ]
+   ]
+  }
+ ]
+}

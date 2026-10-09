@@ -323,6 +323,50 @@ after the very first run). If you ever need an "ensure doc exists" write again, 
 dotted field path or check existence first — never `set(..., { merge: true })` with a
 whole nested object as the value for an existing map field.
 
+## Warframe page (`warframe.html`)
+
+A phone-first page for CB's Warframe account, built in the same JSON-driven +
+Firebase style as the trackers. Four tabs: **Goals** (Mother Token farm counter and a
+checklist of grind goals, with "Buy with plat" and "Foundry" filters), **Mods**
+(Owned / Missing lists, search, and a "Buy with plat" filter on Missing), **Builds**,
+and **Theme**.
+
+- **Content is data:** `warframe-data.json` (fetched with `cache: 'no-store'`). Shape:
+  `{ updated, updatedLabel, source, caveat, meta, farm{...}, mods{owned[], missing[]},
+  builds[] }`. Mod entries are strings or `{ "t": name, "tags": ["plat"] }`. Goals live
+  in `farm.tasks` (each has `id`, `group`, `text`, `note`, `tags`, optional
+  `doneDefault`). **CB's standing request: whenever his Warframe mod list changes
+  (a scan, a new mod, a mod ranked up), replace this JSON and push so the page shows
+  the correct list.**
+- **The `plat` tag** means "tradable according to the warframe-items database
+  (about March 2025)", not a live price. Items missing from that database are untagged.
+- **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,
+  theme: {...} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  sign-in inside the page). Writes use `updateDoc` with dotted paths; `setDoc` is only
+  the fallback when the doc does not exist yet. If Firebase fails to load, the page
+  still renders from the JSON. Rule needed (add alongside the others, **do not replace
+  them**; it must be published by the owner in the Firebase console):
+
+```
+match /warframe/progress {
+  allow read: if true;
+  allow write: if request.auth != null
+               && request.auth.token.email == 'cbleo73@gmail.com'
+               && request.resource.data.keys().hasOnly(['done', 'runs', 'theme'])
+               && (!('done' in request.resource.data) || request.resource.data.done is map)
+               && (!('runs' in request.resource.data) || request.resource.data.runs is int)
+               && (!('theme' in request.resource.data) || request.resource.data.theme is map);
+}
+```
+
+- **Theme:** four base colors (forest green, royal purple, neon green, neon purple)
+  drive every CSS variable on the page, computed by a small script in `<head>` before
+  paint. Saved per device in `localStorage` (`cb8eats-warframe-theme-v1`); when the
+  owner is signed in it also syncs to `warframe/progress.theme`.
+- **Address:** served at `/warframe`. A `warframe.cb8eats.com` hostname is planned but
+  **not wired up yet** (needs a hostname check in `worker.js` plus a custom domain in
+  the Cloudflare dashboard).
+
 ## Conventions
 
 - One branch per change (`claude/<description>`), PR opened against `main`, squash

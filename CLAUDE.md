@@ -28,8 +28,8 @@ worked on this repo — this file is the shared memory across them.
 - **Static files bypass the Worker by default.** A request that matches a file (like
   `/` -> `index.html`) is served straight from the assets and never runs `worker.js`.
   `wrangler.jsonc` therefore sets `assets.run_worker_first` to `["/"]` so the Worker
-  sees the front page (needed for the `warframe.cb8eats.com` hostname, see the
-  Warframe section). Every other path is still served directly from the assets. If a
+  sees the front page (needed for the `dev.cb8eats.com` hostnames, see the Dev hub
+  section). Every other path is still served directly from the assets. If a
   new hostname-based rewrite ever has to run for another path, add that path to the
   list rather than setting it to `true`.
 - **Gotcha:** a Worker `html_handling: "strip"`-style setting was tried once to drop
@@ -47,16 +47,18 @@ value before assuming it's still red/pink from an old memory).
 
 Top-level nav: **Home** (`index.html`) · **Designs** (`designs.html`) · **Music**
 (`music.html`) · **COA: Vampire Knights** (`coa.html`) · **Tarboro Life**
-(`tarboro-life.html`).
+(`tarboro-life.html`). A **Dev** tab is appended to this menu only in a browser where
+the owner (or a listed dev) has signed in — see "Dev hub" below.
 
 Both `coa.html` and `tarboro-life.html` are hub pages linking out to lore/detail
 subpages via a `.grid.grid-3` card grid:
 
 - **COA: Vampire Knights** (an original game project) → `world.html`, `factions.html`,
-  `story.html`, plus `coa-tracker.html` (bug/system tracker, see below).
+  `story.html`, plus `coa-bug-report.html` (public bug report form, see below). The
+  COA tracker is **not** linked from here any more — it lives under the Dev hub.
 - **Tarboro Life** (a FiveM RP server) → `jobs.html`, `businesses.html`, `gangs.html`,
-  `activities.html`, `apply.html` (staff application form), plus `tracker.html`
-  (resource tracker, see below).
+  `activities.html`, `apply.html` (staff application form). The resource tracker is
+  **not** linked from here any more — it lives under the Dev hub.
 
 `music.html` has Spotify track embeds (`.spotify-embed` iframe) and self-hosted
 `<audio>` players for uploaded `audio/*.m4a` files.
@@ -70,7 +72,11 @@ embeds").
 ## The two trackers (JSON-driven + Firebase-backed)
 
 `tracker.html` (Tarboro Life resources) and `coa-tracker.html` (COA systems) are the
-most complex pages on the site. Both follow the same pattern:
+most complex pages on the site. They are **dev pages now**: no public page links to
+them (reached from the Dev hub, `dev.html`), they carry `noindex`, they share the Dev
+hub's theme and header, and sign-in is the button at the top right of the header
+(`js/dev-auth.js`), not a form on the page — see the Dev hub section. Both follow the
+same pattern:
 
 1. **Content is data, not hardcoded HTML.** Each fetches its own JSON file at load —
    `resource-inventory.json` for `tracker.html`, `coa-inventory.json` for
@@ -349,7 +355,7 @@ and **Theme**.
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,
   theme: {...}, custom: {goalId: {name, qty, plat, at}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
-  sign-in inside the page). Writes use `updateDoc` with dotted paths; `setDoc` is only
+  sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace
   them**; it must be published by the owner in the Firebase console):
@@ -394,23 +400,86 @@ published the original three-field rule, adding goals fails with permission-deni
     overridden. The owner can still edit or delete the goal in the page; if a fix exists
     for it, the page warns that the fix still wins until Claude removes it.
 
-- **Theme:** four base colors (forest green, royal purple, neon green, neon purple)
-  drive every CSS variable on the page, computed by a small script in `<head>` before
-  paint. Saved per device in `localStorage` (`cb8eats-warframe-theme-v1`); when the
-  owner is signed in it also syncs to `warframe/progress.theme`.
-- **Address:** served at `/warframe`, and at the bare root of `warframe.cb8eats.com`
-  and `www.warframe.cb8eats.com` (the owner attached the `www.` one in the dashboard,
-  so both are accepted). `worker.js` checks `WARFRAME_HOSTS.has(url.hostname)` and `pathname === '/'`
-  (GET/HEAD only; `/` only reaches the Worker because of `run_worker_first`) and fetches `/warframe` from `env.ASSETS` instead (extensionless on
-  purpose, since `/warframe.html` 307-redirects). Every other path on that hostname
-  falls through to the normal assets, so the page's relative `css/`, `js/` and
-  `warframe-data.json` links work. The hostname itself is attached in the Cloudflare
-  dashboard (Workers & Pages -> `cb8eatswebsite` -> Settings -> Domains & Routes ->
-  Add -> Custom domain), **not** in `wrangler.jsonc`, same as `www.iltep.cb8eats.com`.
-  Cannot be done from a Claude Code Remote session (api.cloudflare.com is blocked), so
-  the owner does it. If sign-in fails only on the new hostname, check Firebase console
-  -> Authentication -> Settings -> Authorized domains and the web API key's website
-  restrictions in Google Cloud.
+- **Theme:** the Theme tab is the shared editor from `js/theme.js` (see the Dev hub
+  section) — the same four colors drive the hub and both trackers too.
+- **Address:** reached from the third card on the Dev hub (`warframe.html` -> `/warframe`).
+  The old `warframe.cb8eats.com` / `www.warframe.cb8eats.com` hostnames were replaced by
+  the dev hostnames below, and the Worker no longer rewrites them (if they are still
+  attached in the dashboard, they just show the home page).
+
+## Dev hub (`dev.html`) and the dev pages
+
+The Tarboro Life tracker, the COA tracker and Warframe are owner/dev tools, not public
+content. They live together under one hub page with three big cards (`dev.html`; ids
+`hub-tarboro`, `hub-coa`, `hub-warframe`). **Four dev pages:** `dev.html`,
+`tracker.html`, `coa-tracker.html`, `warframe.html`.
+
+- **Address:** `www.dev.cb8eats.com` (and `dev.cb8eats.com`) shows the hub at its bare
+  root, and `/dev` works on every hostname. `worker.js` checks
+  `DEV_HOSTS.has(url.hostname)` and `pathname === '/'` (GET/HEAD only; `/` only reaches
+  the Worker because of `assets.run_worker_first: ["/"]`) and fetches `/dev` from
+  `env.ASSETS` (extensionless on purpose: `/dev.html` 307-redirects to `/dev`). Every
+  other path on that host falls through to the normal assets, so relative `css/`, `js/`
+  and JSON links work. The hostname is attached in the Cloudflare dashboard (Workers &
+  Pages -> `cb8eatswebsite` -> Settings -> Domains & Routes -> Add -> Custom domain),
+  **not** in `wrangler.jsonc`, and cannot be done from a Claude Code Remote session —
+  the owner does it. Auth persistence is per origin, so signing in on
+  `www.dev.cb8eats.com` and on `www.iltep.cb8eats.com` are separate sign-ins. If
+  sign-in fails only on a new hostname, check Firebase console -> Authentication ->
+  Settings -> Authorized domains and the web API key's website restrictions in Google
+  Cloud.
+- **Hidden, not secured.** Nothing public links to the dev pages and they are
+  `noindex, nofollow`, but anyone who types the address can open them (read-only —
+  Firestore rules still decide every write). The **Dev tab** is a convenience for the
+  owner, not access control. If real privacy is wanted later, put Cloudflare Access (or
+  similar) in front of the dev hostname rather than hiding more links.
+- **The Dev tab (`js/members-nav.js`, loaded on every public page):** appends a
+  `Dev` tab (`li[data-members-tab]` -> `dev.html`) to `header .nav-tabs`, but only when
+  localStorage key `cb8eats-viewer-v1` holds `owner` or `dev`. That hint holds just the
+  word, never an email. Pages with a sign-in call `window.cb8Members.setUser(user)` from
+  their `onAuthStateChanged` (the dev pages through `dev-auth.js`, plus `apply.html` and
+  `coa-bug-report.html`), which works out the role and writes or clears the hint.
+  `OWNER` is `cbleo73@gmail.com`; **`DEVS` in that file is the list of other dev emails
+  (lowercase)** — currently empty. Adding an email there only shows them the tab: they
+  also need a Firebase email/password account, and any write access means changing the
+  Firestore rules (which live in the Firebase console, not this repo). Public visitors
+  never load Firebase for this.
+- **The sign-in button (`js/dev-auth.js`, `css/dev-base.css`):** one button at the very
+  top right of every dev page's header ("Sign in", or "Signed in" with a green dot),
+  opening a small `<dialog>` with email/password; once signed in the dialog shows who is
+  signed in and a Sign out button. It wraps the `<nav>` in `.cb8-header-right` (at
+  phone width it is pinned to the header's top right corner). It lazy-loads Firebase
+  Auth with a dynamic `import()` and shares the page's default app via
+  `getApps().length ? getApp() : initializeApp(CFG)` (`initializeApp` with identical
+  options returns the existing default app, so the page's own module is unaffected). The
+  old per-page sign-in forms on the trackers and Warframe were removed — **don't
+  re-add them**. Claude must never type the password.
+- **Shared theme (`js/theme.js`, loaded synchronously in `<head>` so there is no flash):**
+  four base colors (forest green, royal purple, neon green, neon purple) -> every CSS
+  variable (`--bg`, `--bg-alt`, `--card`, `--card-hover`, `--border`, `--border-soft`,
+  `--accent`, `--accent-dim`, `--accent-bright`, `--accent-2`, `--glow`, `--wash-a/b`,
+  `--on-accent`, `--on-grad`). Stored per device in localStorage
+  `cb8eats-warframe-theme-v1` (same key the Warframe page always used, so earlier saved
+  colors carried over) and, for the owner, in Firestore `warframe/progress.theme`. A
+  device with no local theme follows the saved one, read through the public REST address
+  `https://firestore.googleapis.com/v1/projects/tarborolifebackend/databases/(default)/documents/warframe/progress`
+  (deliberately no API key, to avoid referrer restrictions); pages that already have a
+  Firestore listener call `WFTheme.setRemote(theme)` from their `onSnapshot`. A `storage`
+  listener makes open tabs follow a change live. `WFTheme.mountEditor(box, {canSave,
+  save, onError})` builds the editor card; the hub and the Warframe Theme tab both use
+  it, and the owner's edits save after a short delay (`updateDoc` with `setDoc` only as
+  the `not-found` fallback; writes only the `theme` field, so `hasOnly` in the
+  `warframe/progress` rule is unchanged).
+- **Shared look:** `css/dev-base.css` (page background wash, header, nav pill, buttons,
+  sign-in button and dialog, slim header at <=420px) is loaded by all four dev pages;
+  `css/dev-widgets.css` (cards, inputs, toast, theme editor) only by the hub and
+  Warframe, because the trackers define colliding class names. The trackers' `.res-inv`
+  panel maps its own `--ri-*` variables onto the theme (`--ri-bg: var(--bg-alt)`,
+  `--ri-accent: var(--accent)`, ...) so it follows the colors, but the status colors
+  (crit/warn/good/verified/planned) stay fixed on purpose because they carry meaning.
+  The trackers keep their own row layout; Warframe's lists were not rebuilt in it.
+- **Phone width:** long unbroken words in `.res-desc`/`.res-note` used to push the
+  trackers wider than the screen; they now wrap (`overflow-wrap: anywhere`).
 
 ## Conventions
 

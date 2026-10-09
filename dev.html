@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev hub — CB8eats</title>
+  <meta name="description" content="Dev hub: the Tarboro Life tracker, the COA tracker and Warframe, in one place.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dev-base.css">
+  <link rel="stylesheet" href="css/dev-widgets.css">
+  <script src="js/theme.js"></script>
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+  <script src="js/nav-scroll.js" defer></script>
+  <script src="js/members-nav.js" defer></script>
+  <script src="js/dev-auth.js" defer></script>
+
+  <style>
+    /* Dev hub only. The colors, header, buttons and theme editor are shared with
+       the trackers and Warframe through css/dev-base.css, css/dev-widgets.css
+       and js/theme.js. */
+    :root { --max-width: 1100px; }
+    main.dev { padding-top: 2.2rem; padding-inline: 1rem; }
+    @media (min-width: 640px) { main.dev { padding-inline: 2rem; } }
+    .dev h1 { margin-bottom: 0.6rem; }
+    .dev .lede { margin-bottom: 1.8rem; }
+
+    .hubgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; margin-bottom: 2.2rem; }
+    @media (max-width: 860px) { .hubgrid { grid-template-columns: 1fr; } }
+
+    .hubcard {
+      display: flex; flex-direction: column; gap: 0.5rem;
+      min-height: 15rem; padding: 1.8rem 1.6rem;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hubcard:hover, .hubcard:focus-visible {
+      transform: translateY(-3px); border-color: var(--accent); background: var(--card-hover);
+      box-shadow: 0 0 22px var(--glow);
+    }
+    .hubcard .icon { font-size: 2.6rem; line-height: 1; }
+    .hubcard .kind { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600; color: var(--accent-bright); margin-top: 0.4rem; }
+    .hubcard h2 { font-size: 1.5rem; margin: 0; }
+    .hubcard p { margin: 0; color: var(--text-dim); font-size: 0.95rem; }
+    .hubcard .cta { margin-top: auto; padding-top: 0.8rem; font-weight: 600; color: var(--accent-bright); }
+    @media (max-width: 860px) { .hubcard { min-height: 0; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="brand"><a href="https://www.iltep.cb8eats.com/">CB8eats</a></div>
+    </div>
+
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="https://www.iltep.cb8eats.com/">Main site</a></li>
+        <li><a href="#top" class="active" data-dev-tab>Dev hub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="dev" id="top">
+    <p class="eyebrow">Dev</p>
+    <h1>Dev hub</h1>
+    <p class="lede">Pick where you want to go. Anyone can look; sign in with the button at the top right to check things off or change the colors.</p>
+
+    <div class="hubgrid" aria-label="Dev pages">
+      <a class="hubcard" href="tracker.html" id="hub-tarboro">
+        <span class="icon" aria-hidden="true">🏙️</span>
+        <span class="kind">Server</span>
+        <h2>Tarboro Life tracker</h2>
+        <p>A live audit of every server resource, checked off as it is actually verified in game.</p>
+        <span class="cta">Open the tracker &rarr;</span>
+      </a>
+      <a class="hubcard" href="coa-tracker.html" id="hub-coa">
+        <span class="icon" aria-hidden="true">🦇</span>
+        <span class="kind">Game</span>
+        <h2>COA tracker</h2>
+        <p>A live audit of every C++ and Blueprint system built so far, checked off as it is verified in the editor.</p>
+        <span class="cta">Open the tracker &rarr;</span>
+      </a>
+      <a class="hubcard" href="warframe.html" id="hub-warframe">
+        <span class="icon" aria-hidden="true">⚔️</span>
+        <span class="kind">Personal</span>
+        <h2>Warframe</h2>
+        <p>Grind goals, every mod owned and missing, and the saved builds, all synced live.</p>
+        <span class="cta">Open Warframe &rarr;</span>
+      </a>
+    </div>
+
+    <div id="hub-theme"></div>
+    <p class="muted" id="hub-status" aria-live="polite"></p>
+  </main>
+
+  <footer>
+    <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script type="module">
+    /* The hub's only Firebase job: save the theme colors for the owner (and keep
+       them live from the saved copy). Signing in is the button in the header
+       (js/dev-auth.js), which shares this Firebase app. */
+    const T = window.WFTheme;
+    const OWNER = 'cbleo73@gmail.com';
+    const CFG = {
+      apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
+      authDomain: "tarborolifebackend.firebaseapp.com",
+      projectId: "tarborolifebackend",
+      storageBucket: "tarborolifebackend.firebasestorage.app",
+      messagingSenderId: "578368600107",
+      appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
+    };
+    let owner = false, fs = null, ref = null;
+    const status = document.getElementById('hub-status');
+
+    T.mountEditor(document.getElementById('hub-theme'), {
+      canSave: () => owner && !!ref,
+      save: async (t) => {
+        try { await fs.updateDoc(ref, { theme: t }); }
+        catch (e) { if (e && e.code === 'not-found') await fs.setDoc(ref, { theme: t }); else throw e; }
+      },
+      onError: (e) => {
+        console.error('Theme save failed:', e);
+        status.textContent = (e && e.code === 'permission-denied')
+          ? 'The server refused that write. The warframe/progress Firestore rule may not be published yet.'
+          : 'Could not save the theme for your other devices: ' + ((e && (e.code || e.message)) || 'unknown error');
+      },
+    });
+
+    try {
+      const base = 'https://www.gstatic.com/firebasejs/10.7.1/';
+      const [fa, fsm, au] = await Promise.all([
+        import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js'), import(base + 'firebase-auth.js'),
+      ]);
+      fs = fsm;
+      const app = fa.getApps().length ? fa.getApp() : fa.initializeApp(CFG);
+      ref = fs.doc(fs.getFirestore(app), 'warframe', 'progress');
+      au.onAuthStateChanged(au.getAuth(app), (user) => { owner = !!(user && user.email === OWNER); });
+      fs.onSnapshot(ref, (snap) => { T.setRemote((snap.data() || {}).theme || null); },
+        (err) => console.error('Firestore listen error:', err));
+    } catch (e) {
+      console.error('Firebase failed to load:', e);
+    }
+  </script>
+</body>
+</html>

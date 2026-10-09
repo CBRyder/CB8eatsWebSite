@@ -350,9 +350,27 @@ and **Theme**.
   `{ updated, updatedLabel, source, caveat, meta, farm{..., customFixes{}}, mods{owned[],
   missing[]}, builds[], resources[{group, items[]}] }`. Mod entries are strings or `{ "t": name, "tags": ["plat"] }`. Goals live
   in `farm.tasks` (each has `id`, `group`, `text`, `note`, `tags`, optional
-  `doneDefault`). **CB's standing request: whenever his Warframe mod list changes
+  `doneDefault`, optional `parts`, see below). **CB's standing request: whenever his Warframe mod list changes
   (a scan, a new mod, a mod ranked up), replace this JSON and push so the page shows
   the correct list.**
+- **A goal made of several things is a dropdown (`parts`), added 2026-10-09.** CB's rule:
+  anything on the Goals tab that includes more than one thing (Own every Warframe, Own all
+  the Primed mods, Own all the Archon mods, the Mother Token shop picks, the AX-52 parts)
+  is a dropdown, and **nothing is listed twice**. A goal gets `parts: [{id, text, note?,
+  doneDefault?, parts?}]`, nested as deep as needed (Primed mods holds one dropdown per
+  weapon type). The row shows `done / total` and opens on tap; it has **no tick of its
+  own** (it counts as done when every part is, so old `done.<parentId>` values in Firestore
+  are ignored). Each part is an ordinary tick saved as `done.<id>`, so ids must be unique
+  across the whole tree and only letters, digits, `-` and `_` (the page drops a repeated id
+  or a repeated name with a console warning, `cleanGoals()`). Keep a part's old id when
+  folding a loose goal into a dropdown, so its saved tick survives. Filters
+  (Buy with plat / Foundry) read the top-level goal's `tags` only; put the tag on the
+  dropdown, not on every part. **Own every Warframe** lists base frames only (no Prime or
+  Umbra versions; not Helminth, not the Necramechs Voidrig and Bonewidow; the twin frame
+  "Sirius & Orion" once, although the item database lists it twice). Source: WFCD
+  `warframe-items` `Warframes.json`, which was current to 23 Sep 2026 (Narin); add a new
+  frame as `frame-<slug>`, keep the list A to Z. Which frames he owns has not been scanned,
+  so none start ticked. The Mods tab already has dropdowns per group (`details.grp`).
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,

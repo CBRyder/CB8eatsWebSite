@@ -73,6 +73,21 @@
     .wfcard .seg { margin: 0.4rem 0 0.6rem; }
     .wfcard .seg button { padding: 0.4rem 0.9rem; }
     .task.done .tt { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+    /* A goal made of several parts is a dropdown: the row shows how many parts are
+       ticked, and opening it lists them (a part can itself be a dropdown). */
+    details.goal { border-bottom: 1px solid var(--border); }
+    details.goal > summary.task { list-style: none; border-bottom: 0; }
+    details.goal > summary::-webkit-details-marker { display: none; }
+    .gsum .tx { flex: 1 1 auto; }
+    .gsum .gmeta { flex: none; display: flex; align-items: center; gap: 0.5rem; margin-top: 2px; }
+    .gsum .chev::after { content: "+"; color: var(--accent-bright); font-size: 1.2rem; line-height: 1; }
+    details.goal[open] > .gsum .chev::after { content: "–"; }
+    .task.partial .box { border-color: var(--accent); }
+    .task.partial .box::after { content: ""; position: absolute; left: 3px; top: 7px; width: 12px; height: 3px; border-radius: 2px; background: var(--accent); }
+    .parts { margin: 0 0 0.7rem 11px; padding-left: 0.9rem; border-left: 2px solid var(--border); }
+    .parts .task { padding: 0.55rem 0; min-height: 44px; }
+    .parts details.goal > summary.task { padding: 0.7rem 0; }
+    .parts.flat { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); column-gap: 1.2rem; }
     /* Added goals: header row, edit button, and the add / edit form */
     .cardhead { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.2rem; }
     .cardhead h2 { margin: 0; }
@@ -273,8 +288,9 @@
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
 
-    const S = { data: null, done: {}, runs: 0, custom: {}, owner: false, sync: null };
+    const S = { data: null, done: {}, runs: 0, custom: {}, owner: false, sync: null, index: {} };
     const openGroups = {};
+    const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
     const CUSTOM_GROUP = 'Added by you';
     const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;   // goal ids become Firestore field-path parts, so no dots
 
@@ -335,8 +351,42 @@
 
     function isDone(id) {
       if (S.done[id] !== undefined) return !!S.done[id];
-      const t = S.data.farm.tasks.find((x) => x.id === id);
+      const t = S.index[id];
       return !!(t && t.doneDefault);
+    }
+
+    /* Goals can have `parts` (a dropdown of smaller ticks), nested as deep as needed.
+       A goal made of parts has no tick of its own: it counts as done when every part
+       is. A repeated id or a repeated name anywhere in the goal list is dropped with a
+       console warning, so a slip in the data can never show the same thing twice. */
+    function cleanGoals(list, ids, names) {
+      const out = [];
+      (Array.isArray(list) ? list : []).forEach((t) => {
+        if (!t || typeof t.id !== 'string' || typeof t.text !== 'string') { console.warn('Skipped a malformed goal:', t); return; }
+        const nm = t.text.replace(/\s+/g, ' ').trim().toLowerCase();
+        if (ids.has(t.id) || names.has(nm)) { console.warn('Skipped a duplicate goal:', t.id, t.text); return; }
+        ids.add(t.id); names.add(nm);
+        if (t.parts !== undefined) {
+          t.parts = cleanGoals(t.parts, ids, names);
+          if (!t.parts.length) delete t.parts;
+        }
+        out.push(t);
+      });
+      return out;
+    }
+    function indexGoals(list) {
+      list.forEach((t) => { S.index[t.id] = t; if (t.parts) indexGoals(t.parts); });
+    }
+    function hasParts(t) { return !!(t.parts && t.parts.length); }
+    function leavesOf(t) { return hasParts(t) ? t.parts.flatMap(leavesOf) : [t]; }
+    function progress(t) {
+      const ls = leavesOf(t);
+      return { done: ls.filter((x) => isDone(x.id)).length, total: ls.length };
+    }
+    function goalDone(t) {
+      if (!hasParts(t)) return isDone(t.id);
+      const p = progress(t);
+      return p.total > 0 && p.done === p.total;
     }
 
     function renderGoals() {
@@ -380,13 +430,13 @@
       wrap.appendChild(seg);
       const everything = f.tasks.concat(customTasks());
       const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
-      const open = visible.filter((t) => !isDone(t.id)).length;
+      const open = visible.filter((t) => !goalDone(t)).length;
       wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + (ui.goalFilter === 'plat' ? ' Buy with plat means you can get it from the Market or from other players.' : '') + (ui.goalFilter === 'foundry' ? ' Foundry means you build it there from a blueprint and parts.' : '')));
       (f.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]).forEach((grp) => {
         const items = visible.filter((t) => t.group === grp);
         if (!items.length) return;
         wrap.appendChild(el('p', 'group-label', grp));
-        items.forEach((t) => wrap.appendChild(t.custom ? customRowEl(t) : taskEl(t)));
+        items.forEach((t) => wrap.appendChild(t.custom ? customRowEl(t) : goalEl(t)));
       });
       if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
       p.appendChild(wrap);
@@ -429,6 +479,15 @@
       return row;
     }
 
+    function goalText(t) {
+      const w = el('span', 'tx');
+      const title = el('span', 'tt', t.text);
+      (t.tags || []).forEach((tag) => title.appendChild(el('span', 'tag tag-' + tag, TAG_LABEL[tag] || tag)));
+      w.appendChild(title);
+      if (t.note) w.appendChild(el('span', 'nt', t.note));
+      return w;
+    }
+
     function taskEl(t) {
       const done = isDone(t.id);
       const b = el('button', 'task' + (done ? ' done' : ''));
@@ -437,14 +496,32 @@
       b.setAttribute('aria-checked', done ? 'true' : 'false');
       if (!S.owner) b.setAttribute('aria-disabled', 'true');
       b.appendChild(el('span', 'box'));
-      const w = el('span', 'tx');
-      const title = el('span', 'tt', t.text);
-      (t.tags || []).forEach((tag) => title.appendChild(el('span', 'tag tag-' + tag, TAG_LABEL[tag] || tag)));
-      w.appendChild(title);
-      if (t.note) w.appendChild(el('span', 'nt', t.note));
-      b.appendChild(w);
+      b.appendChild(goalText(t));
       b.onclick = () => toggleTask(t.id);
       return b;
+    }
+
+    /* A goal with parts: a dropdown. Its row shows how many parts are ticked; the parts
+       (which can be dropdowns too) are the ticks, saved under their own ids. */
+    function goalEl(t) {
+      if (!hasParts(t)) return taskEl(t);
+      const p = progress(t);
+      const d = document.createElement('details'); d.className = 'goal';
+      d.open = !!openGoals[t.id];
+      d.addEventListener('toggle', () => { openGoals[t.id] = d.open; });
+      const sm = el('summary', 'task gsum' + (p.done === p.total ? ' done' : (p.done ? ' partial' : '')));
+      sm.appendChild(el('span', 'box'));
+      sm.appendChild(goalText(t));
+      const meta = el('span', 'gmeta');
+      meta.appendChild(el('span', 'gcount', p.done + ' / ' + p.total));
+      meta.appendChild(el('span', 'chev'));
+      sm.appendChild(meta);
+      d.appendChild(sm);
+      const flat = t.parts.every((x) => !hasParts(x) && !x.note);
+      const list = el('div', 'parts' + (flat ? ' flat' : ''));
+      t.parts.forEach((x) => list.appendChild(goalEl(x)));
+      d.appendChild(list);
+      return d;
     }
 
     function needOwner() {
@@ -752,6 +829,8 @@
         setSync('⚠ data file missing', true);
         return;
       }
+      S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
+      indexGoals(S.data.farm.tasks);
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
       renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog();
       await startSync();

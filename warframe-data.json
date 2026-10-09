@@ -38,25 +38,604 @@
     "id": "picks",
     "group": "Next",
     "text": "Spend 520 Mother Tokens on shop picks #1, #10, #15 and #16",
-    "note": "45 + 125 + 150 + 200 = 520."
+    "note": "45 + 125 + 150 + 200 = 520.",
+    "parts": [
+     {
+      "id": "pick-1",
+      "text": "Shop pick #1"
+     },
+     {
+      "id": "pick-10",
+      "text": "Shop pick #10"
+     },
+     {
+      "id": "pick-15",
+      "text": "Shop pick #15"
+     },
+     {
+      "id": "pick-16",
+      "text": "Shop pick #16"
+     }
+    ]
    },
    {
     "id": "frames",
     "group": "Collection",
     "text": "Own every Warframe",
-    "note": "Frames with Forma in them are kept. The missing frames have not been scanned yet. Most can be built in the Foundry, and many are sold for platinum in the Market.",
+    "note": "Frames with Forma in them are kept. Tick the ones you own. Base frames only, so Prime and Umbra versions are not listed. Most can be built in the Foundry, and many are sold for platinum in the Market.",
     "tags": [
      "plat",
      "foundry"
+    ],
+    "parts": [
+     {
+      "id": "frame-ash",
+      "text": "Ash"
+     },
+     {
+      "id": "frame-atlas",
+      "text": "Atlas"
+     },
+     {
+      "id": "frame-banshee",
+      "text": "Banshee"
+     },
+     {
+      "id": "frame-baruuk",
+      "text": "Baruuk"
+     },
+     {
+      "id": "frame-caliban",
+      "text": "Caliban"
+     },
+     {
+      "id": "frame-chroma",
+      "text": "Chroma"
+     },
+     {
+      "id": "frame-citrine",
+      "text": "Citrine"
+     },
+     {
+      "id": "frame-cyte-09",
+      "text": "Cyte-09"
+     },
+     {
+      "id": "frame-dagath",
+      "text": "Dagath"
+     },
+     {
+      "id": "frame-dante",
+      "text": "Dante"
+     },
+     {
+      "id": "frame-ember",
+      "text": "Ember"
+     },
+     {
+      "id": "frame-equinox",
+      "text": "Equinox"
+     },
+     {
+      "id": "frame-excalibur",
+      "text": "Excalibur"
+     },
+     {
+      "id": "frame-follie",
+      "text": "Follie"
+     },
+     {
+      "id": "frame-frost",
+      "text": "Frost"
+     },
+     {
+      "id": "frame-gara",
+      "text": "Gara"
+     },
+     {
+      "id": "frame-garuda",
+      "text": "Garuda"
+     },
+     {
+      "id": "frame-gauss",
+      "text": "Gauss"
+     },
+     {
+      "id": "frame-grendel",
+      "text": "Grendel"
+     },
+     {
+      "id": "frame-gyre",
+      "text": "Gyre"
+     },
+     {
+      "id": "frame-harrow",
+      "text": "Harrow"
+     },
+     {
+      "id": "frame-hildryn",
+      "text": "Hildryn"
+     },
+     {
+      "id": "frame-hydroid",
+      "text": "Hydroid"
+     },
+     {
+      "id": "frame-inaros",
+      "text": "Inaros"
+     },
+     {
+      "id": "frame-ivara",
+      "text": "Ivara"
+     },
+     {
+      "id": "frame-jade",
+      "text": "Jade"
+     },
+     {
+      "id": "frame-khora",
+      "text": "Khora"
+     },
+     {
+      "id": "frame-koumei",
+      "text": "Koumei"
+     },
+     {
+      "id": "frame-kullervo",
+      "text": "Kullervo"
+     },
+     {
+      "id": "frame-lavos",
+      "text": "Lavos"
+     },
+     {
+      "id": "frame-limbo",
+      "text": "Limbo"
+     },
+     {
+      "id": "frame-loki",
+      "text": "Loki"
+     },
+     {
+      "id": "frame-mag",
+      "text": "Mag"
+     },
+     {
+      "id": "frame-mesa",
+      "text": "Mesa"
+     },
+     {
+      "id": "frame-mirage",
+      "text": "Mirage"
+     },
+     {
+      "id": "frame-narin",
+      "text": "Narin"
+     },
+     {
+      "id": "frame-nekros",
+      "text": "Nekros"
+     },
+     {
+      "id": "frame-nezha",
+      "text": "Nezha"
+     },
+     {
+      "id": "frame-nidus",
+      "text": "Nidus"
+     },
+     {
+      "id": "frame-nokko",
+      "text": "Nokko"
+     },
+     {
+      "id": "frame-nova",
+      "text": "Nova"
+     },
+     {
+      "id": "frame-nyx",
+      "text": "Nyx"
+     },
+     {
+      "id": "frame-oberon",
+      "text": "Oberon"
+     },
+     {
+      "id": "frame-octavia",
+      "text": "Octavia"
+     },
+     {
+      "id": "frame-oraxia",
+      "text": "Oraxia"
+     },
+     {
+      "id": "frame-protea",
+      "text": "Protea"
+     },
+     {
+      "id": "frame-qorvex",
+      "text": "Qorvex"
+     },
+     {
+      "id": "frame-revenant",
+      "text": "Revenant"
+     },
+     {
+      "id": "frame-rhino",
+      "text": "Rhino"
+     },
+     {
+      "id": "frame-saryn",
+      "text": "Saryn"
+     },
+     {
+      "id": "frame-sevagoth",
+      "text": "Sevagoth"
+     },
+     {
+      "id": "frame-sirius-orion",
+      "text": "Sirius & Orion"
+     },
+     {
+      "id": "frame-styanax",
+      "text": "Styanax"
+     },
+     {
+      "id": "frame-temple",
+      "text": "Temple"
+     },
+     {
+      "id": "frame-titania",
+      "text": "Titania"
+     },
+     {
+      "id": "frame-trinity",
+      "text": "Trinity"
+     },
+     {
+      "id": "frame-uriel",
+      "text": "Uriel"
+     },
+     {
+      "id": "frame-valkyr",
+      "text": "Valkyr"
+     },
+     {
+      "id": "frame-vauban",
+      "text": "Vauban"
+     },
+     {
+      "id": "frame-volt",
+      "text": "Volt"
+     },
+     {
+      "id": "frame-voruna",
+      "text": "Voruna"
+     },
+     {
+      "id": "frame-wisp",
+      "text": "Wisp"
+     },
+     {
+      "id": "frame-wukong",
+      "text": "Wukong"
+     },
+     {
+      "id": "frame-xaku",
+      "text": "Xaku"
+     },
+     {
+      "id": "frame-yareli",
+      "text": "Yareli"
+     },
+     {
+      "id": "frame-zephyr",
+      "text": "Zephyr"
+     }
     ]
    },
    {
     "id": "allprimed",
     "group": "Collection",
     "text": "Own all the Primed mods",
-    "note": "Warframe ones are listed below. The weapon and companion sets have their own goals under More mods.",
+    "note": "Warframe, rifle and sniper, shotgun, pistol, melee and companion sets.",
     "tags": [
      "plat"
+    ],
+    "parts": [
+     {
+      "id": "primed-warframe",
+      "text": "Primed Warframe mods",
+      "tags": [
+       "plat"
+      ],
+      "parts": [
+       {
+        "id": "primed-continuity",
+        "text": "Primed Continuity",
+        "note": "Baro Ki'Teer for 350 Ducats and 100,000 credits, or from players."
+       },
+       {
+        "id": "primed-flow",
+        "text": "Primed Flow",
+        "note": "Baro or the vault. No sure source, so players trade it."
+       },
+       {
+        "id": "primed-redirection",
+        "text": "Primed Redirection",
+        "note": "Baro or the vault. No sure source, so players trade it."
+       },
+       {
+        "id": "primed-fastdef",
+        "text": "Primed Fast Deflection",
+        "note": "Baro or the vault. No sure source, so players trade it."
+       },
+       {
+        "id": "primed-streamline",
+        "text": "Primed Streamline",
+        "note": "Baro or the vault. No sure source, so players trade it."
+       },
+       {
+        "id": "primed-surefooted",
+        "text": "Primed Sure Footed",
+        "note": "Baro or the vault. No sure source, so players trade it."
+       },
+       {
+        "id": "primed-vigor",
+        "text": "Primed Vigor",
+        "note": "Baro or the vault. No sure source, so players trade it."
+       }
+      ]
+     },
+     {
+      "id": "primed-rifle",
+      "text": "Primed rifle and sniper mods",
+      "tags": [
+       "plat"
+      ],
+      "parts": [
+       {
+        "id": "rf-bane-of-corpus",
+        "text": "Primed Bane of Corpus"
+       },
+       {
+        "id": "rf-bane-of-grineer",
+        "text": "Primed Bane of Grineer"
+       },
+       {
+        "id": "rf-bane-of-infested",
+        "text": "Primed Bane of Infested"
+       },
+       {
+        "id": "rf-bane-of-orokin",
+        "text": "Primed Bane of Orokin"
+       },
+       {
+        "id": "rf-cryo-rounds",
+        "text": "Primed Cryo Rounds"
+       },
+       {
+        "id": "rf-fast-hands",
+        "text": "Primed Fast Hands"
+       },
+       {
+        "id": "rf-firestorm",
+        "text": "Primed Firestorm"
+       },
+       {
+        "id": "rf-magazine-warp",
+        "text": "Primed Magazine Warp"
+       },
+       {
+        "id": "rf-shred",
+        "text": "Primed Shred"
+       },
+       {
+        "id": "rf-stabilizer",
+        "text": "Primed Stabilizer"
+       },
+       {
+        "id": "rf-chamber",
+        "text": "Primed Chamber"
+       },
+       {
+        "id": "rf-charged-chamber",
+        "text": "Primed Charged Chamber"
+       },
+       {
+        "id": "rf-sniper-ammo-mutation",
+        "text": "Primed Sniper Ammo Mutation"
+       }
+      ]
+     },
+     {
+      "id": "primed-shotgun",
+      "text": "Primed shotgun mods",
+      "tags": [
+       "plat"
+      ],
+      "parts": [
+       {
+        "id": "sg-ammo-stock",
+        "text": "Primed Ammo Stock"
+       },
+       {
+        "id": "sg-blunderbuss",
+        "text": "Primed Blunderbuss"
+       },
+       {
+        "id": "sg-charged-shell",
+        "text": "Primed Charged Shell"
+       },
+       {
+        "id": "sg-chilling-grasp",
+        "text": "Primed Chilling Grasp"
+       },
+       {
+        "id": "sg-cleanse-corpus",
+        "text": "Primed Cleanse Corpus"
+       },
+       {
+        "id": "sg-cleanse-grineer",
+        "text": "Primed Cleanse Grineer"
+       },
+       {
+        "id": "sg-cleanse-infested",
+        "text": "Primed Cleanse Infested"
+       },
+       {
+        "id": "sg-cleanse-orokin",
+        "text": "Primed Cleanse Orokin"
+       },
+       {
+        "id": "sg-counterbalance",
+        "text": "Primed Counterbalance"
+       },
+       {
+        "id": "sg-point-blank",
+        "text": "Primed Point Blank"
+       },
+       {
+        "id": "sg-ravage",
+        "text": "Primed Ravage"
+       },
+       {
+        "id": "sg-shotgun-ammo-mutation",
+        "text": "Primed Shotgun Ammo Mutation"
+       },
+       {
+        "id": "sg-tactical-pump",
+        "text": "Primed Tactical Pump"
+       }
+      ]
+     },
+     {
+      "id": "primed-pistol",
+      "text": "Primed pistol mods",
+      "tags": [
+       "plat"
+      ],
+      "parts": [
+       {
+        "id": "ps-convulsion",
+        "text": "Primed Convulsion"
+       },
+       {
+        "id": "ps-expel-corpus",
+        "text": "Primed Expel Corpus"
+       },
+       {
+        "id": "ps-expel-grineer",
+        "text": "Primed Expel Grineer"
+       },
+       {
+        "id": "ps-expel-infested",
+        "text": "Primed Expel Infested"
+       },
+       {
+        "id": "ps-expel-orokin",
+        "text": "Primed Expel Orokin"
+       },
+       {
+        "id": "ps-fulmination",
+        "text": "Primed Fulmination"
+       },
+       {
+        "id": "ps-heated-charge",
+        "text": "Primed Heated Charge"
+       },
+       {
+        "id": "ps-pistol-ammo-mutation",
+        "text": "Primed Pistol Ammo Mutation"
+       },
+       {
+        "id": "ps-pistol-gambit",
+        "text": "Primed Pistol Gambit"
+       },
+       {
+        "id": "ps-quickdraw",
+        "text": "Primed Quickdraw"
+       },
+       {
+        "id": "ps-slip-magazine",
+        "text": "Primed Slip Magazine"
+       },
+       {
+        "id": "ps-steady-hands",
+        "text": "Primed Steady Hands"
+       },
+       {
+        "id": "ps-target-cracker",
+        "text": "Primed Target Cracker"
+       }
+      ]
+     },
+     {
+      "id": "primed-melee",
+      "text": "Primed melee mods",
+      "tags": [
+       "plat"
+      ],
+      "parts": [
+       {
+        "id": "ml-fever-strike",
+        "text": "Primed Fever Strike"
+       },
+       {
+        "id": "ml-fury",
+        "text": "Primed Fury"
+       },
+       {
+        "id": "ml-heavy-trauma",
+        "text": "Primed Heavy Trauma"
+       },
+       {
+        "id": "ml-pressure-point",
+        "text": "Primed Pressure Point"
+       },
+       {
+        "id": "ml-reach",
+        "text": "Primed Reach"
+       },
+       {
+        "id": "ml-smite-corpus",
+        "text": "Primed Smite Corpus"
+       },
+       {
+        "id": "ml-smite-grineer",
+        "text": "Primed Smite Grineer"
+       },
+       {
+        "id": "ml-smite-infested",
+        "text": "Primed Smite Infested"
+       },
+       {
+        "id": "ml-smite-orokin",
+        "text": "Primed Smite Orokin"
+       }
+      ]
+     },
+     {
+      "id": "primed-companion",
+      "text": "Primed companion mods",
+      "tags": [
+       "plat"
+      ],
+      "parts": [
+       {
+        "id": "cp-animal-instinct",
+        "text": "Primed Animal Instinct"
+       },
+       {
+        "id": "cp-pack-leader",
+        "text": "Primed Pack Leader"
+       },
+       {
+        "id": "cp-regen",
+        "text": "Primed Regen"
+       }
+      ]
+     }
     ]
    },
    {
@@ -66,105 +645,34 @@
     "note": "Chipper at Kahl's Garrison sells them, and players trade them.",
     "tags": [
      "plat"
-    ]
-   },
-   {
-    "id": "archon-intensify",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Archon Intensify",
-    "note": "Chipper, Kahl's Garrison (40 Stock at Fort rank 3). Rank 10 gives +30% Ability Strength.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "archon-stretch",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Archon Stretch",
-    "note": "Chipper, Kahl's Garrison.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "archon-flow",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Archon Flow",
-    "note": "Chipper, Kahl's Garrison.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "archon-vitality",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Archon Vitality",
-    "note": "Chipper, Kahl's Garrison.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-continuity",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Continuity",
-    "note": "Baro Ki'Teer for 350 Ducats and 100,000 credits, or from players.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-flow",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Flow",
-    "note": "Baro or the vault. No sure source, so players trade it.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-redirection",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Redirection",
-    "note": "Baro or the vault. No sure source, so players trade it.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-fastdef",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Fast Deflection",
-    "note": "Baro or the vault. No sure source, so players trade it.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-streamline",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Streamline",
-    "note": "Baro or the vault. No sure source, so players trade it.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-surefooted",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Sure Footed",
-    "note": "Baro or the vault. No sure source, so players trade it.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-vigor",
-    "group": "Archon and Primed Warframe mods",
-    "text": "Primed Vigor",
-    "note": "Baro or the vault. No sure source, so players trade it.",
-    "tags": [
-     "plat"
+    ],
+    "parts": [
+     {
+      "id": "archon-continuity",
+      "text": "Archon Continuity",
+      "note": "You already own this one (8 Oct scan).",
+      "doneDefault": true
+     },
+     {
+      "id": "archon-intensify",
+      "text": "Archon Intensify",
+      "note": "Chipper, Kahl's Garrison (40 Stock at Fort rank 3). Rank 10 gives +30% Ability Strength."
+     },
+     {
+      "id": "archon-stretch",
+      "text": "Archon Stretch",
+      "note": "Chipper, Kahl's Garrison."
+     },
+     {
+      "id": "archon-flow",
+      "text": "Archon Flow",
+      "note": "Chipper, Kahl's Garrison."
+     },
+     {
+      "id": "archon-vitality",
+      "text": "Archon Vitality",
+      "note": "Chipper, Kahl's Garrison."
+     }
     ]
    },
    {
@@ -186,51 +694,6 @@
     ]
    },
    {
-    "id": "primed-rifle",
-    "group": "More mods",
-    "text": "Primed rifle and sniper mods",
-    "note": "Bane of Corpus, Grineer, Infested and Orokin, Cryo Rounds, Fast Hands, Firestorm, Magazine Warp, Shred, Stabilizer, Chamber, Charged Chamber, Sniper Ammo Mutation.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-shotgun",
-    "group": "More mods",
-    "text": "Primed shotgun mods",
-    "note": "Ammo Stock, Blunderbuss, Charged Shell, Chilling Grasp, Cleanse (four), Counterbalance, Point Blank, Ravage, Shotgun Ammo Mutation, Tactical Pump.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-pistol",
-    "group": "More mods",
-    "text": "Primed pistol mods",
-    "note": "Convulsion, Expel (four), Fulmination, Heated Charge, Pistol Ammo Mutation, Pistol Gambit, Quickdraw, Slip Magazine, Steady Hands, Target Cracker.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-melee",
-    "group": "More mods",
-    "text": "Primed melee mods",
-    "note": "Fever Strike, Fury, Heavy Trauma, Pressure Point, Reach, Smite (four).",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
-    "id": "primed-companion",
-    "group": "More mods",
-    "text": "Primed companion mods",
-    "note": "Animal Instinct, Pack Leader, Regen.",
-    "tags": [
-     "plat"
-    ]
-   },
-   {
     "id": "maw",
     "group": "Weapons and companions",
     "text": "Collect 19 more Maw Fang",
@@ -240,9 +703,39 @@
     "id": "ax52",
     "group": "Weapons and companions",
     "text": "AX-52 from Amir",
-    "note": "Blueprint from Amir, then build it in the Foundry. Per the item database it needs 60 Efervon Sample, 60 Höllvanian Pitchweave Fragment, 25 Techrot Chitin, 5 Techrot Motherboard and 25,000 credits. Spends currency, so confirm before buying.",
+    "note": "Per the item database. Spends currency, so confirm before buying.",
     "tags": [
      "foundry"
+    ],
+    "parts": [
+     {
+      "id": "ax52-bp",
+      "text": "Blueprint from Amir"
+     },
+     {
+      "id": "ax52-efervon",
+      "text": "60 Efervon Sample"
+     },
+     {
+      "id": "ax52-pitchweave",
+      "text": "60 Höllvanian Pitchweave Fragment"
+     },
+     {
+      "id": "ax52-chitin",
+      "text": "25 Techrot Chitin"
+     },
+     {
+      "id": "ax52-motherboard",
+      "text": "5 Techrot Motherboard"
+     },
+     {
+      "id": "ax52-credits",
+      "text": "25,000 credits"
+     },
+     {
+      "id": "ax52-build",
+      "text": "Build it in the Foundry"
+     }
     ]
    },
    {
@@ -297,7 +790,6 @@
   "groupOrder": [
    "Next",
    "Collection",
-   "Archon and Primed Warframe mods",
    "More mods",
    "Weapons and companions",
    "Syndicates",

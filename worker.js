@@ -41,7 +41,7 @@ const DEV_PAGES = new Map([
   ['/coa-tracker', '/coa-tracker'], ['/coa-tracker.html', '/coa-tracker'],
   ['/warframe', '/warframe'], ['/warframe.html', '/warframe'],
 ]);
-const DEV_DATA = new Set(['/resource-inventory.json', '/coa-inventory.json', '/warframe-data.json']);
+const DEV_DATA = new Set(['/resource-inventory.json', '/coa-inventory.json', '/warframe-data.json', '/warframe-mod-stats.json']);
 
 // Decode %xx, collapse repeated slashes, drop a trailing slash and lowercase,
 // so /%64ev, //dev and /Dev/ cannot slip past the exact-match lists above.

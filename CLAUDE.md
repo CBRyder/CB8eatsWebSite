@@ -365,12 +365,18 @@ and **Theme**.
   or a repeated name with a console warning, `cleanGoals()`). Keep a part's old id when
   folding a loose goal into a dropdown, so its saved tick survives. Filters
   (Buy with plat / Foundry) read the top-level goal's `tags` only; put the tag on the
-  dropdown, not on every part. **Own every Warframe** lists base frames only (no Prime or
-  Umbra versions; not Helminth, not the Necramechs Voidrig and Bonewidow; the twin frame
-  "Sirius & Orion" once, although the item database lists it twice). Source: WFCD
-  `warframe-items` `Warframes.json`, which was current to 23 Sep 2026 (Narin); add a new
-  frame as `frame-<slug>`, keep the list A to Z. Which frames he owns has not been scanned,
-  so none start ticked. The Mods tab already has dropdowns per group (`details.grp`).
+  dropdown, not on every part. **Own every Warframe** (updated 2026-10-09) holds four things:
+  `frames-base` (66 base frames), `frames-prime` (the 52 Prime versions), `frame-excalibur-umbra` (a plain
+  tick) and `frames-mechs` (the Necramechs Voidrig and Bonewidow). Not listed: Helminth (not a frame),
+  and the twin frame "Sirius & Orion" appears once although the item database lists it twice. Source:
+  WFCD `warframe-items` `Warframes.json`, current to 23 Sep 2026 (Narin); a new frame is `frame-<slug>`
+  (`frame-<slug>-prime` for its Prime), kept A to Z. **`doneDefault: true` on a part means "ticked until
+  CB changes it"** (his saved `done.<id>` wins, and unticking writes an explicit false); it is how owned
+  things get pre-ticked from a scan, because Claude cannot write to Firestore. Also in Collection:
+  **Own all the Necramech mods** (`allnecra`, 28 from `Mods.json` where `compatName` is Necramech; the 9
+  from the 8 Oct scan start ticked) and **Own all the Umbral mods** (`allumbral`, 3, all ticked). Keep the
+  ticked ones in step with `/topics/warframe-mods.md` when the mod list is rescanned.
+  The Mods tab already has dropdowns per group (`details.grp`).
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,

@@ -29,9 +29,11 @@ worked on this repo — this file is the shared memory across them.
   `/` -> `index.html`) is served straight from the assets and never runs `worker.js`.
   `wrangler.jsonc` therefore sets `assets.run_worker_first` to `["/"]` so the Worker
   sees the front page (needed for the `dev.cb8eats.com` hostnames, see the Dev hub
-  section). Every other path is still served directly from the assets. If a
-  new hostname-based rewrite ever has to run for another path, add that path to the
-  list rather than setting it to `true`.
+  section), plus the dev pages and their data files (so `worker.js` can keep them off
+  every hostname except the dev one). Every other path is still served directly from the
+  assets. If a new hostname-based rewrite or block ever has to run for another path, add
+  that path to the list rather than setting it to `true`. The list in `wrangler.jsonc`
+  and `DEV_PAGES` / `DEV_DATA` in `worker.js` must stay in step.
 - **Gotcha:** a Worker `html_handling: "strip"`-style setting was tried once to drop
   `.html` from URLs and it broke the homepage entirely (see commits "Disable the
   .html-stripping redirect on the Worker" / "Revert html_handling: none"). Current
@@ -428,13 +430,32 @@ content. They live together under one hub page with three big cards (`dev.html`;
   sign-in fails only on a new hostname, check Firebase console -> Authentication ->
   Settings -> Authorized domains and the web API key's website restrictions in Google
   Cloud.
-- **Hidden, not secured.** Nothing public links to the dev pages and they are
-  `noindex, nofollow`, but anyone who types the address can open them (read-only —
-  Firestore rules still decide every write). The **Dev tab** is a convenience for the
-  owner, not access control. If real privacy is wanted later, put Cloudflare Access (or
-  similar) in front of the dev hostname rather than hiding more links.
+- **The lock: Cloudflare Access on the dev hostname, and dev pages only exist there.**
+  `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/warframe` (and their `.html`
+  forms) and the data files `resource-inventory.json`, `coa-inventory.json`,
+  `warframe-data.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
+  `workers.dev` address) the pages 302 to `https://www.dev.cb8eats.com/...` and the data
+  files 404, so nothing dev-related can be read from the public hostname. Variants like
+  `/%64ev`, `//tracker`, `/Tracker` are normalized in the Worker or answered by the asset
+  layer with a 307 to the canonical path, which then hits the Worker (tested on the real
+  workerd). The wall itself is a **Cloudflare Access self-hosted application** for
+  `www.dev.cb8eats.com`, created in the dashboard (Zero Trust -> Access -> Applications),
+  with an Allow policy listing the emails that may enter; people get a one-time code by
+  email. **Only the owner's Cloudflare login can edit that list, which is the only way
+  devs are added or removed** (CB chose this over an in-site panel, which would need a
+  Cloudflare API key stored on the site). Other devs are therefore view-only: they get no
+  Firebase account, so only the owner can check things off or change the theme. Access
+  cannot be created from a Claude Code Remote session (api.cloudflare.com is blocked).
+  **Not built yet (planned follow-up, needs the team domain and the application's AUD tag
+  from CB):** the Worker verifying the `Cf-Access-Jwt-Assertion` header on the dev hosts
+  as a second lock in case the Access app is ever removed or misconfigured. Put its two
+  values in `wrangler.jsonc` `vars` (dashboard-set vars get overwritten on deploy).
+  **Known gap:** the tracker check-states and `warframe/progress` live in Firestore, which
+  is public-read, so Access does not cover them (the page content and data files are
+  covered). Closing that means Firestore rules that require sign-in, which would also
+  stop view-only devs from seeing live states — a deliberate trade-off to revisit.
 - **The Dev tab (`js/members-nav.js`, loaded on every public page):** appends a
-  `Dev` tab (`li[data-members-tab]` -> `dev.html`) to `header .nav-tabs`, but only when
+  `Dev` tab (`li[data-members-tab]` -> `https://www.dev.cb8eats.com/`) to `header .nav-tabs`, but only when
   localStorage key `cb8eats-viewer-v1` holds `owner` or `dev`. That hint holds just the
   word, never an email. Pages with a sign-in call `window.cb8Members.setUser(user)` from
   their `onAuthStateChanged` (the dev pages through `dev-auth.js`, plus `apply.html` and

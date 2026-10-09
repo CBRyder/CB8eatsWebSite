@@ -332,8 +332,8 @@ checklist of grind goals, with "Buy with plat" and "Foundry" filters), **Mods**
 and **Theme**.
 
 - **Content is data:** `warframe-data.json` (fetched with `cache: 'no-store'`). Shape:
-  `{ updated, updatedLabel, source, caveat, meta, farm{...}, mods{owned[], missing[]},
-  builds[] }`. Mod entries are strings or `{ "t": name, "tags": ["plat"] }`. Goals live
+  `{ updated, updatedLabel, source, caveat, meta, farm{..., customFixes{}}, mods{owned[],
+  missing[]}, builds[], resources[{group, items[]}] }`. Mod entries are strings or `{ "t": name, "tags": ["plat"] }`. Goals live
   in `farm.tasks` (each has `id`, `group`, `text`, `note`, `tags`, optional
   `doneDefault`). **CB's standing request: whenever his Warframe mod list changes
   (a scan, a new mod, a mod ranked up), replace this JSON and push so the page shows
@@ -341,7 +341,7 @@ and **Theme**.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,
-  theme: {...} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  theme: {...}, custom: {goalId: {name, qty, plat, at}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in inside the page). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace
@@ -352,12 +352,40 @@ match /warframe/progress {
   allow read: if true;
   allow write: if request.auth != null
                && request.auth.token.email == 'cbleo73@gmail.com'
-               && request.resource.data.keys().hasOnly(['done', 'runs', 'theme'])
+               && request.resource.data.keys().hasOnly(['done', 'runs', 'theme', 'custom'])
                && (!('done' in request.resource.data) || request.resource.data.done is map)
                && (!('runs' in request.resource.data) || request.resource.data.runs is int)
-               && (!('theme' in request.resource.data) || request.resource.data.theme is map);
+               && (!('theme' in request.resource.data) || request.resource.data.theme is map)
+               && (!('custom' in request.resource.data)
+                   || (request.resource.data.custom is map && request.resource.data.custom.size() <= 200));
 }
 ```
+
+**⚠ Same gotcha as the trackers:** `hasOnly` must list every top-level field the page
+writes. `custom` was added after the first version of this rule, so if the owner
+published the original three-field rule, adding goals fails with permission-denied
+(the page says "The server refused that write") until the rule above is republished.
+
+- **Added goals (the "+ Add goal" button, owner only):** opens a form with a resource
+  dropdown (built from `resources` in `warframe-data.json`, grouped; plus an "Other"
+  option for anything missing), a quantity goal and a "Buyable with plat" checkbox
+  (which gives the goal the same Buy with plat tag the filter uses). Each goal is stored
+  as `custom.<id>` where `<id>` is generated (`c` + time + random, letters and digits
+  only, because it becomes a dotted Firestore field path). They render under the
+  "Added by you" group, can be ticked off like any goal (`done.<id>`), and the owner can
+  edit or delete them (delete removes both `custom.<id>` and `done.<id>`).
+  - **Reading them as Claude:** `warframe/progress` is public-read, so
+    `https://firestore.googleapis.com/v1/projects/tarborolifebackend/databases/(default)/documents/warframe/progress`
+    returns them. The Claude Code Remote sandbox cannot reach `firestore.googleapis.com`
+    (egress policy), so read it from the owner's browser (a `fetch` from a page on the
+    site, through the built-in browser) or ask the owner to paste what the page shows.
+  - **Correcting them as Claude:** Claude cannot write to Firestore (that needs the
+    owner's email/password sign-in, which Claude must not type). Instead,
+    `farm.customFixes` in `warframe-data.json` overrides what is stored:
+    `{ "<id>": { "name": "Nitain Extract", "qty": 60, "plat": true } }`, or
+    `{ "<id>": { "hidden": true } }` to hide a goal. Only the keys present are
+    overridden. The owner can still edit or delete the goal in the page; if a fix exists
+    for it, the page warns that the fix still wins until Claude removes it.
 
 - **Theme:** four base colors (forest green, royal purple, neon green, neon purple)
   drive every CSS variable on the page, computed by a small script in `<head>` before

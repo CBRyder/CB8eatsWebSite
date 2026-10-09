@@ -63,9 +63,10 @@
     details.wf-auth > summary:hover { color: var(--accent-bright); }
     .signin { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.4rem; }
     .signin input { flex: 1 1 11rem; min-width: 0; }
-    input[type="email"], input[type="password"], input[type="search"] {
+    input[type="email"], input[type="password"], input[type="search"], input[type="text"], input[type="number"], select {
       font: inherit; font-size: 1rem; min-height: 44px; padding: 0.5rem 0.8rem;
       color: var(--text); background: var(--bg-alt); border: 1px solid var(--border); border-radius: 10px;
+      color-scheme: dark;
     }
     input::placeholder { color: var(--text-faint); }
     .btn-sm { font: inherit; font-size: 0.9rem; font-weight: 600; min-height: 44px; padding: 0.5rem 1.1rem; border-radius: 999px; cursor: pointer;
@@ -106,8 +107,34 @@
       border-radius: 999px; border: 1px solid var(--accent-2); color: var(--accent-2); vertical-align: 0.1em; white-space: nowrap; }
     .tag-foundry { border-color: var(--accent); color: var(--accent); }
     .wfcard .seg { margin: 0.4rem 0 0.6rem; }
+    .wfcard .seg button { padding: 0.4rem 0.9rem; }
     .task.done .tt { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-faint); }
-    .flash { min-height: 1.3rem; font-size: 0.88rem; color: var(--accent-bright); margin: 0.6rem 0 0; }
+    /* Message that floats at the bottom of the screen, so it is seen even when the list is long */
+    .toast { position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 50; width: max-content; max-width: calc(100vw - 2rem);
+      margin: 0; padding: 0.7rem 1.1rem; font-size: 0.9rem; color: var(--text); background: var(--card); border: 1px solid var(--accent);
+      border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 16px var(--glow); }
+    .toast[hidden] { display: none; }
+
+    /* Added goals: header row, edit button, and the add / edit form */
+    .cardhead { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.2rem; }
+    .cardhead h2 { margin: 0; }
+    .cardhead .btn-sm[aria-disabled="true"], .taskrow .edit[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .taskrow { display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border); }
+    .taskrow .task { width: auto; flex: 1 1 auto; min-width: 0; border-bottom: 0; }
+    .taskrow .edit { flex: none; }
+    dialog.wfdlg { width: min(92vw, 28rem); max-height: 92vh; overflow: auto; padding: 1.2rem 1.3rem; color: var(--text); background: var(--card);
+      border: 1px solid var(--accent-2); border-radius: var(--radius); box-shadow: 0 0 30px var(--glow); color-scheme: dark; }
+    dialog.wfdlg::backdrop { background: rgba(0, 0, 0, 0.68); }
+    dialog.wfdlg h2 { margin: 0 0 0.2rem; font-size: 1.25rem; }
+    .field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.9rem 0; }
+    .field > span { font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; }
+    .field input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); flex: none; }
+    .check { display: flex; align-items: center; gap: 0.75rem; min-height: 48px; cursor: pointer; font-size: 1rem; }
+    .check small { display: block; color: var(--text-dim); font-size: 0.82rem; }
+    .formerr { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.4rem 0 0; }
+    .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
+    .dlgbtns .spacer { flex: 1 1 auto; }
+    .btn-sm.danger { border-color: #ff8a8a; color: #ff8a8a; }
 
     /* Mods */
     .tools { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 0.8rem; }
@@ -315,6 +342,32 @@
     </div>
   </main>
 
+  <p class="toast" id="wf-flash" role="status" aria-live="polite" hidden></p>
+
+  <dialog class="wfdlg" id="wf-dlg" aria-labelledby="wf-dlg-title">
+    <form id="wf-goalform" novalidate>
+      <h2 id="wf-dlg-title">Add a goal</h2>
+      <p class="muted">Pick the resource, say how many you want, and tick the box if you can buy it with plat.</p>
+      <label class="field"><span>Resource</span>
+        <select id="wf-res" required></select>
+      </label>
+      <label class="field" id="wf-other-wrap" hidden><span>Name of the resource</span>
+        <input type="text" id="wf-other" maxlength="60" autocomplete="off" placeholder="Type the name">
+      </label>
+      <label class="field"><span>Quantity goal</span>
+        <input type="number" id="wf-qty" min="1" max="100000000" step="1" inputmode="numeric" placeholder="For example 500" required>
+      </label>
+      <label class="check"><input type="checkbox" id="wf-plat"><span>Buyable with plat<small>Shows the Buy with plat tag and works with that filter.</small></span></label>
+      <p class="formerr" id="wf-adderr" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm danger" id="wf-del" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="wf-cancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="wf-save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer>
     <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
     &copy; 2026 CB8eats. All rights reserved.
@@ -322,9 +375,9 @@
 
   <script type="module">
     /* Page logic. Content comes from warframe-data.json (replace the file and
-       push to update the lists). Checklist progress and the owner's theme sync
-       through Firestore doc warframe/progress: everyone can read, only the
-       owner can write. If Firebase can't load, the page still renders. */
+       push to update the lists). Checklist progress, the owner's theme and the
+       goals added with the Add button sync through Firestore doc
+       warframe/progress: everyone can read, only the owner can write. If Firebase can't load, the page still renders. */
     const T = window.WFTheme;
     const OWNER = 'cbleo73@gmail.com';
     const CFG = {
@@ -366,8 +419,10 @@
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
 
-    const S = { data: null, done: {}, runs: 0, owner: false, remoteTheme: null, sync: null };
+    const S = { data: null, done: {}, runs: 0, custom: {}, owner: false, remoteTheme: null, sync: null };
     const openGroups = {};
+    const CUSTOM_GROUP = 'Added by you';
+    const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;   // goal ids become Firestore field-path parts, so no dots
 
     /* ---------- helpers ---------- */
     function parseChip(s) {
@@ -389,7 +444,13 @@
       return n;
     }
     function tokens() { return S.runs * S.data.farm.perRun; }
-    function flash(msg) { const f = $('wf-flash'); if (f) f.textContent = msg; }
+    let flashTimer = null;
+    function flash(msg) {
+      const f = $('wf-flash'); if (!f) return;
+      f.textContent = msg; f.hidden = !msg;
+      clearTimeout(flashTimer);
+      if (msg) flashTimer = setTimeout(() => { f.hidden = true; }, 6500);
+    }
     function setSync(msg, isErr) {
       const s = $('wf-sync');
       s.textContent = msg;
@@ -448,7 +509,13 @@
       p.appendChild(card);
 
       const wrap = el('div', 'wfcard');
-      wrap.appendChild(el('h2', null, 'Grind goals'));
+      const head = el('div', 'cardhead');
+      head.appendChild(el('h2', null, 'Grind goals'));
+      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button';
+      if (!S.owner) add.setAttribute('aria-disabled', 'true');
+      add.onclick = () => openGoalDialog(null);
+      head.appendChild(add);
+      wrap.appendChild(head);
       const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Filter goals');
       GOAL_FILTERS.forEach((fl) => {
         const b = el('button', null, fl[1]); b.type = 'button';
@@ -457,18 +524,55 @@
         seg.appendChild(b);
       });
       wrap.appendChild(seg);
-      const visible = f.tasks.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
+      const everything = f.tasks.concat(customTasks());
+      const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
       const open = visible.filter((t) => !isDone(t.id)).length;
       wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + (ui.goalFilter === 'plat' ? ' Buy with plat means you can get it from the Market or from other players.' : '') + (ui.goalFilter === 'foundry' ? ' Foundry means you build it there from a blueprint and parts.' : '')));
-      (f.groupOrder || ['Next', 'Later']).forEach((grp) => {
+      (f.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]).forEach((grp) => {
         const items = visible.filter((t) => t.group === grp);
         if (!items.length) return;
         wrap.appendChild(el('p', 'group-label', grp));
-        items.forEach((t) => wrap.appendChild(taskEl(t)));
+        items.forEach((t) => wrap.appendChild(t.custom ? customRowEl(t) : taskEl(t)));
       });
       if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
-      wrap.appendChild(el('p', 'flash', '')).id = 'wf-flash';
       p.appendChild(wrap);
+    }
+
+    /* Goals the owner added with the Add button. They live in Firestore
+       (warframe/progress.custom, keyed by a generated id). Corrections made
+       by hand in warframe-data.json (farm.customFixes[id]) win over what is
+       stored, so a mistyped entry can be fixed without the owner's sign-in. */
+    function customTasks() {
+      const fixes = (S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object') ? S.data.farm.customFixes : {};
+      const out = [];
+      Object.keys(S.custom).forEach((id) => {
+        if (!ID_RE.test(id)) return;
+        const v = S.custom[id];
+        if (!v || typeof v !== 'object') return;
+        const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
+        if (fx && fx.hidden) return;
+        const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
+        const qty = Math.floor(Number(fx && fx.qty != null ? fx.qty : v.qty));
+        const plat = fx && fx.plat != null ? !!fx.plat : !!v.plat;
+        if (!name || !Number.isFinite(qty) || qty < 1) return;
+        out.push({
+          id, group: CUSTOM_GROUP, text: name + ' × ' + qty.toLocaleString('en-US'), note: '',
+          tags: plat ? ['plat'] : [], custom: { name, qty, plat, fixed: !!fx }, at: Number(v.at) || 0,
+        });
+      });
+      out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+
+    function customRowEl(t) {
+      const row = el('div', 'taskrow');
+      row.appendChild(taskEl(t));
+      const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button';
+      ed.setAttribute('aria-label', 'Edit ' + t.custom.name);
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = () => openGoalDialog(t);
+      row.appendChild(ed);
+      return row;
     }
 
     function taskEl(t) {
@@ -522,6 +626,92 @@
         : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
     }
     function renderLive() { renderGlance(); renderGoals(); }
+
+    /* ---------- add / edit a goal ---------- */
+    let editing = null, delTimer = null;
+    function buildResourceSelect() {
+      const sel = $('wf-res'); sel.textContent = '';
+      const ph = new Option('Choose a resource…', ''); ph.disabled = true; sel.appendChild(ph);
+      (S.data.resources || []).forEach((g) => {
+        const og = document.createElement('optgroup'); og.label = g.group;
+        g.items.forEach((n) => og.appendChild(new Option(n, n)));
+        sel.appendChild(og);
+      });
+      sel.appendChild(new Option('Other (type a name)…', '__other'));
+    }
+    function syncOther() { $('wf-other-wrap').hidden = $('wf-res').value !== '__other'; }
+    function resetDelete() { clearTimeout(delTimer); $('wf-del').textContent = 'Delete'; $('wf-del').dataset.armed = ''; }
+    function openGoalDialog(t) {
+      if (!S.owner || !S.sync) return needOwner();
+      editing = t || null;
+      $('wf-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal';
+      $('wf-save').textContent = t ? 'Save changes' : 'Save goal';
+      $('wf-del').hidden = !t; resetDelete();
+      $('wf-adderr').textContent = '';
+      const sel = $('wf-res');
+      if (t) {
+        const known = Array.from(sel.options).some((o) => o.value === t.custom.name && o.value !== '__other');
+        sel.value = known ? t.custom.name : '__other';
+        $('wf-other').value = known ? '' : t.custom.name;
+        $('wf-qty').value = String(t.custom.qty);
+        $('wf-plat').checked = t.custom.plat;
+      } else {
+        sel.selectedIndex = 0; $('wf-other').value = ''; $('wf-qty').value = ''; $('wf-plat').checked = false;
+      }
+      syncOther();
+      const dlg = $('wf-dlg');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeGoalDialog() {
+      const dlg = $('wf-dlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function newGoalId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+    async function saveGoal(ev) {
+      ev.preventDefault();
+      const err = (m) => { $('wf-adderr').textContent = m; };
+      if (!S.owner || !S.sync) return err('Sign in as the owner to save goals.');
+      const pick = $('wf-res').value;
+      const name = (pick === '__other' ? $('wf-other').value : pick).replace(/\s+/g, ' ').trim();
+      const qty = Number($('wf-qty').value);
+      if (!name) return err(pick === '__other' ? 'Type the name of the resource.' : 'Pick a resource from the list.');
+      if (name.length > 60) return err('That name is too long (60 characters at most).');
+      if (!Number.isInteger(qty) || qty < 1 || qty > 100000000) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
+      const id = editing ? editing.id : newGoalId();
+      const was = S.custom[id];
+      const val = { name, qty, plat: $('wf-plat').checked, at: (was && Number(was.at)) || Date.now() };
+      const overridden = !!(editing && editing.custom.fixed);
+      S.custom[id] = val; renderLive(); closeGoalDialog();
+      try {
+        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.runs, custom: S.custom });
+        flash(overridden ? 'Saved. A correction in the site data still overrides this goal, so ask Claude to clear it.' : (editing ? 'Goal updated.' : 'Goal added.'));
+      } catch (e) {
+        if (was) S.custom[id] = was; else delete S.custom[id];
+        renderLive(); writeFailed(e);
+      }
+    }
+    async function removeGoal() {
+      if (!editing || !S.owner || !S.sync) return;
+      const id = editing.id, was = S.custom[id], wasDone = S.done[id];
+      delete S.custom[id]; delete S.done[id]; renderLive(); closeGoalDialog();
+      try { await S.sync.remove(id); flash('Goal deleted.'); }
+      catch (e) {
+        if (was) S.custom[id] = was;
+        if (wasDone !== undefined) S.done[id] = wasDone;
+        renderLive(); writeFailed(e);
+      }
+    }
+    function initGoalDialog() {
+      buildResourceSelect();
+      $('wf-res').addEventListener('change', syncOther);
+      $('wf-cancel').addEventListener('click', closeGoalDialog);
+      $('wf-goalform').addEventListener('submit', saveGoal);
+      $('wf-del').addEventListener('click', () => {
+        if ($('wf-del').dataset.armed) { resetDelete(); removeGoal(); return; }
+        $('wf-del').dataset.armed = '1'; $('wf-del').textContent = 'Tap again to delete';
+        delTimer = setTimeout(resetDelete, 4000);
+      });
+    }
 
     /* ---------- render: mods ---------- */
     function renderMods() {
@@ -701,6 +891,10 @@
           try { await fs.updateDoc(ref, fields); }
           catch (e) { if (e && e.code === 'not-found') await fs.setDoc(ref, full); else throw e; }
         },
+        async remove(id) {
+          try { await fs.updateDoc(ref, { ['custom.' + id]: fs.deleteField(), ['done.' + id]: fs.deleteField() }); }
+          catch (e) { if (!(e && e.code === 'not-found')) throw e; }
+        },
         async signIn(email, pw) { return au.signInWithEmailAndPassword(auth, email, pw); },
         async signOut() { return au.signOut(auth); },
       };
@@ -710,7 +904,7 @@
         const note = $('wf-authnote');
         $('wf-signin').hidden = !!user;
         $('wf-signout').hidden = !user;
-        if (S.owner) note.textContent = 'Signed in as ' + user.email + '. Checklist and theme saves are unlocked.';
+        if (S.owner) note.textContent = 'Signed in as ' + user.email + '. Checklist, theme and added goals can be saved.';
         else if (user) note.textContent = 'Signed in as ' + user.email + ', but that account is not authorized.';
         else note.textContent = 'Anyone can view this page. Only the site owner can tick items off.';
         renderLive();
@@ -721,6 +915,7 @@
           const d = snap.data() || {};
           S.done = d.done && typeof d.done === 'object' ? d.done : {};
           S.runs = Number.isInteger(d.runs) ? d.runs : 0;
+          S.custom = d.custom && typeof d.custom === 'object' && !Array.isArray(d.custom) ? d.custom : {};
           S.remoteTheme = d.theme ? T.sanitize(d.theme) : null;
           if (!T.readLocal()) { const t = S.remoteTheme || T.DEF; T.apply(t); fillInputs(t); }
           setSync('☁ synced live');
@@ -763,7 +958,7 @@
         return;
       }
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
-      renderLive(); renderMods(); renderBuilds(); initTabs();
+      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog();
       await startSync();
     }
     boot();

@@ -17,12 +17,31 @@
 const APPLY_EMAIL_ROUTE = '/api/send-application-confirmation';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// The Warframe page has its own hostname. Visiting warframe.cb8eats.com (the
+// bare address, nothing after the slash) shows the same page that lives at
+// /warframe on the main site. Every other path on that hostname (css, js,
+// images, warframe-data.json) falls through to the normal static assets, so the
+// page's relative links keep working. The hostname itself is attached to this
+// Worker in the Cloudflare dashboard (Domains & Routes), not here.
+const WARFRAME_HOST = 'warframe.cb8eats.com';
+const WARFRAME_PAGE = '/warframe'; // extensionless on purpose: /warframe.html would 307-redirect to /warframe
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === APPLY_EMAIL_ROUTE && request.method === 'POST') {
       return handleSendConfirmation(request, env);
+    }
+
+    if (
+      url.hostname === WARFRAME_HOST &&
+      url.pathname === '/' &&
+      (request.method === 'GET' || request.method === 'HEAD')
+    ) {
+      const pageUrl = new URL(WARFRAME_PAGE, url);
+      pageUrl.search = url.search;
+      return env.ASSETS.fetch(new Request(pageUrl, request));
     }
 
     return env.ASSETS.fetch(request);

@@ -410,8 +410,8 @@ published the original three-field rule, adding goals fails with permission-deni
 
 - **Added goals (the "+ Add goal" button, owner only):** opens a form with a resource
   dropdown (built from `resources` in `warframe-data.json`, grouped; plus an "Other"
-  option for anything missing), a quantity goal and a "Buyable with plat" checkbox
-  (which gives the goal the same Buy with plat tag the filter uses). Each goal is stored
+  option for anything missing), a quantity goal and a row of **tag buttons** (see the
+  tag list below). Each goal is stored
   as `custom.<id>` where `<id>` is generated (`c` + time + random, letters and digits
   only, because it becomes a dotted Firestore field path). They render under the
   "Added by you" group, can be ticked off like any goal (`done.<id>`), and the owner can
@@ -427,7 +427,20 @@ published the original three-field rule, adding goals fails with permission-deni
     `{ "<id>": { "name": "Nitain Extract", "qty": 60, "plat": true } }`, or
     `{ "<id>": { "hidden": true } }` to hide a goal. Only the keys present are
     overridden. The owner can still edit or delete the goal in the page; if a fix exists
-    for it, the page warns that the fix still wins until Claude removes it.
+    for it, the page warns that the fix still wins until Claude removes it. A fix may
+    also set `"tags": ["plat", "foundry"]` (unknown ids are dropped) instead of `plat`.
+  - **Tags (added 2026-10-09):** the tags live in one list, `TAGS` in `warframe.html`
+    (`{ id, label, tone, explain }`; today `plat` = Buy with plat and `foundry` =
+    Foundry). That list drives everything: the filter buttons above the goals, the
+    chip on a goal, the sentence under a filter, and the tag buttons in the Add goal
+    form. **To add a tag, add one line to `TAGS`** (`tone` is `accent`, `accent2` or
+    `bright`, which picks the colour) and put its id in a goal's `tags` in
+    `warframe-data.json`. A tag button is lit in its own tag colour when on and greyed
+    when off (`aria-pressed`). A custom goal saves `custom.<id>.tags` (array of ids)
+    and still also writes the old `plat` flag, so a cached older page keeps reading it
+    right; goals saved before tags existed (only `plat`) are read as `tags: ['plat']`.
+    No Firestore rule change is needed, because `custom` is a map and its inner fields
+    are not constrained.
 
 - **Theme:** the Theme tab is the shared editor from `js/theme.js` (see the Dev hub
   section) — the same four colors drive the hub and both trackers too.

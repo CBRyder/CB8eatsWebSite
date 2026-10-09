@@ -68,8 +68,12 @@
     .task .tt { font-weight: 500; }
     .task .nt { font-size: 0.85rem; color: var(--text-dim); }
     .tag { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.5rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-      border-radius: 999px; border: 1px solid var(--accent-2); color: var(--accent-2); vertical-align: 0.1em; white-space: nowrap; }
-    .tag-foundry { border-color: var(--accent); color: var(--accent); }
+      border-radius: 999px; border: 1px solid var(--tag, var(--accent-2)); color: var(--tag, var(--accent-2)); vertical-align: 0.1em; white-space: nowrap; }
+    /* A tag's colour is a tone (set from the TAGS list in the script). The chip on a goal and the
+       button in the Add goal form both read --tag, so they always match. */
+    .tone-accent { --tag: var(--accent); }
+    .tone-accent2 { --tag: var(--accent-2); }
+    .tone-bright { --tag: var(--accent-bright); }
     .wfcard .seg { margin: 0.4rem 0 0.6rem; }
     .wfcard .seg button { padding: 0.4rem 0.9rem; }
     .task.done .tt { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-faint); }
@@ -104,6 +108,14 @@
     .field input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); flex: none; }
     .check { display: flex; align-items: center; gap: 0.75rem; min-height: 48px; cursor: pointer; font-size: 1rem; }
     .check small { display: block; color: var(--text-dim); font-size: 0.82rem; }
+    .field > small { color: var(--text-dim); font-size: 0.82rem; }
+    /* Tag buttons in the Add goal form: lit like the tag chip when on, grey when off. */
+    .tagpick { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tagbtn { margin: 0; min-height: 44px; padding: 0.35rem 1rem; font: inherit; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; border-radius: 999px; border: 1px solid var(--tag, var(--accent-2)); color: var(--tag, var(--accent-2));
+      background: color-mix(in srgb, var(--tag, var(--accent-2)) 14%, transparent); }
+    .tagbtn[aria-pressed="false"] { border-color: var(--border); color: var(--text-faint); background: transparent; opacity: 0.8; }
+    .tagbtn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
     .formerr { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.4rem 0 0; }
     .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
     .dlgbtns .spacer { flex: 1 1 auto; }
@@ -221,7 +233,7 @@
   <dialog class="wfdlg" id="wf-dlg" aria-labelledby="wf-dlg-title">
     <form id="wf-goalform" novalidate>
       <h2 id="wf-dlg-title">Add a goal</h2>
-      <p class="muted">Pick the resource, say how many you want, and tick the box if you can buy it with plat.</p>
+      <p class="muted">Pick the resource, say how many you want, and switch on any tags that fit.</p>
       <label class="field"><span>Resource</span>
         <select id="wf-res" required></select>
       </label>
@@ -231,7 +243,11 @@
       <label class="field"><span>Quantity goal</span>
         <input type="number" id="wf-qty" min="1" max="100000000" step="1" inputmode="numeric" placeholder="For example 500" required>
       </label>
-      <label class="check"><input type="checkbox" id="wf-plat"><span>Buyable with plat<small>Shows the Buy with plat tag and works with that filter.</small></span></label>
+      <div class="field" role="group" aria-labelledby="wf-tags-label">
+        <span id="wf-tags-label">Tags</span>
+        <div class="tagpick" id="wf-tags"></div>
+        <small>A lit tag shows on the goal and works with the filters above the list.</small>
+      </div>
       <p class="formerr" id="wf-adderr" role="alert"></p>
       <div class="dlgbtns">
         <button type="button" class="btn-sm danger" id="wf-del" hidden>Delete</button>
@@ -264,8 +280,17 @@
     };
     const UI_KEY = 'cb8eats-warframe-ui-v1';
     const TABS = ['goals', 'mods', 'builds', 'theme'];
-    const TAG_LABEL = { plat: 'Buy with plat', foundry: 'Foundry' };
-    const GOAL_FILTERS = [['all', 'All'], ['plat', 'Buy with plat'], ['foundry', 'Foundry']];
+    /* Every goal tag lives here. A new tag is one line: the goal filters, the chip on a goal and
+       the button in the Add goal form are all built from this list. tone is accent, accent2 or
+       bright (see .tone-* in the styles); explain is the sentence shown under the filter. */
+    const TAGS = [
+      { id: 'plat', label: 'Buy with plat', tone: 'accent2', explain: 'Buy with plat means you can get it from the Market or from other players.' },
+      { id: 'foundry', label: 'Foundry', tone: 'accent', explain: 'Foundry means you build it there from a blueprint and parts.' },
+    ];
+    const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
+    const TAG_TONE = Object.fromEntries(TAGS.map((t) => [t.id, t.tone || 'accent2']));
+    const GOAL_FILTERS = [['all', 'All']].concat(TAGS.map((t) => [t.id, t.label]));
+    function tagClass(tag) { return 'tag tag-' + tag + ' tone-' + (TAG_TONE[tag] || 'accent2'); }
 
     const $ = (id) => document.getElementById(id);
     function el(tag, cls, text) {
@@ -431,7 +456,7 @@
       const everything = f.tasks.concat(customTasks());
       const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
       const open = visible.filter((t) => !goalDone(t)).length;
-      wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + (ui.goalFilter === 'plat' ? ' Buy with plat means you can get it from the Market or from other players.' : '') + (ui.goalFilter === 'foundry' ? ' Foundry means you build it there from a blueprint and parts.' : '')));
+      wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + ((TAGS.find((x) => x.id === ui.goalFilter) || {}).explain ? ' ' + TAGS.find((x) => x.id === ui.goalFilter).explain : '')));
       (f.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]).forEach((grp) => {
         const items = visible.filter((t) => t.group === grp);
         if (!items.length) return;
@@ -457,15 +482,25 @@
         if (fx && fx.hidden) return;
         const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
         const qty = Math.floor(Number(fx && fx.qty != null ? fx.qty : v.qty));
-        const plat = fx && fx.plat != null ? !!fx.plat : !!v.plat;
         if (!name || !Number.isFinite(qty) || qty < 1) return;
+        const tags = customTags(v, fx);
         out.push({
           id, group: CUSTOM_GROUP, text: name + ' × ' + qty.toLocaleString('en-US'), note: '',
-          tags: plat ? ['plat'] : [], custom: { name, qty, plat, fixed: !!fx }, at: Number(v.at) || 0,
+          tags, custom: { name, qty, tags, plat: tags.includes('plat'), fixed: !!fx }, at: Number(v.at) || 0,
         });
       });
       out.sort((a, b) => a.at - b.at);
       return out;
+    }
+
+    /* Tags of an added goal: the saved tags list, or for goals saved before tags existed the old
+       plat flag. A correction in warframe-data.json (customFixes) may set tags, or just plat. */
+    function customTags(v, fx) {
+      const known = (a) => TAGS.map((x) => x.id).filter((id) => Array.isArray(a) && a.includes(id));
+      let tags = Array.isArray(v.tags) ? known(v.tags) : (v.plat ? ['plat'] : []);
+      if (fx && Array.isArray(fx.tags)) tags = known(fx.tags);
+      else if (fx && fx.plat != null) tags = fx.plat ? Array.from(new Set(tags.concat('plat'))) : tags.filter((x) => x !== 'plat');
+      return TAGS.map((x) => x.id).filter((id) => tags.includes(id));
     }
 
     function customRowEl(t) {
@@ -482,7 +517,7 @@
     function goalText(t) {
       const w = el('span', 'tx');
       const title = el('span', 'tt', t.text);
-      (t.tags || []).forEach((tag) => title.appendChild(el('span', 'tag tag-' + tag, TAG_LABEL[tag] || tag)));
+      (t.tags || []).forEach((tag) => title.appendChild(el('span', tagClass(tag), TAG_LABEL[tag] || tag)));
       w.appendChild(title);
       if (t.note) w.appendChild(el('span', 'nt', t.note));
       return w;
@@ -570,6 +605,21 @@
       });
       sel.appendChild(new Option('Other (type a name)…', '__other'));
     }
+    function buildTagButtons() {
+      const box = $('wf-tags'); box.textContent = '';
+      TAGS.forEach((tg) => {
+        const b = el('button', 'tagbtn tag-' + tg.id + ' tone-' + (tg.tone || 'accent2'), tg.label);
+        b.type = 'button'; b.dataset.tag = tg.id; b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
+        box.appendChild(b);
+      });
+    }
+    function setTagButtons(tags) {
+      $('wf-tags').querySelectorAll('.tagbtn').forEach((b) => b.setAttribute('aria-pressed', (tags || []).includes(b.dataset.tag) ? 'true' : 'false'));
+    }
+    function pickedTags() {
+      return Array.from($('wf-tags').querySelectorAll('.tagbtn')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tag);
+    }
     function syncOther() { $('wf-other-wrap').hidden = $('wf-res').value !== '__other'; }
     function resetDelete() { clearTimeout(delTimer); $('wf-del').textContent = 'Delete'; $('wf-del').dataset.armed = ''; }
     function openGoalDialog(t) {
@@ -585,9 +635,9 @@
         sel.value = known ? t.custom.name : '__other';
         $('wf-other').value = known ? '' : t.custom.name;
         $('wf-qty').value = String(t.custom.qty);
-        $('wf-plat').checked = t.custom.plat;
+        setTagButtons(t.custom.tags);
       } else {
-        sel.selectedIndex = 0; $('wf-other').value = ''; $('wf-qty').value = ''; $('wf-plat').checked = false;
+        sel.selectedIndex = 0; $('wf-other').value = ''; $('wf-qty').value = ''; setTagButtons([]);
       }
       syncOther();
       const dlg = $('wf-dlg');
@@ -610,7 +660,9 @@
       if (!Number.isInteger(qty) || qty < 1 || qty > 100000000) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
       const id = editing ? editing.id : newGoalId();
       const was = S.custom[id];
-      const val = { name, qty, plat: $('wf-plat').checked, at: (was && Number(was.at)) || Date.now() };
+      const tags = pickedTags();
+      /* plat is still saved beside tags so an older copy of the page (a cached phone tab) reads it right. */
+      const val = { name, qty, tags, plat: tags.includes('plat'), at: (was && Number(was.at)) || Date.now() };
       const overridden = !!(editing && editing.custom.fixed);
       S.custom[id] = val; renderLive(); closeGoalDialog();
       try {
@@ -633,7 +685,7 @@
       }
     }
     function initGoalDialog() {
-      buildResourceSelect();
+      buildResourceSelect(); buildTagButtons();
       $('wf-res').addEventListener('change', syncOther);
       $('wf-cancel').addEventListener('click', closeGoalDialog);
       $('wf-goalform').addEventListener('submit', saveGoal);

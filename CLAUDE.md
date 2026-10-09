@@ -25,6 +25,13 @@ worked on this repo — this file is the shared memory across them.
   below), which `worker.js` intercepts itself. Keep that pattern — check the request
   path first, fall through to `ASSETS` for everything else — rather than growing the
   worker into something that re-implements static serving.
+- **Static files bypass the Worker by default.** A request that matches a file (like
+  `/` -> `index.html`) is served straight from the assets and never runs `worker.js`.
+  `wrangler.jsonc` therefore sets `assets.run_worker_first` to `["/"]` so the Worker
+  sees the front page (needed for the `warframe.cb8eats.com` hostname, see the
+  Warframe section). Every other path is still served directly from the assets. If a
+  new hostname-based rewrite ever has to run for another path, add that path to the
+  list rather than setting it to `true`.
 - **Gotcha:** a Worker `html_handling: "strip"`-style setting was tried once to drop
   `.html` from URLs and it broke the homepage entirely (see commits "Disable the
   .html-stripping redirect on the Worker" / "Revert html_handling: none"). Current
@@ -394,7 +401,7 @@ published the original three-field rule, adding goals fails with permission-deni
 - **Address:** served at `/warframe`, and at the bare root of `warframe.cb8eats.com`
   and `www.warframe.cb8eats.com` (the owner attached the `www.` one in the dashboard,
   so both are accepted). `worker.js` checks `WARFRAME_HOSTS.has(url.hostname)` and `pathname === '/'`
-  (GET/HEAD only) and fetches `/warframe` from `env.ASSETS` instead (extensionless on
+  (GET/HEAD only; `/` only reaches the Worker because of `run_worker_first`) and fetches `/warframe` from `env.ASSETS` instead (extensionless on
   purpose, since `/warframe.html` 307-redirects). Every other path on that hostname
   falls through to the normal assets, so the page's relative `css/`, `js/` and
   `warframe-data.json` links work. The hostname itself is attached in the Cloudflare

@@ -8,7 +8,13 @@
   },
   "assets": {
     "directory": ".",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // By default a request that matches a static file (like "/" -> index.html)
+    // is served straight from the files and never reaches worker.js. Run the
+    // Worker first for "/" only, so worker.js can show the Warframe page at the
+    // root of warframe.cb8eats.com. For every other host it falls through to
+    // ASSETS and returns the normal home page.
+    "run_worker_first": ["/"]
   },
   "vars": {
     // Public/non-secret. The actual send credential is RESEND_API_KEY,

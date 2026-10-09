@@ -62,275 +62,547 @@
     "id": "frames",
     "group": "Collection",
     "text": "Own every Warframe",
-    "note": "Frames with Forma in them are kept. Tick the ones you own. Base frames only, so Prime and Umbra versions are not listed. Most can be built in the Foundry, and many are sold for platinum in the Market.",
+    "note": "Frames with Forma in them are kept. Tick the ones you own: the base frames, their Prime versions, Excalibur Umbra and the two Necramechs. Pre-ticked from your 9 Oct Arsenal scan (34 frames: 24 base, 9 Prime and Excalibur Umbra; no Necramech yet). Most can be built in the Foundry, and many are sold for platinum in the Market.",
     "tags": [
      "plat",
      "foundry"
     ],
     "parts": [
      {
-      "id": "frame-ash",
-      "text": "Ash"
-     },
-     {
-      "id": "frame-atlas",
-      "text": "Atlas"
-     },
-     {
-      "id": "frame-banshee",
-      "text": "Banshee"
-     },
-     {
-      "id": "frame-baruuk",
-      "text": "Baruuk"
-     },
-     {
-      "id": "frame-caliban",
-      "text": "Caliban"
-     },
-     {
-      "id": "frame-chroma",
-      "text": "Chroma"
-     },
-     {
-      "id": "frame-citrine",
-      "text": "Citrine"
-     },
-     {
-      "id": "frame-cyte-09",
-      "text": "Cyte-09"
-     },
-     {
-      "id": "frame-dagath",
-      "text": "Dagath"
-     },
-     {
-      "id": "frame-dante",
-      "text": "Dante"
-     },
-     {
-      "id": "frame-ember",
-      "text": "Ember"
-     },
-     {
-      "id": "frame-equinox",
-      "text": "Equinox"
-     },
-     {
-      "id": "frame-excalibur",
-      "text": "Excalibur"
-     },
-     {
-      "id": "frame-follie",
-      "text": "Follie"
-     },
-     {
-      "id": "frame-frost",
-      "text": "Frost"
-     },
-     {
-      "id": "frame-gara",
-      "text": "Gara"
-     },
-     {
-      "id": "frame-garuda",
-      "text": "Garuda"
-     },
-     {
-      "id": "frame-gauss",
-      "text": "Gauss"
-     },
-     {
-      "id": "frame-grendel",
-      "text": "Grendel"
-     },
-     {
-      "id": "frame-gyre",
-      "text": "Gyre"
-     },
-     {
-      "id": "frame-harrow",
-      "text": "Harrow"
-     },
-     {
-      "id": "frame-hildryn",
-      "text": "Hildryn"
-     },
-     {
-      "id": "frame-hydroid",
-      "text": "Hydroid"
-     },
-     {
-      "id": "frame-inaros",
-      "text": "Inaros"
-     },
-     {
-      "id": "frame-ivara",
-      "text": "Ivara"
-     },
-     {
-      "id": "frame-jade",
-      "text": "Jade"
-     },
-     {
-      "id": "frame-khora",
-      "text": "Khora"
-     },
-     {
-      "id": "frame-koumei",
-      "text": "Koumei"
-     },
-     {
-      "id": "frame-kullervo",
-      "text": "Kullervo"
-     },
-     {
-      "id": "frame-lavos",
-      "text": "Lavos"
-     },
-     {
-      "id": "frame-limbo",
-      "text": "Limbo"
-     },
-     {
-      "id": "frame-loki",
-      "text": "Loki"
-     },
-     {
-      "id": "frame-mag",
-      "text": "Mag"
-     },
-     {
-      "id": "frame-mesa",
-      "text": "Mesa"
-     },
-     {
-      "id": "frame-mirage",
-      "text": "Mirage"
-     },
-     {
-      "id": "frame-narin",
-      "text": "Narin"
-     },
-     {
-      "id": "frame-nekros",
-      "text": "Nekros"
-     },
-     {
-      "id": "frame-nezha",
-      "text": "Nezha"
-     },
-     {
-      "id": "frame-nidus",
-      "text": "Nidus"
-     },
-     {
-      "id": "frame-nokko",
-      "text": "Nokko"
-     },
-     {
-      "id": "frame-nova",
-      "text": "Nova"
-     },
-     {
-      "id": "frame-nyx",
-      "text": "Nyx"
-     },
-     {
-      "id": "frame-oberon",
-      "text": "Oberon"
-     },
-     {
-      "id": "frame-octavia",
-      "text": "Octavia"
-     },
-     {
-      "id": "frame-oraxia",
-      "text": "Oraxia"
-     },
-     {
-      "id": "frame-protea",
-      "text": "Protea"
-     },
-     {
-      "id": "frame-qorvex",
-      "text": "Qorvex"
-     },
-     {
-      "id": "frame-revenant",
-      "text": "Revenant"
-     },
-     {
-      "id": "frame-rhino",
-      "text": "Rhino"
-     },
-     {
-      "id": "frame-saryn",
-      "text": "Saryn"
-     },
-     {
-      "id": "frame-sevagoth",
-      "text": "Sevagoth"
-     },
-     {
-      "id": "frame-sirius-orion",
-      "text": "Sirius & Orion"
-     },
-     {
-      "id": "frame-styanax",
-      "text": "Styanax"
-     },
-     {
-      "id": "frame-temple",
-      "text": "Temple"
-     },
-     {
-      "id": "frame-titania",
-      "text": "Titania"
-     },
-     {
-      "id": "frame-trinity",
-      "text": "Trinity"
-     },
-     {
-      "id": "frame-uriel",
-      "text": "Uriel"
-     },
-     {
-      "id": "frame-valkyr",
-      "text": "Valkyr"
-     },
-     {
-      "id": "frame-vauban",
-      "text": "Vauban"
-     },
-     {
-      "id": "frame-volt",
-      "text": "Volt"
-     },
-     {
-      "id": "frame-voruna",
-      "text": "Voruna"
-     },
-     {
-      "id": "frame-wisp",
-      "text": "Wisp"
-     },
-     {
-      "id": "frame-wukong",
-      "text": "Wukong"
-     },
-     {
-      "id": "frame-xaku",
-      "text": "Xaku"
-     },
-     {
-      "id": "frame-yareli",
-      "text": "Yareli"
-     },
-     {
-      "id": "frame-zephyr",
-      "text": "Zephyr"
+      "id": "frames-base",
+      "text": "Base Warframes",
+      "parts": [
+       {
+        "id": "frame-ash",
+        "text": "Ash",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-atlas",
+        "text": "Atlas"
+       },
+       {
+        "id": "frame-banshee",
+        "text": "Banshee",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-baruuk",
+        "text": "Baruuk"
+       },
+       {
+        "id": "frame-caliban",
+        "text": "Caliban"
+       },
+       {
+        "id": "frame-chroma",
+        "text": "Chroma"
+       },
+       {
+        "id": "frame-citrine",
+        "text": "Citrine"
+       },
+       {
+        "id": "frame-cyte-09",
+        "text": "Cyte-09",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-dagath",
+        "text": "Dagath",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-dante",
+        "text": "Dante",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-ember",
+        "text": "Ember"
+       },
+       {
+        "id": "frame-equinox",
+        "text": "Equinox"
+       },
+       {
+        "id": "frame-excalibur",
+        "text": "Excalibur",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-follie",
+        "text": "Follie",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-frost",
+        "text": "Frost"
+       },
+       {
+        "id": "frame-gara",
+        "text": "Gara"
+       },
+       {
+        "id": "frame-garuda",
+        "text": "Garuda"
+       },
+       {
+        "id": "frame-gauss",
+        "text": "Gauss"
+       },
+       {
+        "id": "frame-grendel",
+        "text": "Grendel"
+       },
+       {
+        "id": "frame-gyre",
+        "text": "Gyre"
+       },
+       {
+        "id": "frame-harrow",
+        "text": "Harrow"
+       },
+       {
+        "id": "frame-hildryn",
+        "text": "Hildryn"
+       },
+       {
+        "id": "frame-hydroid",
+        "text": "Hydroid"
+       },
+       {
+        "id": "frame-inaros",
+        "text": "Inaros"
+       },
+       {
+        "id": "frame-ivara",
+        "text": "Ivara"
+       },
+       {
+        "id": "frame-jade",
+        "text": "Jade"
+       },
+       {
+        "id": "frame-khora",
+        "text": "Khora"
+       },
+       {
+        "id": "frame-koumei",
+        "text": "Koumei"
+       },
+       {
+        "id": "frame-kullervo",
+        "text": "Kullervo"
+       },
+       {
+        "id": "frame-lavos",
+        "text": "Lavos"
+       },
+       {
+        "id": "frame-limbo",
+        "text": "Limbo",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-loki",
+        "text": "Loki",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-mag",
+        "text": "Mag"
+       },
+       {
+        "id": "frame-mesa",
+        "text": "Mesa"
+       },
+       {
+        "id": "frame-mirage",
+        "text": "Mirage"
+       },
+       {
+        "id": "frame-narin",
+        "text": "Narin"
+       },
+       {
+        "id": "frame-nekros",
+        "text": "Nekros"
+       },
+       {
+        "id": "frame-nezha",
+        "text": "Nezha"
+       },
+       {
+        "id": "frame-nidus",
+        "text": "Nidus",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-nokko",
+        "text": "Nokko",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-nova",
+        "text": "Nova"
+       },
+       {
+        "id": "frame-nyx",
+        "text": "Nyx",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-oberon",
+        "text": "Oberon",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-octavia",
+        "text": "Octavia"
+       },
+       {
+        "id": "frame-oraxia",
+        "text": "Oraxia"
+       },
+       {
+        "id": "frame-protea",
+        "text": "Protea"
+       },
+       {
+        "id": "frame-qorvex",
+        "text": "Qorvex"
+       },
+       {
+        "id": "frame-revenant",
+        "text": "Revenant",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-rhino",
+        "text": "Rhino",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-saryn",
+        "text": "Saryn",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-sevagoth",
+        "text": "Sevagoth"
+       },
+       {
+        "id": "frame-sirius-orion",
+        "text": "Sirius & Orion",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-styanax",
+        "text": "Styanax"
+       },
+       {
+        "id": "frame-temple",
+        "text": "Temple",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-titania",
+        "text": "Titania",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-trinity",
+        "text": "Trinity"
+       },
+       {
+        "id": "frame-uriel",
+        "text": "Uriel",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-valkyr",
+        "text": "Valkyr",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-vauban",
+        "text": "Vauban",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-volt",
+        "text": "Volt"
+       },
+       {
+        "id": "frame-voruna",
+        "text": "Voruna"
+       },
+       {
+        "id": "frame-wisp",
+        "text": "Wisp"
+       },
+       {
+        "id": "frame-wukong",
+        "text": "Wukong",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-xaku",
+        "text": "Xaku"
+       },
+       {
+        "id": "frame-yareli",
+        "text": "Yareli",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-zephyr",
+        "text": "Zephyr"
+       }
+      ]
+     },
+     {
+      "id": "frames-prime",
+      "text": "Prime Warframes",
+      "parts": [
+       {
+        "id": "frame-ash-prime",
+        "text": "Ash Prime"
+       },
+       {
+        "id": "frame-atlas-prime",
+        "text": "Atlas Prime"
+       },
+       {
+        "id": "frame-banshee-prime",
+        "text": "Banshee Prime"
+       },
+       {
+        "id": "frame-baruuk-prime",
+        "text": "Baruuk Prime"
+       },
+       {
+        "id": "frame-caliban-prime",
+        "text": "Caliban Prime"
+       },
+       {
+        "id": "frame-chroma-prime",
+        "text": "Chroma Prime"
+       },
+       {
+        "id": "frame-citrine-prime",
+        "text": "Citrine Prime"
+       },
+       {
+        "id": "frame-ember-prime",
+        "text": "Ember Prime"
+       },
+       {
+        "id": "frame-equinox-prime",
+        "text": "Equinox Prime"
+       },
+       {
+        "id": "frame-excalibur-prime",
+        "text": "Excalibur Prime"
+       },
+       {
+        "id": "frame-frost-prime",
+        "text": "Frost Prime"
+       },
+       {
+        "id": "frame-gara-prime",
+        "text": "Gara Prime"
+       },
+       {
+        "id": "frame-garuda-prime",
+        "text": "Garuda Prime"
+       },
+       {
+        "id": "frame-gauss-prime",
+        "text": "Gauss Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-grendel-prime",
+        "text": "Grendel Prime"
+       },
+       {
+        "id": "frame-gyre-prime",
+        "text": "Gyre Prime"
+       },
+       {
+        "id": "frame-harrow-prime",
+        "text": "Harrow Prime"
+       },
+       {
+        "id": "frame-hildryn-prime",
+        "text": "Hildryn Prime"
+       },
+       {
+        "id": "frame-hydroid-prime",
+        "text": "Hydroid Prime"
+       },
+       {
+        "id": "frame-inaros-prime",
+        "text": "Inaros Prime"
+       },
+       {
+        "id": "frame-ivara-prime",
+        "text": "Ivara Prime"
+       },
+       {
+        "id": "frame-khora-prime",
+        "text": "Khora Prime"
+       },
+       {
+        "id": "frame-lavos-prime",
+        "text": "Lavos Prime"
+       },
+       {
+        "id": "frame-limbo-prime",
+        "text": "Limbo Prime"
+       },
+       {
+        "id": "frame-loki-prime",
+        "text": "Loki Prime"
+       },
+       {
+        "id": "frame-mag-prime",
+        "text": "Mag Prime"
+       },
+       {
+        "id": "frame-mesa-prime",
+        "text": "Mesa Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-mirage-prime",
+        "text": "Mirage Prime"
+       },
+       {
+        "id": "frame-nekros-prime",
+        "text": "Nekros Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-nezha-prime",
+        "text": "Nezha Prime"
+       },
+       {
+        "id": "frame-nidus-prime",
+        "text": "Nidus Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-nova-prime",
+        "text": "Nova Prime"
+       },
+       {
+        "id": "frame-nyx-prime",
+        "text": "Nyx Prime"
+       },
+       {
+        "id": "frame-oberon-prime",
+        "text": "Oberon Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-octavia-prime",
+        "text": "Octavia Prime"
+       },
+       {
+        "id": "frame-protea-prime",
+        "text": "Protea Prime"
+       },
+       {
+        "id": "frame-revenant-prime",
+        "text": "Revenant Prime"
+       },
+       {
+        "id": "frame-rhino-prime",
+        "text": "Rhino Prime"
+       },
+       {
+        "id": "frame-saryn-prime",
+        "text": "Saryn Prime"
+       },
+       {
+        "id": "frame-sevagoth-prime",
+        "text": "Sevagoth Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-styanax-prime",
+        "text": "Styanax Prime"
+       },
+       {
+        "id": "frame-titania-prime",
+        "text": "Titania Prime"
+       },
+       {
+        "id": "frame-trinity-prime",
+        "text": "Trinity Prime"
+       },
+       {
+        "id": "frame-valkyr-prime",
+        "text": "Valkyr Prime"
+       },
+       {
+        "id": "frame-vauban-prime",
+        "text": "Vauban Prime"
+       },
+       {
+        "id": "frame-volt-prime",
+        "text": "Volt Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-voruna-prime",
+        "text": "Voruna Prime"
+       },
+       {
+        "id": "frame-wisp-prime",
+        "text": "Wisp Prime"
+       },
+       {
+        "id": "frame-wukong-prime",
+        "text": "Wukong Prime"
+       },
+       {
+        "id": "frame-xaku-prime",
+        "text": "Xaku Prime",
+        "doneDefault": true
+       },
+       {
+        "id": "frame-yareli-prime",
+        "text": "Yareli Prime"
+       },
+       {
+        "id": "frame-zephyr-prime",
+        "text": "Zephyr Prime",
+        "doneDefault": true
+       }
+      ]
+     },
+     {
+      "id": "frame-excalibur-umbra",
+      "text": "Excalibur Umbra",
+      "doneDefault": true
+     },
+     {
+      "id": "frames-mechs",
+      "text": "Necramechs",
+      "parts": [
+       {
+        "id": "mech-bonewidow",
+        "text": "Bonewidow"
+       },
+       {
+        "id": "mech-voidrig",
+        "text": "Voidrig"
+       }
+      ]
      }
     ]
    },
@@ -672,6 +944,161 @@
       "id": "archon-vitality",
       "text": "Archon Vitality",
       "note": "Chipper, Kahl's Garrison."
+     }
+    ]
+   },
+   {
+    "id": "allumbral",
+    "group": "Collection",
+    "text": "Own all the Umbral mods",
+    "note": "All three are in your 8 Oct scan.",
+    "parts": [
+     {
+      "id": "um-fiber",
+      "text": "Umbral Fiber",
+      "doneDefault": true
+     },
+     {
+      "id": "um-intensify",
+      "text": "Umbral Intensify",
+      "doneDefault": true
+     },
+     {
+      "id": "um-vitality",
+      "text": "Umbral Vitality",
+      "doneDefault": true
+     }
+    ]
+   },
+   {
+    "id": "allnecra",
+    "group": "Collection",
+    "text": "Own all the Necramech mods",
+    "note": "They only fit Necramechs. Ticked: the ones in your 8 Oct scan.",
+    "tags": [
+     "plat"
+    ],
+    "parts": [
+     {
+      "id": "nm-augur",
+      "text": "Necramech Augur"
+     },
+     {
+      "id": "nm-aviator",
+      "text": "Necramech Aviator"
+     },
+     {
+      "id": "nm-blitz",
+      "text": "Necramech Blitz",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-continuity",
+      "text": "Necramech Continuity"
+     },
+     {
+      "id": "nm-deflection",
+      "text": "Necramech Deflection",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-drift",
+      "text": "Necramech Drift"
+     },
+     {
+      "id": "nm-efficiency",
+      "text": "Necramech Efficiency",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-enemy-sense",
+      "text": "Necramech Enemy Sense"
+     },
+     {
+      "id": "nm-flow",
+      "text": "Necramech Flow"
+     },
+     {
+      "id": "nm-friction",
+      "text": "Necramech Friction",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-fury",
+      "text": "Necramech Fury",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-hydraulics",
+      "text": "Necramech Hydraulics"
+     },
+     {
+      "id": "nm-intensify",
+      "text": "Necramech Intensify"
+     },
+     {
+      "id": "nm-pressure-point",
+      "text": "Necramech Pressure Point"
+     },
+     {
+      "id": "nm-rage",
+      "text": "Necramech Rage"
+     },
+     {
+      "id": "nm-reach",
+      "text": "Necramech Reach",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-rebuke",
+      "text": "Necramech Rebuke"
+     },
+     {
+      "id": "nm-redirection",
+      "text": "Necramech Redirection",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-refuel",
+      "text": "Necramech Refuel"
+     },
+     {
+      "id": "nm-repair",
+      "text": "Necramech Repair"
+     },
+     {
+      "id": "nm-seismic-wave",
+      "text": "Necramech Seismic Wave"
+     },
+     {
+      "id": "nm-slipstream",
+      "text": "Necramech Slipstream"
+     },
+     {
+      "id": "nm-stamina",
+      "text": "Necramech Stamina"
+     },
+     {
+      "id": "nm-steel-fiber",
+      "text": "Necramech Steel Fiber"
+     },
+     {
+      "id": "nm-streamline",
+      "text": "Necramech Streamline",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-stretch",
+      "text": "Necramech Stretch",
+      "doneDefault": true
+     },
+     {
+      "id": "nm-thrusters",
+      "text": "Necramech Thrusters"
+     },
+     {
+      "id": "nm-vitality",
+      "text": "Necramech Vitality"
      }
     ]
    },

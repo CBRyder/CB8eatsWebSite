@@ -478,6 +478,15 @@ content. They live together under one hub page with three big cards (`dev.html`;
   `--ri-accent: var(--accent)`, ...) so it follows the colors, but the status colors
   (crit/warn/good/verified/planned) stay fixed on purpose because they carry meaning.
   The trackers keep their own row layout; Warframe's lists were not rebuilt in it.
+- **Icon:** every dev page uses one DEV icon (green D, purple E, green V on dark, from
+  CB's saved theme colors `#00ff66` / `#e040ff`): `images/dev-icon.svg` (tab icon, rounded)
+  and `images/dev-apple-touch-icon.png` (180x180, full-bleed square, for Safari's Add to
+  Home Screen; also a PNG tab-icon fallback). The letters are drawn as paths, so there is
+  no font dependency. Each dev page sets `apple-mobile-web-app-title` (hub `DEV`, Tarboro
+  tracker `TL`, COA tracker `COA`, Warframe `Warframe`). iOS caches the icon from when a
+  shortcut was added, so changing it means removing and re-adding the shortcut. The hub's
+  cards are titled `TL`, `COA` and `Warframe`. The trackers' old `favicon-tarboro.svg` /
+  `favicon-coa.svg` are still used by the public Tarboro Life and COA pages.
 - **Phone width:** long unbroken words in `.res-desc`/`.res-note` used to push the
   trackers wider than the screen; they now wrap (`overflow-wrap: anywhere`).
 

@@ -380,6 +380,36 @@ and **Theme**.
   from the 8 Oct scan start ticked) and **Own all the Umbral mods** (`allumbral`, 3, all ticked). Keep the
   ticked ones in step with `/topics/warframe-mods.md` when the mod list is rescanned.
   The Mods tab already has dropdowns per group (`details.grp`).
+- **View mod screen (added 2026-10-09):** tap any mod chip on the Mods tab, or a mod in a
+  saved build, and a `<dialog id="wf-moddlg">` shows its stats: polarity, max rank, drain (or
+  capacity gained, for auras and stances, whose `baseDrain` is negative), drain in a
+  matching-polarity slot (half, rounded up; capacity doubles), a rank slider with the stat
+  lines at that rank (starts at max rank), an "Every rank" table, what the list says about it
+  (copies, best rank, or the `note` for a missing mod), set partners, a wiki link, and the mod
+  picture. A chip that stands for a family (`Bane of Corpus/Grineer/Infested`, `Bond family: ...`)
+  opens a screen with one button per member. Chips with no match stay plain text.
+  - **Data:** `warframe-mod-stats.json`, fetched with `cache: 'no-store'` *after* the main data
+    (`loadModStats()`); if it fails the chips stay plain and the page logs one `console.warn`.
+    Shape: `{ built, source, mods: { m0: { n name, p polarity, r rarity, d baseDrain, m max rank,
+    c compat, t type, l [[stat lines] per rank 0..m], xr extra ranks the database lists beyond
+    max (some Railjack mods), ds description, set, sp set partners, tr tradable, ex exilus,
+    intro, w wiki url, img picture file } }, index: { "<groupId>|<chip name>": [mod keys] },
+    partial: { "<groupId>|<chip name>": [names the database lacks] } }`. The chip name is
+    what `parseChip()` returns; builds use group id `builds`.
+  - **It is generated, not hand-edited:** `python3 tools/build-mod-stats.py --items <Mods.json>`
+    reads `warframe-data.json` and WFCD's `warframe-items` `Mods.json` (npm `warframe-items`,
+    `data/json/Mods.json`) and rewrites the file. **Re-run it whenever the owned or missing mod
+    lists change** (a new chip with no entry in `index` is simply not tappable), then commit both
+    files. It prints chips it could not match and the judgement calls it made. The database
+    has several mods of one name (Flawed/Intermediate/Expert copies); the script prefers the
+    one for that group's kind of mod, then the normal (non-tier) copy, then the one with real
+    text. Stat text is cleaned of the game's markup tags.
+  - **Pictures** are the 256px mod artwork from the same repo, loaded straight from
+    `https://cdn.jsdelivr.net/gh/WFCD/warframe-items@master/data/img/<file>` by the browser
+    (not copied into this repo); if one fails to load it is hidden and nothing else changes.
+    The sandbox cannot reach jsDelivr (use `raw.githubusercontent.com` there).
+  - The data file is one of the dev-only data files (see the Dev hub section), so it is in
+    `DEV_DATA` in `worker.js` and in `wrangler.jsonc`'s `run_worker_first`.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,
@@ -473,7 +503,7 @@ content. They live together under one hub page with three big cards (`dev.html`;
 - **The lock: Cloudflare Access on the dev hostname, and dev pages only exist there.**
   `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/warframe` (and their `.html`
   forms) and the data files `resource-inventory.json`, `coa-inventory.json`,
-  `warframe-data.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
+  `warframe-data.json`, `warframe-mod-stats.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
   `workers.dev` address) the pages 302 to `https://www.dev.cb8eats.com/...` and the data
   files 404, so nothing dev-related can be read from the public hostname. Variants like
   `/%64ev`, `//tracker`, `/Tracker` are normalized in the Worker or answered by the asset

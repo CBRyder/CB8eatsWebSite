@@ -143,6 +143,41 @@
     .chip .n { color: var(--text-dim); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
     .chip .nt { color: var(--text-faint); font-size: 0.78rem; }
     .empty { color: var(--text-dim); }
+    /* Tappable mod chips and the View mod screen */
+    .chip.tap { font: inherit; font-size: 0.9rem; color: var(--text); cursor: pointer; min-height: 40px; align-items: center; text-align: left; }
+    .chip.tap:hover { border-color: var(--accent); }
+    .chip.tap:focus-visible, .mv-pick button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    dialog.mvdlg { width: min(94vw, 34rem); }
+    .mv-head { display: flex; gap: 0.9rem; align-items: flex-start; }
+    .mv-img { flex: none; width: 88px; height: 88px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); background: var(--bg-alt); }
+    .mv-img[hidden] { display: none; }
+    .mv-title { flex: 1 1 auto; min-width: 0; }
+    .mv-title h2 { overflow-wrap: anywhere; }
+    .mv-sub { margin: 0; font-size: 0.88rem; color: var(--text-dim); }
+    .mv-x { flex: none; min-width: 44px; }
+    .mv-pick { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0 0.2rem; }
+    .mv-pick[hidden] { display: none; }
+    .mv-pick button { font: inherit; font-size: 0.85rem; min-height: 40px; padding: 0.2rem 0.8rem; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: var(--text-dim); }
+    .mv-pick button[aria-pressed="true"] { color: var(--on-grad); border-color: transparent; background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+    .mv-tiles { margin-top: 0.9rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mv-rank { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0.2rem; }
+    .mv-rank .btn-sm { flex: none; min-width: 48px; }
+    .mv-rank input[type="range"] { flex: 1 1 auto; min-width: 0; min-height: 44px; accent-color: var(--accent); }
+    .mv-rankread { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin: 0.9rem 0 0.1rem; }
+    .mv-lines { margin: 0.2rem 0 0; padding-left: 1.1rem; font-size: 0.98rem; }
+    .mv-lines li { margin-bottom: 0.35rem; overflow-wrap: anywhere; }
+    .mv-desc { margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-dim); }
+    .mv-all { margin-top: 0.7rem; }
+    .mv-all summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; color: var(--accent-bright); font-weight: 600; font-size: 0.9rem; }
+    .mv-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .mv-table th, .mv-table td { text-align: left; vertical-align: top; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+    .mv-table th { color: var(--text-dim); font-weight: 600; white-space: nowrap; }
+    .mv-table tr.cur th, .mv-table tr.cur td { color: var(--accent-bright); }
+    .mv-box { margin: 0.9rem 0 0; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-alt); font-size: 0.92rem; overflow-wrap: anywhere; }
+    .mv-box b { display: block; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 0.2rem; }
+    .mv-box .tag { margin-left: 0.4rem; }
+    .mv-link { display: inline-block; margin-top: 0.7rem; min-height: 40px; line-height: 40px; color: var(--accent-bright); }
     /* Builds */
     .build h2 { margin-bottom: 0.1rem; }
     .build .meta { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 0.8rem; }
@@ -258,6 +293,19 @@
     </form>
   </dialog>
 
+  <dialog class="wfdlg mvdlg" id="wf-moddlg" aria-labelledby="wf-mod-title">
+    <div class="mv-head">
+      <img class="mv-img" id="wf-mod-img" alt="" width="88" height="88" hidden referrerpolicy="no-referrer">
+      <div class="mv-title">
+        <h2 id="wf-mod-title"></h2>
+        <p class="mv-sub" id="wf-mod-sub"></p>
+      </div>
+      <button type="button" class="btn-sm mv-x" id="wf-mod-close" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="mv-pick" id="wf-mod-pick" role="group" aria-label="Which mod" hidden></div>
+    <div id="wf-mod-body"></div>
+  </dialog>
+
   <footer>
     <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
     &copy; 2026 CB8eats. All rights reserved.
@@ -330,8 +378,10 @@
       t = t.replace(/\(([^)]*)\)/, (m, a) => { note = a; return ''; });
       return { name: t.replace(/\s+/g, ' ').trim(), rank, count, max, note, tags };
     }
-    function chipEl(c, extraCls) {
-      const n = el('span', 'chip' + (c.max ? ' max' : '') + (extraCls ? ' ' + extraCls : ''));
+    /* tap = { keys, view, miss, build } makes the chip a button that opens the View mod screen. */
+    function chipEl(c, extraCls, tap) {
+      const n = el(tap ? 'button' : 'span', 'chip' + (c.max ? ' max' : '') + (extraCls ? ' ' + extraCls : '') + (tap ? ' tap' : ''));
+      if (tap) { n.type = 'button'; n.dataset.mod = c.name; n.setAttribute('aria-haspopup', 'dialog'); n.addEventListener('click', () => openMod(tap, c)); }
       n.appendChild(document.createTextNode(c.name));
       if (c.count) n.appendChild(el('span', 'n', '×' + c.count));
       if (c.rank) n.appendChild(el('span', 'n', c.rank));
@@ -718,7 +768,7 @@
         sm.appendChild(el('span', 'gcount', hits.length !== chips.length ? hits.length + ' of ' + chips.length : String(chips.length)));
         d.appendChild(sm);
         if (g.note) d.appendChild(el('p', 'gnote', g.note));
-        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c))); d.appendChild(wrap);
+        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c, null, tapFor(g.id, c.name)))); d.appendChild(wrap);
         box.appendChild(d);
       });
       const platOn = ui.view === 'missing' && ui.modFilter === 'plat';
@@ -732,10 +782,175 @@
       const lg = $('wf-legend'); lg.textContent = '';
       if (ui.view === 'owned') {
         lg.appendChild(el('span', 'dot'));
-        lg.appendChild(document.createTextNode('Has a max-rank copy (judged from the drain number, so approximate). ×N is copies owned. r7/10 is the best rank seen. Scanned ' + S.data.meta.scannedLabel + '.'));
+        lg.appendChild(document.createTextNode('Has a max-rank copy (judged from the drain number, so approximate). ×N is copies owned. r7/10 is the best rank seen. Scanned ' + S.data.meta.scannedLabel + '.' + TAP_HINT()));
       } else {
-        lg.textContent = 'Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.';
+        lg.textContent = 'Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.' + TAP_HINT();
       }
+    }
+
+    /* ---------- View mod screen ---------- */
+    /* warframe-mod-stats.json is built by tools/build-mod-stats.py from the WFCD item database. It is
+       fetched after the main data; until it arrives (or if it fails) the chips are plain, untappable text. */
+    const MS = { data: null };
+    const IMG_BASE = 'https://cdn.jsdelivr.net/gh/WFCD/warframe-items@master/data/img/';
+    const mv = { keys: [], i: 0, rank: 0, chip: null, tap: null };
+    function statKeys(groupId, name) { return (MS.data && MS.data.index[groupId + '|' + name]) || null; }
+    function missFor(groupId, name) { return (MS.data && MS.data.partial && MS.data.partial[groupId + '|' + name]) || []; }
+    function tapFor(groupId, name) {
+      const keys = statKeys(groupId, name);
+      return keys ? { keys, view: ui.view, miss: missFor(groupId, name) } : null;
+    }
+    const TAP_HINT = () => (MS.data ? ' Tap a mod to see its stats.' : '');
+    async function loadModStats() {
+      try {
+        const res = await fetch('warframe-mod-stats.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        MS.data = await res.json();
+      } catch (e) { console.warn('Could not load warframe-mod-stats.json:', e); MS.data = null; return; }
+      renderMods(); renderBuilds();
+    }
+    const cap = (w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '');
+    function openMod(tap, chip) {
+      if (!MS.data) return;
+      mv.tap = tap; mv.keys = tap.keys; mv.chip = chip; mv.i = 0;
+      const pick = $('wf-mod-pick'); pick.textContent = '';
+      pick.hidden = mv.keys.length < 2;
+      mv.keys.forEach((k, i) => {
+        const b = el('button', null, MS.data.mods[k].n); b.type = 'button';
+        b.addEventListener('click', () => { mv.i = i; renderMod(); });
+        pick.appendChild(b);
+      });
+      renderMod();
+      const dlg = $('wf-moddlg');
+      if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', '');
+    }
+    function closeMod() {
+      const dlg = $('wf-moddlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function renderMod() {
+      const m = MS.data.mods[mv.keys[mv.i]];
+      const ranks = m.l && m.l.length ? m.l : null;
+      const maxRank = ranks ? ranks.length - 1 : 0;
+      mv.rank = maxRank;
+      $('wf-mod-title').textContent = m.n;
+      const showCompat = m.c && !(m.t || '').toLowerCase().includes(m.c.toLowerCase());
+      $('wf-mod-sub').textContent = [m.r, m.t, showCompat ? m.c : ''].filter(Boolean).join(' · ');
+      [...$('wf-mod-pick').children].forEach((b, i) => b.setAttribute('aria-pressed', i === mv.i ? 'true' : 'false'));
+      const img = $('wf-mod-img'); img.hidden = true; img.removeAttribute('src');
+      if (m.img) { img.onload = () => { img.hidden = false; }; img.onerror = () => { img.hidden = true; }; img.src = IMG_BASE + encodeURIComponent(m.img); }
+
+      const body = $('wf-mod-body'); body.textContent = '';
+      const neg = typeof m.d === 'number' && m.d < 0;           // auras and stances give capacity instead of using it
+      const hasD = typeof m.d === 'number';
+      const tiles = el('div', 'stats mv-tiles');
+      const tile = (k, v) => { const x = el('div', 'stat'); const kk = el('div', 'k', k), vv = el('div', 'v', v); x.appendChild(kk); x.appendChild(vv); tiles.appendChild(x); return { k: kk, v: vv }; };
+      tile('Polarity', cap(m.p) || '—');
+      tile('Max rank', String(ranks ? maxRank : (m.m != null ? m.m : '—')));
+      const tDrain = tile(neg ? 'Capacity gained' : 'Drain', '—');
+      const tMatch = tile('In a matching slot', '—');
+      body.appendChild(tiles);
+
+      const read = el('p', 'mv-rankread'); read.setAttribute('role', 'status');
+      const lines = el('ul', 'mv-lines');
+      let range = null, minus = null, plus = null;
+      if (maxRank > 0) {
+        const bar = el('div', 'mv-rank');
+        minus = el('button', 'btn-sm', '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'One rank lower');
+        plus = el('button', 'btn-sm', '+'); plus.type = 'button'; plus.setAttribute('aria-label', 'One rank higher');
+        range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = String(maxRank); range.step = '1'; range.value = String(maxRank);
+        range.id = 'wf-mod-rank'; range.setAttribute('aria-label', 'Mod rank');
+        bar.appendChild(minus); bar.appendChild(range); bar.appendChild(plus);
+        body.appendChild(read); body.appendChild(bar);
+      }
+      body.appendChild(el('p', 'label', 'Stats'));
+      body.appendChild(lines);
+      if (m.ds && ranks) body.appendChild(el('p', 'mv-desc', m.ds));
+
+      let rows = [];
+      if (ranks && maxRank > 0) {
+        const det = el('details', 'mv-all'); det.appendChild(el('summary', null, 'Every rank'));
+        const tbl = el('table', 'mv-table'); const tb = document.createElement('tbody');
+        ranks.forEach((ls, r) => {
+          const tr = document.createElement('tr');
+          tr.appendChild(el('th', null, 'Rank ' + r)); tr.appendChild(el('td', null, ls.join(' · ') || '—'));
+          tb.appendChild(tr); rows.push(tr);
+        });
+        tbl.appendChild(tb); det.appendChild(tbl); body.appendChild(det);
+      }
+
+      const paint = () => {
+        const r = mv.rank;
+        if (range) {
+          read.textContent = 'Rank ' + r + ' of ' + maxRank;
+          range.value = String(r); minus.disabled = r <= 0; plus.disabled = r >= maxRank;
+        }
+        if (hasD) {
+          const d = neg ? -m.d + r : m.d + r;
+          tDrain.v.textContent = neg ? '+' + d : String(d);
+          tMatch.v.textContent = neg ? '+' + d * 2 : String(Math.ceil(d / 2));
+        }
+        lines.textContent = '';
+        const ls = ranks ? ranks[r] : [];
+        if (ls.length) ls.forEach((t) => lines.appendChild(el('li', null, t)));
+        else lines.appendChild(el('li', null, m.ds || 'No stats listed for this mod.'));
+        rows.forEach((tr, i) => tr.classList.toggle('cur', i === r));
+      };
+      if (range) {
+        range.addEventListener('input', () => { mv.rank = Number(range.value); paint(); });
+        minus.addEventListener('click', () => { if (mv.rank > 0) { mv.rank--; paint(); } });
+        plus.addEventListener('click', () => { if (mv.rank < maxRank) { mv.rank++; paint(); } });
+      }
+      paint();
+
+      // what the list on this page says about it
+      const c = mv.chip, tap = mv.tap;
+      const box = el('div', 'mv-box');
+      if (tap.view === 'owned') {
+        box.appendChild(el('b', null, 'In your collection'));
+        const bits = [];
+        if (c.count) bits.push('×' + c.count + ' copies');
+        if (c.rank) bits.push('best rank seen ' + c.rank.replace(/^r(\d+)\/(\d+)$/, 'rank $1 of $2'));
+        if (c.max) bits.push('has a max-rank copy');
+        if (c.note) bits.push(c.note);
+        box.appendChild(document.createTextNode(bits.length ? bits.join(' · ') : 'You own this mod.'));
+      } else if (tap.view === 'missing') {
+        box.appendChild(el('b', null, 'Not in your collection yet'));
+        box.appendChild(document.createTextNode(c.note ? 'Where to get it: ' + c.note : 'No source written down for this one yet.'));
+        (c.tags || []).filter((t) => TAG_LABEL[t]).forEach((t) => box.appendChild(el('span', tagClass(t), TAG_LABEL[t])));
+      } else {
+        box.appendChild(el('b', null, 'In your build'));
+        box.appendChild(document.createTextNode(tap.build + (c.max ? ' · max rank' : '')));
+      }
+      body.appendChild(box);
+      if (tap.miss && tap.miss.length) body.appendChild(el('p', 'fine', 'Not in the database, so no stats for: ' + tap.miss.join(', ') + '.'));
+
+      if (m.set) {
+        const sb = el('div', 'mv-box'); sb.appendChild(el('b', null, 'Set mod'));
+        sb.appendChild(document.createTextNode('Part of the ' + m.set + ' set' + (m.sp && m.sp.length ? ' with ' + m.sp.join(', ') : '') + '. Equipping more pieces of a set makes each piece stronger.'));
+        body.appendChild(sb);
+      }
+
+      const facts = [];
+      if (m.tr != null) facts.push(m.tr ? 'Can be traded' : 'Cannot be traded');
+      if (m.ex) facts.push('Fits an Exilus slot');
+      if (m.intro) facts.push('Added in ' + m.intro);
+      if (m.xr) facts.push('The database lists ' + m.xr + ' more ranks above that');
+      if (facts.length) body.appendChild(el('p', 'fine', facts.join(' · ') + '.'));
+      body.appendChild(el('p', 'fine', 'Drain goes up by 1 for each rank. A slot with the same polarity halves it (rounded up) and doubles any capacity gained. A different polarity costs about a quarter more. Stats from the ' + MS.data.source + ' database, built ' + MS.data.built + '.'));
+      if (m.w && /^https:\/\/wiki\.warframe\.com\//.test(m.w)) {
+        const a = el('a', 'mv-link', 'Open on the Warframe wiki'); a.href = m.w; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        body.appendChild(a);
+      }
+    }
+    function initModDialog() {
+      const dlg = $('wf-moddlg');
+      $('wf-mod-close').addEventListener('click', closeMod);
+      dlg.addEventListener('click', (e) => {
+        if (e.target !== dlg) return;                      // a click on the dimmed backdrop, not on the padding inside
+        const r = dlg.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeMod();
+      });
     }
 
     /* ---------- render: builds ---------- */
@@ -758,7 +973,12 @@
           c.appendChild(el('p', 'label', 'Mods'));
           const r = el('div', 'modrow');
           b.mods.forEach((m) => {
-            const ch = el('span', 'chip' + (m[2] === 'max' ? ' max' : '') + (m[1] === 'out' ? ' out' : ''));
+            const keys = statKeys('builds', m[0]);
+            const ch = el(keys ? 'button' : 'span', 'chip' + (m[2] === 'max' ? ' max' : '') + (m[1] === 'out' ? ' out' : '') + (keys ? ' tap' : ''));
+            if (keys) {
+              ch.type = 'button'; ch.dataset.mod = m[0]; ch.setAttribute('aria-haspopup', 'dialog');
+              ch.addEventListener('click', () => openMod({ keys, view: 'build', miss: missFor('builds', m[0]), build: b.name }, { name: m[0], count: null, rank: null, max: m[2] === 'max', note: '', tags: [] }));
+            }
             ch.appendChild(document.createTextNode(m[0]));
             if (m[2] && m[2] !== 'max') ch.appendChild(el('span', 'nt', m[2]));
             if (m[1] === 'out') ch.appendChild(el('span', 'nt', 'out for now'));
@@ -884,7 +1104,8 @@
       S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
       indexGoals(S.data.farm.tasks);
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
-      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog();
+      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initModDialog();
+      loadModStats();
       await startSync();
     }
     boot();

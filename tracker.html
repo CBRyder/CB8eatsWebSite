@@ -5,11 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resource Inventory &amp; Testing — Tarboro Life — CB8eats</title>
   <meta name="description" content="Live audit of every Tarboro Life server resource, cross-checked against server.cfg and build memory.">
+  <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dev-base.css">
+  <script src="js/theme.js"></script>
   <link rel="icon" type="image/svg+xml" href="images/favicon-tarboro.svg">
   <script src="js/nav-scroll.js" defer></script>
+  <script src="js/members-nav.js" defer></script>
+  <script src="js/dev-auth.js" defer></script>
   <style>
     /* ===== Resource Inventory (scoped) ===== */
 
@@ -22,16 +27,20 @@
     main { max-width: 1600px; }
 
     .res-inv {
-      --ri-bg: #10141c;
-      --ri-surface: #171d28;
-      --ri-surface2: #1e2530;
-      --ri-border: #2a3242;
-      --ri-border-soft: #232a38;
-      --ri-text: #e7ebf2;
-      --ri-muted: #8993a8;
-      --ri-faint: #5c6478;
-      --ri-accent: #e8823a;
-      --ri-accent-dim: #a85f2c;
+      /* Surfaces, text and accent follow the shared dev theme (js/theme.js), so
+         this page matches the Dev hub and Warframe and changes with them. The
+         status colors below (good / warn / crit / verified / planned) stay fixed
+         on purpose: they carry meaning. */
+      --ri-bg: var(--bg-alt);
+      --ri-surface: var(--card);
+      --ri-surface2: var(--card-hover);
+      --ri-border: var(--border);
+      --ri-border-soft: var(--border-soft, var(--border));
+      --ri-text: var(--text);
+      --ri-muted: var(--text-dim);
+      --ri-faint: var(--text-faint);
+      --ri-accent: var(--accent);
+      --ri-accent-dim: var(--accent-dim, var(--accent));
       --ri-good: #55b98a;
       --ri-good-bg: rgba(85, 185, 138, 0.12);
       --ri-warn: #e0b83f;
@@ -73,7 +82,7 @@
          scrolls away like everything else. */
       position: static; top: auto; z-index: auto; background: none;
       display: flex; align-items: baseline; justify-content: space-between; gap: 24px;
-      border-bottom: 1px solid var(--ri-border); padding-bottom: 22px; margin-bottom: 28px;
+      border-bottom: 1px solid var(--ri-border); padding: 0 0 22px; margin-bottom: 28px;
       flex-wrap: wrap;
     }
     .res-inv .prompt { color: var(--ri-faint); font-size: 13px; letter-spacing: 0.02em; }
@@ -138,14 +147,6 @@
       margin-bottom: 18px;
     }
     .res-inv .auth-note { color: var(--ri-faint); font-size: 12px; }
-    .res-inv .signin-form { display: flex; gap: 8px; flex-wrap: wrap; }
-    .res-inv .signin-input {
-      font-family: var(--ri-mono); font-size: 12px;
-      background: var(--ri-surface); border: 1px solid var(--ri-border); border-radius: 6px;
-      padding: 6px 10px; color: var(--ri-text); width: 150px;
-    }
-    .res-inv .signin-input::placeholder { color: var(--ri-faint); }
-    .res-inv .signin-input:focus { border-color: var(--ri-accent-dim); }
     .res-inv .tested-check:disabled, .res-inv .bugged-check:disabled, .res-inv .na-check:disabled { opacity: 0.35; cursor: not-allowed; }
     .res-inv .bugged-toggle input { accent-color: var(--ri-crit); }
 
@@ -256,7 +257,7 @@
       .res-inv .res-table, .res-inv .res-table tbody, .res-inv .res-table tr, .res-inv .res-table td { display: block; width: 100%; }
       .res-inv .res-row td { padding: 3px 0; }
       .res-inv .res-row { padding: 12px 4px; }
-      .res-inv .res-desc, .res-inv .res-note { max-width: 100%; }
+      .res-inv .res-desc, .res-inv .res-note { max-width: 100%; overflow-wrap: anywhere; }
     }
   </style>
 </head>
@@ -264,23 +265,21 @@
 
   <header>
     <div class="header-left">
-      <div class="brand"><a href="index.html">CB8eats</a></div>
-      <a class="header-back" href="tarboro-life.html">&larr; Tarboro Life</a>
+      <div class="brand"><a href="https://www.iltep.cb8eats.com/">CB8eats</a></div>
+      <a class="header-back" href="dev.html">&larr; Dev hub</a>
     </div>
 
     <nav>
       <ul class="nav-tabs">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="designs.html">Designs</a></li>
-        <li><a href="music.html">Music</a></li>
-        <li><a href="coa.html">COA: Vampire Knights</a></li>
-        <li><a href="tarboro-life.html" class="active">Tarboro Life</a></li>
+        <li><a href="https://www.iltep.cb8eats.com/">Main site</a></li>
+        <li><a href="dev.html">Dev hub</a></li>
+        <li><a href="#top" class="active" data-dev-tab>Tarboro tracker</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
-    <a class="back-link" href="tarboro-life.html">&larr; Back to Tarboro Life</a>
+    <a class="back-link" href="dev.html">&larr; Back to Dev hub</a>
 
     <section>
       <h2>Resource Inventory &amp; Testing</h2>
@@ -311,14 +310,8 @@
           <div class="banner" id="ri-banner">Loading…</div>
 
           <div class="auth-row" id="ri-auth-row">
-            <form id="ri-signin-form" class="signin-form">
-              <input type="email" id="ri-email" class="signin-input" placeholder="Email" autocomplete="username" required>
-              <input type="password" id="ri-password" class="signin-input" placeholder="Password" autocomplete="current-password" required>
-              <button type="submit" class="filter-btn" id="ri-signin-btn">Sign in</button>
-            </form>
-            <button type="button" class="filter-btn" id="ri-signout-btn" style="display:none;">Sign out</button>
             <button type="button" class="filter-btn reset-btn" id="ri-reset-btn" style="display:none;">Reset all progress</button>
-            <span class="auth-note" id="ri-auth-note">Anyone can view this checklist — only the site owner can check items off.</span>
+            <span class="auth-note" id="ri-auth-note">Anyone can view this checklist. Sign in at the top right as the owner to check items off.</span>
           </div>
 
           <div class="controls">
@@ -359,7 +352,7 @@
       getFirestore, doc, updateDoc, onSnapshot, FieldPath
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
-      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+      getAuth, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -388,54 +381,31 @@
       });
     }
 
+    // Signing in and out is the button at the top right of the header
+    // (js/dev-auth.js). It shares this Firebase app, so this handler hears about
+    // every change and just updates what this page shows.
     function riUpdateSignInUI(user) {
-      const form = document.getElementById('ri-signin-form');
-      const signOutBtn = document.getElementById('ri-signout-btn');
       const resetBtn = document.getElementById('ri-reset-btn');
       const note = document.getElementById('ri-auth-note');
-      if (!form || !signOutBtn) return;
 
       if (user && user.email === RI_AUTHORIZED_EMAIL) {
         riIsAuthorized = true;
-        form.style.display = 'none';
-        signOutBtn.style.display = '';
         if (resetBtn) resetBtn.style.display = '';
         if (note) note.textContent = `Signed in as ${user.email} — checkboxes unlocked.`;
       } else if (user) {
         riIsAuthorized = false;
-        form.style.display = 'none';
-        signOutBtn.style.display = '';
         if (resetBtn) resetBtn.style.display = 'none';
-        if (note) note.textContent = `Signed in as ${user.email}, but that account isn't authorized.`;
+        if (note) note.textContent = `Signed in as ${user.email}, but that account isn't authorized to check items off.`;
       } else {
         riIsAuthorized = false;
-        form.style.display = '';
-        signOutBtn.style.display = 'none';
         if (resetBtn) resetBtn.style.display = 'none';
-        if (note) note.textContent = 'Anyone can view this checklist — only the site owner can check items off.';
+        if (note) note.textContent = 'Anyone can view this checklist. Sign in at the top right as the owner to check items off.';
       }
 
       riSetCheckboxesEnabled(riIsAuthorized);
     }
 
     onAuthStateChanged(auth, (user) => riUpdateSignInUI(user));
-
-    document.getElementById('ri-signin-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('ri-email').value.trim();
-      const password = document.getElementById('ri-password').value;
-      const note = document.getElementById('ri-auth-note');
-      if (note) note.textContent = 'Signing in…';
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById('ri-password').value = '';
-      } catch (err) {
-        console.error('Sign-in failed:', err);
-        if (note) note.textContent = `Sign-in error: ${err.code || err.message}`;
-      }
-    });
-
-    document.getElementById('ri-signout-btn').addEventListener('click', () => signOut(auth));
 
     // Full wipe of the tested map — a real field replacement via updateDoc,
     // not the old setDoc(..., {merge:true}) pattern documented as a bug

@@ -17,15 +17,16 @@
 const APPLY_EMAIL_ROUTE = '/api/send-application-confirmation';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// The Warframe page has its own hostname, with or without the www. Visiting
-// warframe.cb8eats.com (the bare address, nothing after the slash) shows the
-// same page that lives at /warframe on the main site. Every other path on that
-// hostname (css, js, images, warframe-data.json) falls through to the normal
-// static assets, so the page's relative links keep working. The hostnames
+// The Dev hub has its own hostname, with or without the www. Visiting
+// dev.cb8eats.com (the bare address, nothing after the slash) shows the same
+// page that lives at /dev on the main site: three cards for the Tarboro Life
+// tracker, the COA tracker and Warframe. Every other path on that hostname
+// (css, js, the tracker pages, warframe-data.json) falls through to the normal
+// static assets, so the pages' relative links keep working. The hostnames
 // themselves are attached to this Worker in the Cloudflare dashboard
 // (Domains & Routes), not here.
-const WARFRAME_HOSTS = new Set(['warframe.cb8eats.com', 'www.warframe.cb8eats.com']);
-const WARFRAME_PAGE = '/warframe'; // extensionless on purpose: /warframe.html would 307-redirect to /warframe
+const DEV_HOSTS = new Set(['dev.cb8eats.com', 'www.dev.cb8eats.com']);
+const DEV_PAGE = '/dev'; // extensionless on purpose: /dev.html would 307-redirect to /dev
 
 export default {
   async fetch(request, env, ctx) {
@@ -36,11 +37,11 @@ export default {
     }
 
     if (
-      WARFRAME_HOSTS.has(url.hostname) &&
+      DEV_HOSTS.has(url.hostname) &&
       url.pathname === '/' &&
       (request.method === 'GET' || request.method === 'HEAD')
     ) {
-      const pageUrl = new URL(WARFRAME_PAGE, url);
+      const pageUrl = new URL(DEV_PAGE, url);
       pageUrl.search = url.search;
       return env.ASSETS.fetch(new Request(pageUrl, request));
     }

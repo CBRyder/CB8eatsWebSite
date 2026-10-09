@@ -1,0 +1,35 @@
+/* Small building blocks shared by the Dev hub and the Warframe page: form
+   controls, buttons, cards, the toast, and the theme editor that js/theme.js
+   builds. Load after css/dev-base.css. The trackers do not load this file
+   (they have their own buttons and chips with the same class names). */
+
+[hidden] { display: none !important; }
+.syncline { font-size: 0.8rem; color: var(--text-faint); margin: 0 0 1.2rem; }
+.syncline.err { color: #ff8a8a; }
+input[type="email"], input[type="password"], input[type="search"], input[type="text"], input[type="number"], select {
+  font: inherit; font-size: 1rem; min-height: 44px; padding: 0.5rem 0.8rem;
+  color: var(--text); background: var(--bg-alt); border: 1px solid var(--border); border-radius: 10px;
+  color-scheme: dark;
+}
+input::placeholder { color: var(--text-faint); }
+.btn-sm { font: inherit; font-size: 0.9rem; font-weight: 600; min-height: 44px; padding: 0.5rem 1.1rem; border-radius: 999px; cursor: pointer;
+  color: var(--text); background: transparent; border: 1px solid var(--border); }
+.btn-sm:hover { border-color: var(--accent); }
+.btn-sm.primary { color: var(--on-grad); border-color: transparent; background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+.wfcard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; margin-bottom: 1.2rem; }
+.wfcard h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+.muted { color: var(--text-dim); font-size: 0.92rem; margin: 0.4rem 0 0; }
+/* Message that floats at the bottom of the screen, so it is seen even when the list is long */
+.toast { position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 50; width: max-content; max-width: calc(100vw - 2rem);
+  margin: 0; padding: 0.7rem 1.1rem; font-size: 0.9rem; color: var(--text); background: var(--card); border: 1px solid var(--accent);
+  border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 16px var(--glow); }
+.toast[hidden] { display: none; }
+/* Theme tab */
+.swatches { display: grid; gap: 0.8rem; margin: 0.6rem 0 1rem; }
+.swatch { display: grid; grid-template-columns: 56px 1fr; gap: 0.8rem; align-items: center; }
+.swatch input[type="color"] { width: 56px; height: 44px; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-alt); cursor: pointer; }
+.swatch .nm { font-weight: 600; }
+.swatch .hint { display: block; font-size: 0.82rem; color: var(--text-dim); font-weight: 400; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.savednote { font-size: 0.85rem; color: var(--text-dim); margin: 0.9rem 0 0; }

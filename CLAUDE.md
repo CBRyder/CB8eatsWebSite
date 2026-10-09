@@ -478,6 +478,20 @@ content. They live together under one hub page with three big cards (`dev.html`;
   `--ri-accent: var(--accent)`, ...) so it follows the colors, but the status colors
   (crit/warn/good/verified/planned) stay fixed on purpose because they carry meaning.
   The trackers keep their own row layout; Warframe's lists were not rebuilt in it.
+- **Icons (each dev page has its own, on purpose):** the Dev hub (`dev.html`) has a DEV
+  icon (green D, purple E, green V on dark, from CB's saved theme colors `#00ff66` /
+  `#e040ff`): `images/dev-icon.svg` (tab icon, rounded) and
+  `images/dev-apple-touch-icon.png` (180x180, full-bleed square, for Safari's Add to Home
+  Screen; also a PNG tab-icon fallback), with `apple-mobile-web-app-title` `DEV`. The
+  Tarboro Life tracker keeps its `TL` tab icon (`favicon-tarboro.svg`) and the COA tracker
+  its `COA` one (`favicon-coa.svg`); each also has a matching 180x180 home-screen PNG
+  (`tl-apple-touch-icon.png`, `coa-apple-touch-icon.png`, rendered from those SVGs) and a
+  home-screen title of `TL` / `COA`. Warframe and the whole public site keep the "CB"
+  `favicon.svg` (no touch icon). The DEV letters are drawn as paths, so no font is needed.
+  iOS caches the icon from when a shortcut was added, so changing it means removing and
+  re-adding the shortcut. The hub's cards are titled `TL`, `COA` and `Warframe`, but the
+  menu tabs in the dev pages' headers stay words ("Dev hub", "Tarboro tracker",
+  "COA tracker", "Warframe"), because CB wants that.
 - **Phone width:** long unbroken words in `.res-desc`/`.res-note` used to push the
   trackers wider than the screen; they now wrap (`overflow-wrap: anywhere`).
 

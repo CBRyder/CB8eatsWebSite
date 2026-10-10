@@ -245,8 +245,10 @@ for view in ('owned', 'missing'):
         for it in g['items']:
             add(g['id'], chip_name(it))
 for b in data.get('builds', []):
-    for md in b.get('mods', []):
-        add('builds', md[0])
+    f = b.get('form') or {}                     # the saved-build shape: aura, exilus and up to 10 mod names
+    names = [md[0] for md in b.get('mods', [])] + [n for n in [f.get('aura'), f.get('exilus')] + list(f.get('mods', [])) if n]
+    for n in names:
+        add('builds', n)
 if os.path.exists(args.community):          # the community builds on the Builds tab; their chips use group id "community"
     for b in json.load(open(args.community, encoding='utf-8'))['builds']:
         for md in b['mods']:

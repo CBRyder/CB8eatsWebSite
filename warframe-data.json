@@ -10,24 +10,6 @@
  },
  "farm": {
   "target": 520,
-  "vaultBonus": 7,
-  "tiers": [
-   {
-    "id": "t1",
-    "label": "Tier 1",
-    "tokens": 10
-   },
-   {
-    "id": "t2",
-    "label": "Tier 2",
-    "tokens": 15
-   },
-   {
-    "id": "t3",
-    "label": "Tier 3",
-    "tokens": 20
-   }
-  ],
   "picks": [
    "#1",
    "#10",

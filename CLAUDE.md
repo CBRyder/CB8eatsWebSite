@@ -497,21 +497,33 @@ and **Theme**.
     `wrangler.jsonc`'s `run_worker_first`; the worker 404s it on every host except the dev one.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
-- **Mother Token counter (changed 2026-10-10; CB: "3 tiers ... 10, 15, 20" and "a custom amount"):** the
-  Goals tab's top card counts **tokens**, not runs. Three buttons add a Tier 1 / 2 / 3 Isolation Vault
-  (`farm.tiers` in `warframe-data.json`: `{id, label, tokens}` = 10, 15, 20) plus `farm.vaultBonus` (7) when
-  the "I opened the vault" box is ticked (saved per device in the localStorage `ui` entry as `bonus`, on by
-  default). So a Tier 3 run is 27, which is what the old `perRun: 27` was. **The 7 bonus is CB's guess** ("idk
-  that tho"; the wiki's Isolation Vault page says opening the vault gives an extra drop-table reward, not a
-  token count), so the page says so. A fourth button, **Custom**, opens a number box beside Add / Cancel: a
-  whole number adds, a minus takes off (spending at the shop), and the total never goes below 0. **Undo**
-  reverses the last add (in memory only). The old `perRun`, `runsNeeded` and `runLabel` fields are gone from
-  the JSON; `target`, `picks`, `pickCosts` and `shopRefresh` stay and are still edited by hand.
-  **Storage trick:** the total is saved in the existing Firestore field `runs` (an int, written with
-  `updateDoc({runs: n})`), so **no Firestore rule change is needed**. It held a run count (it was 0 when this
-  shipped, so nothing was converted); in the code it is `S.tokens`. Do not add a separate `tokens` field
-  without asking CB to republish the rule with it in `hasOnly`. A page cached from before this change would
-  read the token total as a run count until it reloads.
+- **Mother Token counter (changed 2026-10-10, again later that day; CB: "remove the red and make the top
+  red section the typing section, the green be the add button and below those is a history Date and
+  Time"):** the Goals tab's top card counts **tokens**, not runs. It is a number box (`#tok-in`, a minus
+  takes tokens off, for spending at the shop) with an **Add** button (`#tok-add`) beside it, and below
+  that a **History** list (`#tok-log`) of every add with its date and time, newest first, plus an
+  **Undo** button (`#tok-undo`) that takes back the newest entry. The earlier Tier 1/2/3 buttons, the
+  "I opened the vault (+7)" tickbox and its note are gone, and so are `farm.tiers` and
+  `farm.vaultBonus` in `warframe-data.json` (and the old `perRun`, `runsNeeded`, `runLabel`);
+  `target`, `picks`, `pickCosts` and `shopRefresh` stay and are still edited by hand. The box
+  is 3/4 of the row and Add is 1/4; typing survives a live update from another device (the box is
+  re-focused after a re-render).
+  - **Storage, no rule change:** the total is saved in the existing Firestore field `runs` (an int,
+    `S.tokens` in the code). The history is one field inside the existing `custom` map:
+    `custom.tokenlog.e.<key> = { n, at }` (`n` = the change that was really applied, so an add that was
+    clamped at 0 records what actually changed; `at` = ms; key = `t` + `at` + 4 random characters, only
+    letters and digits). **Every Add or Undo is one `updateDoc` that writes `runs` and the entry
+    together** (Undo writes `deleteField()` for that key), so the total and the history cannot disagree,
+    and the whole history counts once towards the rule's limit of 200 entries in `custom`.
+    `customTasks()` skips the id `tokenlog`, `tokenLog()` reads and cleans it (bad keys, zero or
+    non-integer amounts are ignored). The first history shown is "Before the history started": the
+    total minus everything in the log, so the list always adds up to the total (168 when this shipped,
+    because that was typed before the history existed). Do not add a separate `tokens` or `history`
+    top-level field without asking CB to republish the rule with it in `hasOnly`. A page cached from
+    before the first token change would read the total as a run count until it reloads.
+  - **History is only as shared as the doc:** two devices adding at the same moment can lose one history
+    entry (each write sets `runs` to an absolute number), which shows up as a signed "Before the history
+    started" row. CB is the only writer, so this was accepted.
 - **Add build (Builds tab, added 2026-10-10; CB: "10 drop downs plus aura slot, exilus and adapter"):** under
   the My builds / Community builds switch, a **+ Add build** button (`#bv-add`, owner only, greyed until
   `warframe-mod-stats.json` has loaded) opens a form (`#wf-bdlg`): build name, what it is for (Warframe,
@@ -537,7 +549,7 @@ and **Theme**.
     so a change from another device shows up.
   - No rank pickers yet: the View mod screen opens each mod at its max rank.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
-  theme: {...}, custom: {goalId: {name, qty, plat, at}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  theme: {...}, custom: {goalId: {name, qty, plat, at}, tokenlog: {e: {key: {n, at}}} (the token history), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace

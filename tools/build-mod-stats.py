@@ -21,7 +21,8 @@ Output shape (see CLAUDE.md, "View mod screen"):
     index: { "<groupId>|<chip name>": ["<key>", ...] },
     partial: { "<groupId>|<chip name>": ["<name not found>", ...] },
     arcanes: { "Warframe": [names], "Primary": [...], "Secondary": [...], "Melee": [...] },
-    gear: { "<build category id>": [item names, A to Z] } }
+    gear: { "<build category id>": [item names, A to Z] },
+    gearStats: { "<build category id>|<item name>": { ... base stats, see below ... } } }
 `ex` marks an Exilus mod and `ut` a utility mod (one that also fits an Exilus slot). `arcanes` is what the
 "Add build" form offers in its arcane (adapter) dropdown; pass `--arcanes /path/to/Arcanes.json` (same repo,
 same folder as Mods.json) to refresh it, otherwise the ones already in the output file are kept.
@@ -29,6 +30,12 @@ same folder as Mods.json) to refresh it, otherwise the ones already in the outpu
 melee, archwing, archgun, archmelee, companion, necramech); pass `--gear /path/to/folder` (the folder that holds
 Warframes.json, Primary.json, Secondary.json, Melee.json, Archwing.json, Arch-Gun.json, Arch-Melee.json, Sentinels.json and
 Pets.json, e.g. node_modules/warframe-items/data/json) to refresh it, otherwise the ones already in the output file are kept.
+`gearStats` is the item's own base numbers, which the "Stats" screen on a build card adds the mods' bonuses to (it is written
+by the same `--gear` run, for the kinds that have a formula: warframe, primary, secondary, melee, archgun, archmelee).
+A weapon: cc crit chance %, cm crit multiplier, sc status chance %, fr fire rate (attack speed for melee), and for guns ms
+multishot, mg magazine, rl reload time in seconds, plus d total damage per shot (the first attack in the database, usually
+"Normal Attack"). A Warframe: h health, s shield, a armor, e energy, exactly as the database lists them (rank 0 values: the Stats screen adds
+the rank-30 gain, +100 health, +100 shield and +50 energy, which reproduces what the game shows for Cyte-09).
 `u` is [different players using the mod, builds using it]; a mod nobody in the tally uses has no `u`.
 A chip that stands for a whole family (for example "Bane of Corpus/Grineer/Infested") points
 at several keys; `partial` lists the family members the database does not have. Chips with no match are simply not in `index`, and the page leaves them
@@ -311,6 +318,57 @@ elif os.path.exists(args.out):
         gear = None
 if gear:
     out['gear'] = gear
+
+# The items' base numbers for the Stats screen (kinds with a formula only).
+def r2(x):
+    x = round(float(x), 3)
+    return int(x) if x == int(x) else x
+def weapon_stats(x):
+    at = (x.get('attacks') or [None])[0] or {}
+    dmg = at.get('damage') or {}
+    total = sum(v for v in dmg.values() if isinstance(v, (int, float))) or (x.get('totalDamage') or 0)
+    g = {}
+    cc = at.get('crit_chance'); cc = cc if cc is not None else (x.get('criticalChance') or 0) * 100
+    cm = at.get('crit_mult') if at.get('crit_mult') is not None else x.get('criticalMultiplier')
+    sc = at.get('status_chance'); sc = sc if sc is not None else (x.get('procChance') or 0) * 100
+    fr = at.get('speed') if at.get('speed') is not None else x.get('fireRate')
+    top = x.get('fireRate')
+    if fr is not None and top is not None and abs(top - fr) < 0.05:
+        fr = top          # the database rounds an attack's speed to 2 decimals; the top-level number is the exact one (Burst weapons differ, and keep the attack's)
+    g['cc'], g['sc'] = r2(cc), r2(sc)
+    if cm is not None: g['cm'] = r2(cm)
+    if fr is not None: g['fr'] = r2(fr)
+    if total: g['d'] = r2(total)
+    for k, src in (('ms', 'multishot'), ('mg', 'magazineSize'), ('rl', 'reloadTime')):
+        if x.get(src) is not None: g[k] = r2(x[src])
+    return g
+def frame_stats(x):
+    g = {}
+    for k, src in (('h', 'health'), ('s', 'shield'), ('a', 'armor'), ('e', 'power')):
+        if x.get(src) is not None: g[k] = r2(x[src])
+    return g
+gear_stats = None
+if args.gear:
+    gear_stats = {}
+    for cat, sources in GEAR_SOURCES.items():
+        if cat not in ('warframe', 'primary', 'secondary', 'melee', 'archgun', 'archmelee'):
+            continue
+        for fname, keep in sources:
+            path = os.path.join(args.gear, fname)
+            if not os.path.exists(path):
+                continue
+            for x in json.load(open(path, encoding='utf-8')):
+                if keep(x) and x.get('name'):
+                    st = frame_stats(x) if cat == 'warframe' else weapon_stats(x)
+                    if st:
+                        gear_stats[cat + '|' + x['name']] = st
+elif os.path.exists(args.out):
+    try:
+        gear_stats = json.load(open(args.out, encoding='utf-8')).get('gearStats')
+    except (ValueError, OSError):
+        gear_stats = None
+if gear_stats:
+    out['gearStats'] = gear_stats
 with open(args.out, 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
 

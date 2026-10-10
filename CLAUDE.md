@@ -594,6 +594,36 @@ and **Theme**.
     lists already in the file. Warframes are `productCategory` Suits (Helminth is left out), Necramechs MechSuits, Primary
     leaves out Operator amps, Melee leaves out Zaw parts, Companions are the Sentinels plus the beasts and Venari. If the file
     has no `gear` (an old copy), the dropdown only offers Other and the name is typed.
+  - **Stats screen (added 2026-10-10; CB: "make stats screens for each build bc u have the stats"):** every build card,
+    yours and the community ones, has a **Stats** button (`.stbtn`, in `.cardbtns` next to Edit; Edit stays first in the page
+    so the tab order and the tests' `.cardhead .btn-sm` do not move, `order: -1` shows Stats first; greyed out until
+    `warframe-mod-stats.json` has loaded) that opens `#wf-statsdlg`. It works on the open tab of a card, needs no sign-in, and
+    writes nothing. The page adds each mod's bonuses to the item's own numbers, `gearStats` in `warframe-mod-stats.json`
+    (`{ "<category id>|<item>": {...} }`, written by the same `--gear` run as `gear`; see the docstring of
+    `tools/build-mod-stats.py` for the keys). Weapons: cc, cm, sc, fr, ms, mg, rl (total = base x (1 + sum of that stat's
+    always-on mods); reload time = base / (1 + reload speed)). Warframes: health, shield, armor, energy (database value, plus
+    the rank-30 gain of +100 health, +100 shield and +50 energy, times 1 + the mods) and Strength / Duration / Range /
+    Efficiency (100 + the mods, Efficiency capped at 175%). **Checked against Cyte-09 Config A read from the game:** 325 /
+    235 / 150 / 230, 199% / 232% / 34% / 70% all reproduce, and Burston Prime's crit chance 54%, status 30% and fire rate 8
+    do too. Crit damage does not (the game shows 3.2x, the page works out 1.8x, because of Gilded Truth's "Truth" effect, which
+    the database only lists as "+1 'Truth'") and the page does NOT estimate a total damage (the naive sum is far below the
+    game's 302.7), so when a hand-kept build has game-read tiles (`stats` in `warframe-data.json`), each matching row says
+    "The game shows X, the same / which differs" (`TILE_KEY` maps a tile's label to a row; the comparison is at the
+    game's own precision). Those game-read tiles are also shown at the top of the screen (and stay on the card).
+    - **The engine (`statsEngine(data, byName, input)`, a pure function; `parseStatLine`, `pickModKey`, `gearFind`):** each
+      mod is read at the rank the build saved (**max rank when none is saved**, and the screen says which). A stat line
+      is a header (`On Kill:`), a number (`+165% Damage`, `-66% Ability Range`, `+2 Punch Through`), a multiplier (`x1.3
+      Damage to Corpus`) or text. Always-on numbers are summed per stat (`STAT_KEY` names the ones with a base to add to,
+      all others, such as Damage, the elements, Shield Recharge, are listed under "Other bonuses from the mods" with who
+      gives them; with no base numbers the list is titled "What the mods add"). **Not added in, listed apart:** "Only some
+      of the time" (anything under a header, or whose words say `for 20s`, `per`, `stacks`, `when`, `while`, `on first`,
+      `for your`, `up to`; kept as `cond[]` with the parsed `parts`) and "Other effects" (plain sentences). Mods the
+      database has no stats for are named under "Not counted". Arcanes, set bonuses, weak points and Forma are not counted
+      (the screen says so). An Archwing build's item is looked up under archwing, then arch-gun, then arch-melee
+      (`gearCats`), and a melee item's fire rate row reads "Attack speed". A kind with no `gearStats` (companions,
+      necramechs, archwings, an item the database lacks) lists only what the mods add.
+    - **To refresh the base numbers:** `python3 tools/build-mod-stats.py --items <Mods.json> --gear <folder>` (use the
+      same `Mods.json` as before so the mod data does not change; the npm copy differs), commit the JSON.
   - **Cards (CB, 2026-10-10: "one card for all the configs ... like tabs"):** `buildGroups()` puts every build of the same
     kind and **item** (case-insensitive) on **one card**, with a tab per build (`.cfgtabs`, `role=tablist`): tab text is
     the config (Config A, B, C first, then the rest; a build with no config uses its name; two tabs that would read

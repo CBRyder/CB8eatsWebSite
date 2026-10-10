@@ -240,6 +240,18 @@
     .fchip { padding: 0.15rem 0.7rem; font-size: 0.88rem; font-weight: 600; color: var(--text); border: 1px solid var(--accent-2); border-radius: 999px; background: var(--card); }
     .framenote { margin-top: 0.3rem; overflow-wrap: anywhere; }
     .mv-link { display: inline-block; margin-top: 0.7rem; min-height: 40px; line-height: 40px; color: var(--accent-bright); }
+    /* Build stats screen */
+    .cardbtns { display: flex; gap: 0.5rem; align-items: center; flex: none; }
+    .cardbtns .stbtn { order: -1; }
+    .st-row { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .st-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.8rem; }
+    .st-name { font-weight: 600; }
+    .st-total { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; text-align: right; }
+    .st-calc { font-size: 0.85rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+    .st-who, .st-game { font-size: 0.8rem; color: var(--text-faint); overflow-wrap: anywhere; }
+    .st-list { margin: 0.2rem 0 0; padding-left: 1.1rem; font-size: 0.95rem; }
+    .st-list li { margin-bottom: 0.5rem; overflow-wrap: anywhere; }
+    .st-list .st-who { display: block; }
     /* Builds */
     .build h2 { margin-bottom: 0.1rem; }
     .build .meta { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 0.8rem; }
@@ -436,6 +448,17 @@
     </div>
     <div class="mv-pick" id="wf-mod-pick" role="group" aria-label="Which mod" hidden></div>
     <div id="wf-mod-body"></div>
+  </dialog>
+
+  <dialog class="wfdlg mvdlg" id="wf-statsdlg" aria-labelledby="wf-stats-title">
+    <div class="mv-head">
+      <div class="mv-title">
+        <h2 id="wf-stats-title"></h2>
+        <p class="mv-sub" id="wf-stats-sub"></p>
+      </div>
+      <button type="button" class="btn-sm mv-x" id="wf-stats-close" aria-label="Close">&#10005;</button>
+    </div>
+    <div id="wf-stats-body"></div>
   </dialog>
 
   <footer>
@@ -1665,7 +1688,8 @@
       const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + (group ? group.item + (b.config ? ' ' + b.config : '') : b.name));
       if (!S.owner) ed.setAttribute('aria-disabled', 'true');
       ed.onclick = () => openBuildDialog(b);
-      head.appendChild(ed);
+      const btns = el('div', 'cardbtns'); btns.appendChild(ed); btns.appendChild(statsButton(ownStatsInfo(b, group)));   // Edit stays first in the page, Stats shows first
+      head.appendChild(btns);
       c.appendChild(head);
       if (group) {
         const tabs = el('div', 'cfgtabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', group.item + ' configs');
@@ -1747,6 +1771,218 @@
       return c;
     }
 
+    /* ---------- Build stats screen ---------- */
+    /* The "Stats" button on a build card opens a screen that adds up the build's mods on top of the item's own numbers. The item's
+       numbers are `gearStats` in warframe-mod-stats.json (tools/build-mod-stats.py --gear): a weapon's base numbers, and a Warframe's
+       database numbers, to which rank 30 adds 100 health, 100 shield and 50 energy (checked against Cyte-09 Config A read from the game:
+       325 / 235 / 150 / 230). Each mod is read at the rank the build saved (its max rank when no rank is saved). Bonuses that always
+       apply are added up; anything that only happens sometimes (on kill, per combo, for 20s...) is listed, not added in. Nothing here is
+       saved or sent anywhere. */
+    const GEAR_CAT = { warframes: 'warframe', 'primary-weapons': 'primary', 'secondary-weapons': 'secondary', 'melee-weapons': 'melee', companions: 'companion' };
+    const STAT_KEY = {
+      'critical chance': 'cc', 'critical damage': 'cm', 'status chance': 'sc', 'fire rate': 'fr', 'attack speed': 'fr', multishot: 'ms',
+      'magazine capacity': 'mg', 'reload speed': 'rl', health: 'h', 'shield capacity': 's', armor: 'a', 'energy max': 'e',
+      'ability strength': 'str', 'ability duration': 'dur', 'ability range': 'rng', 'ability efficiency': 'eff',
+    };
+    const FRAME_R30 = { h: 100, s: 100, e: 50 };
+    /* The labels of a hand-kept build's game-read tiles (warframe-data.json `stats`) and the row each one belongs to. */
+    const TILE_KEY = { 'crit chance': 'cc', 'crit damage': 'cm', 'fire rate': 'fr', 'attack speed': 'fr', status: 'sc', 'status chance': 'sc', multishot: 'ms',
+      health: 'h', shield: 's', armor: 'a', energy: 'e', strength: 'str', duration: 'dur', range: 'rng', efficiency: 'eff' };
+    const WEAPON_ROWS = [
+      { k: 'cc', label: 'Critical chance', unit: '%', dp: 1 },
+      { k: 'cm', label: 'Critical damage', unit: 'x', dp: 2 },
+      { k: 'sc', label: 'Status chance', unit: '%', dp: 1 },
+      { k: 'fr', label: 'Fire rate', melee: 'Attack speed', unit: '', dp: 2 },
+      { k: 'ms', label: 'Multishot', unit: '', dp: 2 },
+      { k: 'mg', label: 'Magazine size', unit: '', dp: 0 },
+      { k: 'rl', label: 'Reload time', unit: ' s', dp: 2 },
+    ];
+    const FRAME_ROWS = [
+      { k: 'h', label: 'Health', gear: true }, { k: 's', label: 'Shield', gear: true }, { k: 'a', label: 'Armor', gear: true }, { k: 'e', label: 'Energy', gear: true },
+      { k: 'str', label: 'Ability strength' }, { k: 'dur', label: 'Ability duration' }, { k: 'rng', label: 'Ability range' }, { k: 'eff', label: 'Ability efficiency', cap: 175 },
+    ];
+    const fnum = (n, dp) => String(Number(n.toFixed(dp)));
+    const sgn = (n, dp) => (n > 0 ? '+' : n < 0 ? '-' : '') + fnum(Math.abs(n), dp);
+    const TRIGGER = /\b(for \d+(?:\.\d+)?s|per|stacks?|when|while|upon|after|on (?:the )?first|on bullet jump|for your|up to)\b/i;
+    /* One stat line of a mod: a header ("On Kill:"), a number ("+165% Damage", "-66% Ability Range", "+2 Punch Through"), a multiplier
+       ("x1.3 Damage to Corpus") or plain text. A number is `cond` when its words say it only sometimes applies. */
+    function parseStatLine(text) {
+      const t = String(text).trim();
+      if (/^[A-Z][A-Za-z' ,-]{1,40}:$/.test(t)) return { type: 'head', text: t };
+      let m = /^x(\d+(?:\.\d+)?)\s+(.+)$/.exec(t);
+      if (m) return { type: 'mult', value: parseFloat(m[1]), unit: 'x', name: m[2].replace(/\.$/, '').trim(), text: t, cond: false };
+      m = /^([+-])?(\d+(?:\.\d+)?)(%|m)?\s+(.+)$/.exec(t);
+      if (m) {
+        const name = m[4].replace(/\s*\([^)]*\)/g, '').replace(/\.$/, '').trim();
+        if (/\.\s/.test(name)) return { type: 'text', text: t };            // a whole sentence, not a stat name
+        return { type: 'num', value: (m[1] === '-' ? -1 : 1) * parseFloat(m[2]), unit: m[3] || '', name, text: t, cond: TRIGGER.test(name) };
+      }
+      return { type: 'text', text: t };
+    }
+    /* The item's own numbers: { cat, stats } from the first of `cats` that lists the item (an Archwing build can hold an Arch-Gun or an Arch-Melee). */
+    function gearFind(data, cats, item) {
+      if (!data.gearStats || !item) return null;
+      const idx = data._gsl || (data._gsl = Object.keys(data.gearStats).reduce((o, k) => { o[k.toLowerCase()] = k; return o; }, {}));
+      for (const cat of cats) {
+        const k = idx[(cat + '|' + String(item).trim()).toLowerCase()];
+        if (k) return { cat, stats: data.gearStats[k] };
+      }
+      return null;
+    }
+    /* Of several mods with one name (Flawed, Intermediate, Expert copies) take the one for this kind of build that has stats. */
+    function pickModKey(data, byName, name, types) {
+      const ks = byName[String(name).toLowerCase()];
+      if (!ks || !ks.length) return null;
+      const score = (k) => { const m = data.mods[k]; return (types && types.indexOf(m.t) >= 0 ? 4 : 0) + (m.l && m.l.length ? 2 : 0) + (m.m || 0) / 1000; };
+      return ks.slice().sort((a, b) => score(b) - score(a))[0];
+    }
+    /* input: { gearCat, item, entries: [{ name, rank }] }. Returns { gs, isFrame, rows, bonuses, cond, other, none, guessed }. */
+    function statsEngine(data, byName, input) {
+      const cats = input.gearCats || [input.gearCat], found = gearFind(data, cats, input.item), gs = found ? found.stats : null;
+      const types = [].concat.apply([], cats.map((c) => (catOf(c) ? catOf(c).types : []))), isFrame = (found ? found.cat : input.gearCat) === 'warframe';
+      const sums = {}, cond = [], other = [], none = [], guessed = [];
+      input.entries.forEach((e) => {
+        const key = pickModKey(data, byName, e.name, types), m = key ? data.mods[key] : null;
+        if (!m || !m.l || !m.l.length) { none.push(e.name); return; }
+        let rank = e.rank;
+        if (typeof rank !== 'number') { rank = m.l.length - 1; guessed.push(e.name); }
+        rank = Math.min(rank, m.l.length - 1);
+        let head = null;
+        const flush = () => { if (head) { cond.push({ mod: m.n, rank, text: head.map((p) => p.text).join(' '), parts: head }); head = null; } };
+        (m.l[rank] || []).forEach((t) => {
+          const p = parseStatLine(t);
+          if (p.type === 'head') { flush(); head = [p]; return; }
+          if (head) { head.push(p); return; }
+          if (p.type === 'text') { other.push({ mod: m.n, rank, text: p.text }); return; }
+          if (p.cond) { cond.push({ mod: m.n, rank, text: p.text, parts: [p] }); return; }
+          const k = p.type === 'mult' ? 'x|' + p.name.toLowerCase() : (p.unit === '%' && STAT_KEY[p.name.toLowerCase()]) || 'o|' + p.name.toLowerCase() + '|' + p.unit;
+          const a = sums[k] || (sums[k] = { key: k, name: p.name, unit: p.unit, mult: p.type === 'mult', value: p.type === 'mult' ? 1 : 0, who: [] });
+          if (p.type === 'mult') a.value *= p.value; else a.value += p.value;
+          a.who.push({ mod: m.n, rank, value: p.value });
+        });
+        flush();
+      });
+      const whoText = (a) => (a ? a.who.map((w) => w.mod + ' ' + (a.mult ? 'x' + fnum(w.value, 2) : sgn(w.value, 1) + a.unit)).join(', ') : '');
+      const rows = [], used = new Set();
+      if (isFrame) {
+        FRAME_ROWS.forEach((d) => {
+          used.add(d.k);
+          if (d.gear && !(gs && gs[d.k] != null)) { used.delete(d.k); return; }
+          const a = sums[d.k], s = a ? a.value : 0;
+          let base, total, note = '';
+          if (d.gear) { base = gs[d.k] + (FRAME_R30[d.k] || 0); total = base * (1 + s / 100); }
+          else {
+            base = 100; total = Math.max(0, 100 + s);
+            if (d.cap && total > d.cap) { total = d.cap; note = 'capped at ' + d.cap + '%'; }
+          }
+          const dp = d.gear ? 0 : 1, unit = d.gear ? '' : '%';
+          rows.push({ key: d.k, label: d.label, base: fnum(base, dp) + unit, mods: s ? sgn(s, 1) + '%' : '', total: fnum(total, dp) + unit, num: total, who: whoText(a), note });
+        });
+      } else if (gs) {
+        const melee = found.cat === 'melee' || found.cat === 'archmelee';
+        WEAPON_ROWS.forEach((d) => {
+          if (gs[d.k] == null) return;
+          used.add(d.k);
+          const a = sums[d.k], s = a ? a.value : 0, base = gs[d.k], factor = Math.max(0, 1 + s / 100);
+          const total = d.k === 'rl' ? base / Math.max(0.01, factor) : base * factor;
+          rows.push({ key: d.k, label: melee && d.melee ? d.melee : d.label, base: fnum(base, d.dp) + d.unit, mods: s ? sgn(s, 1) + '%' + (d.k === 'rl' ? ' speed' : '') : '',
+            total: fnum(total, d.dp) + d.unit, num: total, who: whoText(a), note: '' });
+        });
+      }
+      const bonuses = Object.keys(sums).filter((k) => !used.has(k)).map((k) => {
+        const a = sums[k];
+        return { name: a.name, text: (a.mult ? 'x' + fnum(a.value, 2) : sgn(a.value, 1) + a.unit) + ' ' + a.name, who: whoText(a) };
+      });
+      return { gs, isFrame, rows, bonuses, cond, other, none, guessed };
+    }
+    function ownStatsInfo(b, group) {
+      const entries = [];
+      if (b.aura) entries.push({ name: b.aura, rank: b.auraRank });
+      if (b.exilus) entries.push({ name: b.exilus, rank: b.exilusRank });
+      b.mods.forEach((n, i) => { if (n) entries.push({ name: n, rank: b.ranks[i] }); });
+      const item = group ? group.item : b.item;
+      return { title: item || b.name, sub: ['Stats', catOf(b.cat).label, b.config, item && b.name.toLowerCase() !== item.toLowerCase() ? b.name : ''].filter(Boolean).join(' · '),
+        gearCat: b.cat, item, entries, seed: b.seed || null };
+    }
+    function communityStatsInfo(b, cm) {
+      const gc = GEAR_CAT[b.cat] || b.cat;
+      return { title: b.item, sub: ['Stats', 'by ' + b.by, cm.source + ' build'].join(' · '), gearCat: gc, gearCats: gc === 'archwing' ? ['archwing', 'archgun', 'archmelee'] : [gc],
+        item: b.item, entries: b.mods.map((m) => ({ name: m[0], rank: m[1] })), seed: null };
+    }
+    function statsButton(info) {
+      const b = el('button', 'btn-sm stbtn', 'Stats'); b.type = 'button'; b.setAttribute('aria-label', 'Stats for ' + info.title); b.setAttribute('aria-haspopup', 'dialog');
+      if (!MS.data) { b.setAttribute('aria-disabled', 'true'); b.title = 'The mod list has not loaded'; }
+      b.onclick = () => openStats(info);
+      return b;
+    }
+    function openStats(info) {
+      if (!MS.data) return;
+      renderStats(info);
+      const dlg = $('wf-statsdlg');
+      if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', '');
+      dlg.scrollTop = 0;
+    }
+    function closeStats() {
+      const dlg = $('wf-statsdlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function renderStats(info) {
+      const r = statsEngine(MS.data, MS.byName, info);
+      $('wf-stats-title').textContent = info.title;
+      $('wf-stats-sub').textContent = info.sub;
+      const body = $('wf-stats-body'); body.textContent = '';
+      const seed = info.seed;
+      if (seed && seed.stats) {
+        body.appendChild(el('p', 'label', 'Read from the game'));
+        const g = el('div', 'stats');
+        seed.stats.forEach((st) => { const x = el('div', 'stat'); x.appendChild(el('div', 'k', st[0])); x.appendChild(el('div', 'v', st[1])); g.appendChild(x); });
+        body.appendChild(g);
+        if (seed.statsNote) body.appendChild(el('p', 'fine', seed.statsNote));
+      }
+      body.appendChild(el('p', 'label', 'Worked out from the mods'));
+      /* A build read from the game also has the game's own number: say whether the sum above agrees with it (at the game's precision). */
+      const game = {};
+      if (seed && seed.stats) seed.stats.forEach((st) => { const k = TILE_KEY[String(st[0]).toLowerCase()]; if (k) game[k] = String(st[1]); });
+      if (r.rows.length) {
+        r.rows.forEach((row) => {
+          const d = el('div', 'st-row'); d.dataset.stat = row.key;
+          const top = el('div', 'st-top'); top.appendChild(el('span', 'st-name', row.label)); top.appendChild(el('span', 'st-total', row.total)); d.appendChild(top);
+          d.appendChild(el('div', 'st-calc', 'Base ' + row.base + (row.mods ? ' · mods ' + row.mods : ' · no mod changes it') + (row.note ? ' · ' + row.note : '')));
+          if (row.who) d.appendChild(el('div', 'st-who', row.who));
+          const gv = game[row.key], gnum = gv == null ? NaN : parseFloat(gv);
+          if (!isNaN(gnum)) {
+            const dec = (/\.(\d+)/.exec(gv) || [, ''])[1].length;
+            d.appendChild(el('div', 'st-game', 'The game shows ' + gv.replace(/\s*\(.*\)\s*$/, '') + (Number(row.num.toFixed(dec)) === gnum ? ', the same.' : ', which differs: the game counts something this page does not.')));
+          }
+          body.appendChild(d);
+        });
+        if (r.isFrame) body.appendChild(el('p', 'fine', 'Health, shield and energy are at rank 30.'));
+      } else {
+        body.appendChild(el('p', 'muted', !info.item ? 'This build has no Warframe or weapon picked, so there are no base numbers to add the mods to.'
+          : 'The database has no base numbers for ' + info.item + ', so only what the mods add is listed.'));
+      }
+      const list = (title, items, fill) => {
+        if (!items.length) return;
+        body.appendChild(el('p', 'label', title));
+        const ul = el('ul', 'st-list'); items.forEach((it) => { const li = el('li'); fill(li, it); ul.appendChild(li); }); body.appendChild(ul);
+      };
+      list(r.rows.length ? 'Other bonuses from the mods' : 'What the mods add', r.bonuses, (li, b) => { li.appendChild(document.createTextNode(b.text)); li.appendChild(el('span', 'st-who', b.who)); });
+      list('Only some of the time (not added in)', r.cond, (li, c) => { li.appendChild(document.createTextNode(c.text)); li.appendChild(el('span', 'st-who', c.mod + ' rank ' + c.rank)); });
+      list('Other effects (not added in)', r.other, (li, o) => { li.appendChild(document.createTextNode(o.text)); li.appendChild(el('span', 'st-who', o.mod + ' rank ' + o.rank)); });
+      if (r.guessed.length) body.appendChild(el('p', 'fine', 'No rank is saved for ' + r.guessed.join(', ') + ', so ' + (r.guessed.length > 1 ? 'they count' : 'it counts') + ' at max rank.'));
+      if (r.none.length) body.appendChild(el('p', 'fine', 'Not counted, no stats in the database: ' + r.none.join(', ') + '.'));
+      body.appendChild(el('p', 'fine', 'Added up by this page from the mod list, each mod at its saved rank, and the item\'s numbers in the ' + MS.data.source + ' database. Arcanes, set bonuses, weak points and Forma are not counted, so it can differ from the game\'s own panel.'));
+    }
+    function initStatsDialog() {
+      const dlg = $('wf-statsdlg');
+      $('wf-stats-close').addEventListener('click', closeStats);
+      dlg.addEventListener('click', (e) => {
+        if (e.target !== dlg) return;
+        const r = dlg.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeStats();
+      });
+    }
+
     /* ---------- render: builds ---------- */
     /* warframe-community-builds.json: top-rated builds by other players, fetched after the main data.
        The page works without it (the Community builds button stays greyed out). */
@@ -1769,7 +2005,8 @@
       const c = el('div', 'wfcard build comm');
       const cat = cm.cats.find((x) => x[0] === b.cat);
       c.appendChild(el('span', 'pill', cat ? cat[1] : b.cat));
-      c.appendChild(el('h2', null, b.item));
+      const head = el('div', 'cardhead'); head.appendChild(el('h2', null, b.item)); head.appendChild(statsButton(communityStatsInfo(b, cm)));
+      c.appendChild(head);
       c.appendChild(el('p', 'meta', b.title));
       c.appendChild(el('p', 'meta', ['by ' + b.by, cm.source + ' score ' + b.score.toLocaleString('en-US'), b.formas + ' forma', 'rank ' + b.rank, 'updated ' + b.updated].join(' · ')));
       if (b.frames && b.frames.length) {
@@ -1965,7 +2202,7 @@
       S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
       indexGoals(S.data.farm.tasks);
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
-      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initBuildDialog(); initTokenDialog(); initModDialog();
+      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initBuildDialog(); initTokenDialog(); initModDialog(); initStatsDialog();
       loadModStats(); loadCommunity();
       await startSync();
     }

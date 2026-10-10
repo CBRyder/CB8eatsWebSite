@@ -177,6 +177,9 @@
     .mv-box { margin: 0.9rem 0 0; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-alt); font-size: 0.92rem; overflow-wrap: anywhere; }
     .mv-box b { display: block; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 0.2rem; }
     .mv-box .tag { margin-left: 0.4rem; }
+    .mv-box .fine { display: block; margin: 0.4rem 0 0; }
+    .chip .n.uc { color: var(--accent-bright); }
+    .legend .commline { display: block; margin-top: 0.4rem; }
     .mv-link { display: inline-block; margin-top: 0.7rem; min-height: 40px; line-height: 40px; color: var(--accent-bright); }
     /* Builds */
     .build h2 { margin-bottom: 0.1rem; }
@@ -247,10 +250,13 @@
         </div>
         <input type="search" id="wf-q" placeholder="Search mods" autocomplete="off" aria-label="Search mods">
       </div>
-      <div class="tools" id="wf-modfilter" hidden>
-        <div class="seg" role="group" aria-label="Filter missing mods">
+      <div class="tools" id="wf-modfilter">
+        <div class="seg" id="mf-plat-seg" role="group" aria-label="Filter missing mods" hidden>
           <button type="button" id="mf-all" aria-pressed="true">All missing</button>
           <button type="button" id="mf-plat" aria-pressed="false">Buy with plat</button>
+        </div>
+        <div class="seg" role="group" aria-label="Community filter">
+          <button type="button" id="mf-comm" aria-pressed="false" disabled>Most used by the Community</button>
         </div>
       </div>
       <p class="legend" id="wf-legend"></p>
@@ -348,7 +354,7 @@
       return n;
     }
 
-    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all' };
+    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false };
     try {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
@@ -357,6 +363,7 @@
         if (p && (p.view === 'owned' || p.view === 'missing')) ui.view = p.view;
         if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
         if (p && (p.modFilter === 'all' || p.modFilter === 'plat')) ui.modFilter = p.modFilter;
+        if (p && p.community === true) ui.community = true;
       }
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
@@ -385,6 +392,7 @@
       n.appendChild(document.createTextNode(c.name));
       if (c.count) n.appendChild(el('span', 'n', '×' + c.count));
       if (c.rank) n.appendChild(el('span', 'n', c.rank));
+      if (c.used) { const u = el('span', 'n uc', c.used + (c.used === 1 ? ' player' : ' players')); u.title = 'Used by ' + c.used + ' different players'; n.appendChild(u); }
       if (c.note) n.appendChild(el('span', 'nt', c.note));
       return n;
     }
@@ -751,10 +759,16 @@
       const q = $('wf-q').value.trim().toLowerCase();
       const groups = S.data.mods[ui.view];
       const box = $('wf-groups'); box.textContent = '';
+      const us = MS.data && MS.data.usage;            // the community tally, from warframe-mod-stats.json
+      const commOn = !!(ui.community && us);
       let shown = 0, total = 0;
       groups.forEach((g) => {
         const chips = g.items.map(parseChip); total += chips.length;
-        const pool = (ui.view === 'missing' && ui.modFilter === 'plat') ? chips.filter((c) => c.tags.includes('plat')) : chips;
+        let pool = (ui.view === 'missing' && ui.modFilter === 'plat') ? chips.filter((c) => c.tags.includes('plat')) : chips;
+        if (commOn) {
+          pool.forEach((c) => { c.used = usedBy(g.id, c.name); });
+          pool = pool.filter((c) => c.used >= us.min).sort((a, b) => b.used - a.used);   // most used first (ties keep list order)
+        }
         const hits = q ? pool.filter((c) => (c.name + ' ' + c.note).toLowerCase().includes(q)) : pool;
         if ((q || pool.length !== chips.length) && !hits.length) return;
         shown += hits.length;
@@ -772,11 +786,15 @@
         box.appendChild(d);
       });
       const platOn = ui.view === 'missing' && ui.modFilter === 'plat';
-      $('wf-count').textContent = (q || platOn) ? shown + ' of ' + total + ' entries match' : total + ' entries in ' + groups.length + ' groups';
-      $('wf-modfilter').hidden = ui.view !== 'missing';
+      $('wf-count').textContent = (q || platOn || commOn) ? shown + ' of ' + total + ' entries match' : total + ' entries in ' + groups.length + ' groups';
+      $('mf-plat-seg').hidden = ui.view !== 'missing';
       $('mf-all').setAttribute('aria-pressed', ui.modFilter === 'all' ? 'true' : 'false');
       $('mf-plat').setAttribute('aria-pressed', ui.modFilter === 'plat' ? 'true' : 'false');
-      if (!shown) box.appendChild(el('p', 'empty', 'No mods match "' + q + '".'));
+      const bc = $('mf-comm');
+      bc.disabled = !us;
+      bc.title = us ? '' : 'Loading the community numbers…';
+      bc.setAttribute('aria-pressed', commOn ? 'true' : 'false');
+      if (!shown) box.appendChild(el('p', 'empty', q ? 'No mods match "' + q + '".' : 'No mods match these filters.'));
       $('v-owned').setAttribute('aria-pressed', ui.view === 'owned' ? 'true' : 'false');
       $('v-missing').setAttribute('aria-pressed', ui.view === 'missing' ? 'true' : 'false');
       const lg = $('wf-legend'); lg.textContent = '';
@@ -786,6 +804,7 @@
       } else {
         lg.textContent = 'Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.' + TAP_HINT();
       }
+      if (commOn) lg.appendChild(el('span', 'commline', communityLine(us)));
     }
 
     /* ---------- View mod screen ---------- */
@@ -796,6 +815,14 @@
     const mv = { keys: [], i: 0, rank: 0, chip: null, tap: null };
     function statKeys(groupId, name) { return (MS.data && MS.data.index[groupId + '|' + name]) || null; }
     function missFor(groupId, name) { return (MS.data && MS.data.partial && MS.data.partial[groupId + '|' + name]) || []; }
+    /* How many different players use a chip's mod in the community tally (a family chip: its most used member). */
+    function usedBy(groupId, name) {
+      const keys = statKeys(groupId, name);
+      return keys ? keys.reduce((a, k) => Math.max(a, (MS.data.mods[k].u || [0])[0]), 0) : 0;
+    }
+    function communityLine(us) {
+      return 'Most used by the Community: mods that at least ' + us.min + ' different players use, counted from ' + us.builds.toLocaleString('en-US') + ' builds by ' + us.players + ' players (' + us.label + '). One player with many builds counts once. The number on a mod is how many different players use it, and the most used come first.';
+    }
     function tapFor(groupId, name) {
       const keys = statKeys(groupId, name);
       return keys ? { keys, view: ui.view, miss: missFor(groupId, name) } : null;
@@ -923,6 +950,16 @@
         box.appendChild(document.createTextNode(tap.build + (c.max ? ' · max rank' : '')));
       }
       body.appendChild(box);
+      const us = MS.data.usage;
+      if (us) {
+        const ub = el('div', 'mv-box'); ub.appendChild(el('b', null, 'Community use'));
+        const u = m.u, pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+        ub.appendChild(document.createTextNode(u
+          ? pl(u[0], 'different player') + (u[0] === 1 ? ' uses' : ' use') + ' this mod, in ' + pl(u[1], 'build') + '.' + (u[0] >= us.min ? ' That puts it among the most used.' : '')
+          : 'None of the ' + us.players + ' players counted use this mod.'));
+        ub.appendChild(el('span', 'fine', 'Counted from ' + us.builds.toLocaleString('en-US') + ' builds by ' + us.players + ' players (' + us.label + '). One player with many builds counts once.'));
+        body.appendChild(ub);
+      }
       if (tap.miss && tap.miss.length) body.appendChild(el('p', 'fine', 'Not in the database, so no stats for: ' + tap.miss.join(', ') + '.'));
 
       if (m.set) {
@@ -1031,6 +1068,7 @@
       $('v-missing').addEventListener('click', () => { ui.view = 'missing'; saveUi(); renderMods(); });
       $('mf-all').addEventListener('click', () => { ui.modFilter = 'all'; saveUi(); renderMods(); });
       $('mf-plat').addEventListener('click', () => { ui.modFilter = 'plat'; saveUi(); renderMods(); });
+      $('mf-comm').addEventListener('click', () => { ui.community = !ui.community; saveUi(); renderMods(); });
       $('wf-q').addEventListener('input', renderMods);
     }
 

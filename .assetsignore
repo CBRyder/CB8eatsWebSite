@@ -5,3 +5,4 @@
 wrangler.jsonc
 .assetsignore
 worker.js
+tools

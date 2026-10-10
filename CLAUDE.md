@@ -398,7 +398,7 @@ and **Theme**.
     index: { "<groupId>|<chip name>": [mod keys] },
     partial: { "<groupId>|<chip name>": [names the database lacks] },
     arcanes: { Warframe: [names], Primary: [...], Secondary: [...], Melee: [...] } }`. `arcanes` feeds the Add build
-    form's arcane (adapter) dropdown; refresh it with `--arcanes <folder>/Arcanes.json` (same repo as Mods.json),
+    form's arcane dropdowns; refresh it with `--arcanes <folder>/Arcanes.json` (same repo as Mods.json),
     otherwise the generator keeps the ones already in the file. The chip name is
     what `parseChip()` returns; builds use group id `builds`.
   - **It is generated, not hand-edited:** `python3 tools/build-mod-stats.py --items <Mods.json>`
@@ -517,16 +517,23 @@ and **Theme**.
   `warframe-mod-stats.json` has loaded) opens a form (`#wf-bdlg`): build name, what it is for (Warframe,
   Primary, Secondary, Melee, Archwing, Arch-Gun, Arch-Melee, Companion, Necramech; `BUILD_CATS` in
   `warframe.html`), an optional item name, **10 mod dropdowns** (`wf-b-m0`..`wf-b-m9`), an **Aura** dropdown
-  (a **Stance** one for melee), an **Exilus** dropdown (only mods flagged `ex` or `ut`, so it is hidden for
-  categories that have none) and an **Arcane (adapter)** dropdown (Warframe, Primary, Secondary and Melee
-  only), plus notes. I read "adapter" as the arcane slot a weapon gets from an Arcane Adapter; say so if CB
-  meant something else. Each dropdown offers that category's mods from `warframe-mod-stats.json`, grouped
+  (a **Stance** one for melee), an **Exilus** dropdown (only mods flagged `ex` or `ut`; shown for a Warframe and
+  for Primary, Secondary and Melee weapons, the ones that take an Exilus adapter, hidden for the rest) and the
+  **arcane dropdowns** (`arcaneSlots` in `BUILD_CATS`; "adapter" in CB's first message was read as the arcane
+  slot a weapon gets from an Arcane Adapter). **CB, 2026-10-10: "the 2 arcanes for warframes, the one for the
+  weapons"**, so a Warframe has **Arcane 1 and Arcane 2** (`wf-b-arcane`, `wf-b-arcane2`, both the Warframe
+  arcanes, and the same arcane cannot be in both), Primary, Secondary and Melee have one **Arcane**, and an
+  **Arch-Gun** has two (the wiki: the top slot takes a Primary arcane, the bottom a Secondary one). Archwing,
+  Arch-Melee, Companion and Necramech have none (the wiki says robotic companions cannot equip arcanes), plus
+  notes. The Exilus lists were checked against the wiki's Exilus Mods category on 2026-10-10: nothing the wiki
+  lists was missing, and the only extras are five the database flags (Hushed Invisibility, Intruder, Shock
+  Absorbers, Overview, Primed Shotgun Ammo Mutation). Each dropdown offers that category's mods from `warframe-mod-stats.json`, grouped
   "You own" / "You are missing" / "Not on either list" (so a mod that is on neither of the lists can still be
   picked), A to Z, each name once. A build cannot use one mod twice (the form says which slots clash). Changing
   the category keeps the choices that still fit and clears the rest.
   - **Storage, no rule change:** each build is `warframe/progress.custom.<id>` with `kind: 'build'` (id
-    `b` + time + random), value `{ kind, name, cat, item, aura, exilus, arcane, mods: [10 names, '' for an empty
-    slot], notes, at }`. It shares the `custom` map with the added goals, so `customTasks()` skips anything with
+    `b` + time + random), value `{ kind, name, cat, item, aura, exilus, arcane, arcane2, mods: [10 names, '' for an empty
+    slot], notes, at }` (`arcane2` is the second Warframe or Arch-Gun arcane; builds saved before it existed just have `arcane`). It shares the `custom` map with the added goals, so `customTasks()` skips anything with
     `kind === 'build'` and the goal list never shows them; `userBuilds()` reads the other way. The rule's
     `custom.size() <= 200` limit is shared. Mods are saved by **name**, not by `m123` key (the keys change every
     time the generator runs); an edit keeps a saved mod the list no longer has, labelled "(not in the list now)".

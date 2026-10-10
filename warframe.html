@@ -1127,15 +1127,18 @@
 
     /* ---------- builds you add yourself ---------- */
     /* Saved in the same Firestore map as added goals, warframe/progress.custom.<id> with kind: 'build', so no rule change is
-       needed: { kind, name, cat, item, aura, exilus, arcane, mods: [10 names, '' for an empty slot], notes, at }. Mods are saved by name. */
+       needed: { kind, name, cat, item, aura, exilus, arcane, arcane2, mods: [10 names, '' for an empty slot], notes, at }. Mods are saved by name. */
     const BUILD_SLOTS = 10;
     const BUILD_CATS = [
-      { id: 'warframe', label: 'Warframe', types: ['Warframe Mod'], aura: 'Aura', arcanes: 'Warframe' },
-      { id: 'primary', label: 'Primary weapon', types: ['Primary Mod', 'Shotgun Mod'], arcanes: 'Primary' },
-      { id: 'secondary', label: 'Secondary weapon', types: ['Secondary Mod'], arcanes: 'Secondary' },
-      { id: 'melee', label: 'Melee weapon', types: ['Melee Mod'], aura: 'Stance', stance: true, arcanes: 'Melee' },
+      /* arcaneSlots: one dropdown each, drawing on that kind of arcane. A Warframe has two arcane slots, a weapon one; an
+         Arch-Gun has two (top Primary, bottom Secondary). Exilus: a Warframe and a Primary, Secondary or Melee weapon have the
+         slot (Exilus adapter), the others do not (the dropdown only shows when the category has Exilus mods). */
+      { id: 'warframe', label: 'Warframe', types: ['Warframe Mod'], aura: 'Aura', arcaneSlots: [['Arcane 1', 'Warframe'], ['Arcane 2', 'Warframe']] },
+      { id: 'primary', label: 'Primary weapon', types: ['Primary Mod', 'Shotgun Mod'], arcaneSlots: [['Arcane', 'Primary']] },
+      { id: 'secondary', label: 'Secondary weapon', types: ['Secondary Mod'], arcaneSlots: [['Arcane', 'Secondary']] },
+      { id: 'melee', label: 'Melee weapon', types: ['Melee Mod'], aura: 'Stance', stance: true, arcaneSlots: [['Arcane', 'Melee']] },
       { id: 'archwing', label: 'Archwing', types: ['Archwing Mod'] },
-      { id: 'archgun', label: 'Arch-Gun', types: ['Arch-Gun Mod'] },
+      { id: 'archgun', label: 'Arch-Gun', types: ['Arch-Gun Mod'], arcaneSlots: [['Arcane 1 (Primary)', 'Primary'], ['Arcane 2 (Secondary)', 'Secondary']] },
       { id: 'archmelee', label: 'Arch-Melee', types: ['Arch-Melee Mod'] },
       { id: 'companion', label: 'Companion', types: ['Companion Mod'] },
       { id: 'necramech', label: 'Necramech', types: ['Necramech Mod'] },
@@ -1147,7 +1150,7 @@
     /* The mods each dropdown offers for a category, from warframe-mod-stats.json: each is { name, state } with state
        own (on the Owned list), miss (on the Missing list) or other, sorted A to Z and with duplicate names folded. */
     function buildPools(catId) {
-      const pools = { general: [], aura: [], exilus: [], arcane: [] };
+      const pools = { general: [], aura: [], exilus: [], arcanes: [] };
       const c = catOf(catId);
       if (!c || !MS.data) return pools;
       const own = listKeys('owned'), miss = listKeys('missing');
@@ -1166,8 +1169,7 @@
       });
       const az = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
       ['general', 'aura', 'exilus'].forEach((w) => pools[w].sort(az));
-      const arc = (MS.data.arcanes && c.arcanes && MS.data.arcanes[c.arcanes]) || [];
-      pools.arcane = arc.map((n) => ({ name: n, state: 'other' }));
+      pools.arcanes = (c.arcaneSlots || []).map(([label, kind]) => ({ label, pool: ((MS.data.arcanes && MS.data.arcanes[kind]) || []).map((n) => ({ name: n, state: 'other' })) }));
       return pools;
     }
     /* Fill a dropdown: a "none" choice, then your owned mods, then your missing ones, then the rest. */
@@ -1192,7 +1194,7 @@
       const mods = [];
       for (let i = 0; i < BUILD_SLOTS; i++) mods.push(cleanText(v('wf-b-m' + i), 80));
       return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem'), 60), aura: cleanText(v('wf-b-aura'), 80),
-        exilus: cleanText(v('wf-b-exilus'), 80), arcane: cleanText(v('wf-b-arcane'), 80), mods, notes: String(v('wf-bnotes') || '').trim().slice(0, 300) };
+        exilus: cleanText(v('wf-b-exilus'), 80), arcane: cleanText(v('wf-b-arcane'), 80), arcane2: cleanText(v('wf-b-arcane2'), 80), mods, notes: String(v('wf-bnotes') || '').trim().slice(0, 300) };
     }
     /* Draw the slot dropdowns for the chosen category, keeping any choice that is still on offer. */
     function drawSlots(vals, keepUnknown) {
@@ -1208,7 +1210,7 @@
       if (c.aura && pools.aura.length) add('wf-b-aura', c.aura, pools.aura, vals.aura, 'Not on either list');
       if (pools.exilus.length) add('wf-b-exilus', 'Exilus', pools.exilus, vals.exilus, 'Not on either list');
       for (let i = 0; i < BUILD_SLOTS; i++) add('wf-b-m' + i, 'Mod ' + (i + 1), pools.general, vals.mods[i], 'Not on either list');
-      if (pools.arcane.length) add('wf-b-arcane', 'Arcane (adapter)', pools.arcane, vals.arcane, 'All arcanes');
+      pools.arcanes.forEach((a, i) => { if (a.pool.length) add(i ? 'wf-b-arcane2' : 'wf-b-arcane', a.label, a.pool, i ? vals.arcane2 : vals.arcane, 'All arcanes'); });
       box.appendChild(grid);
     }
     function resetBuildDelete() { clearTimeout(bDelTimer); $('wf-bdel').textContent = 'Delete'; $('wf-bdel').dataset.armed = ''; }
@@ -1226,7 +1228,7 @@
       $('wf-bname').value = b ? b.name : '';
       $('wf-bitem').value = b ? b.item : '';
       $('wf-bnotes').value = b ? b.notes : '';
-      drawSlots(b || { aura: '', exilus: '', arcane: '', mods: [] }, true);
+      drawSlots(b || { aura: '', exilus: '', arcane: '', arcane2: '', mods: [] }, true);
       const dlg = $('wf-bdlg');
       if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
     }
@@ -1251,9 +1253,10 @@
         if (seen[low]) return err(slot + ' is the same mod as ' + seen[low] + '. A build cannot use one mod twice.');
         seen[low] = slot;
       }
+      if (f.arcane && f.arcane.toLowerCase() === f.arcane2.toLowerCase()) return err('Arcane 1 and Arcane 2 are the same arcane. A build cannot use one arcane twice.');
       const id = bEditing ? bEditing.id : newBuildId();
       const was = S.custom[id];
-      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, aura: f.aura, exilus: f.exilus, arcane: f.arcane, mods: f.mods, notes: f.notes,
+      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, aura: f.aura, exilus: f.exilus, arcane: f.arcane, arcane2: f.arcane2, mods: f.mods, notes: f.notes,
         at: (was && Number(was.at)) || Date.now() };
       const wasEditing = !!bEditing;
       S.custom[id] = val; renderBuilds(); closeBuildDialog();
@@ -1293,7 +1296,7 @@
         if (!c || !name) return;
         const mods = Array.isArray(v.mods) ? v.mods.slice(0, BUILD_SLOTS).map((x) => cleanText(x, 80)) : [];
         while (mods.length < BUILD_SLOTS) mods.push('');
-        out.push({ id, name, cat: c.id, item: cleanText(v.item, 60), aura: cleanText(v.aura, 80), exilus: cleanText(v.exilus, 80), arcane: cleanText(v.arcane, 80),
+        out.push({ id, name, cat: c.id, item: cleanText(v.item, 60), aura: cleanText(v.aura, 80), exilus: cleanText(v.exilus, 80), arcane: cleanText(v.arcane, 80), arcane2: cleanText(v.arcane2, 80),
           mods, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, 300), at: Number(v.at) || 0 });
       });
       out.sort((a, b) => a.at - b.at);
@@ -1331,7 +1334,8 @@
       if (b.aura) line(b.cat === 'melee' ? 'Stance' : 'Aura', [b.aura]);
       if (b.exilus) line('Exilus', [b.exilus]);
       if (mods.length) { c.appendChild(el('p', 'label', 'Mods ' + mods.length + ' of ' + BUILD_SLOTS)); const r = el('div', 'modrow'); mods.forEach((n) => r.appendChild(chip(n))); c.appendChild(r); }
-      if (b.arcane) line('Arcane', [b.arcane], true);
+      const arcs = [b.arcane, b.arcane2].filter(Boolean);
+      if (arcs.length) line(arcs.length > 1 ? 'Arcanes' : 'Arcane', arcs, true);
       if (have) {
         const names = [b.aura, b.exilus].concat(b.mods).filter(Boolean);
         let own = 0, miss = 0;

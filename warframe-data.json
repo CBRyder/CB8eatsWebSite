@@ -3521,7 +3521,7 @@
   },
   {
    "id": "cyte-a",
-   "name": "Cyte-09 (Config A)",
+   "name": "Cyte-09",
    "goal": "The build you have active, read from the game on 10 Oct 2026",
    "form": {
     "cat": "warframe",
@@ -3597,7 +3597,7 @@
   },
   {
    "id": "cyte",
-   "name": "Cyte-09 (Config B)",
+   "name": "Cyte-09",
    "goal": "Built for the Cyte-09 request",
    "status": "Built in Config B",
    "form": {

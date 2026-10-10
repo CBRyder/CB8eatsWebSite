@@ -1,5 +1,5 @@
 {
-"updated": "2026-10-09",
+"updated": "2026-10-10",
 "about": "Mods used in builds that have been read, one record per build and the player who made it. Seeded 2026-10-09 with the top 100 builds in each of Overframe's six categories (warframes, primary, secondary, melee, archwing, companions). Add every build read from now on with tools/mod_usage.py add. A mod's popularity is the number of DIFFERENT players using it.",
 "names": {
 "64": "Coaction Drift",
@@ -1237,6 +1237,7 @@
 "overframe:991369": {"by":"TennoKyle","cat":"archwing","mods":[282,279,1451,4632,278,286,287,6763]},
 "overframe:1001390": {"by":"ninjase","cat":"primary-weapons","mods":[1428,6375,738,724,723,706,5522,5525,5523]},
 "overframe:1001776": {"by":"ninjase","cat":"companions","mods":[6964,1412,6962,687,210,662,656,6961,6751]},
-"overframe:1024823": {"by":"Ntrophy","cat":"melee-weapons","mods":[6851,347,6836,345,361,360,352,349,853,6356]}
+"overframe:1024823": {"by":"Ntrophy","cat":"melee-weapons","mods":[6851,347,6836,345,361,360,352,349,853,6356]},
+"ingame:cyte09-configA-2026-10-10": {"by":"CB","cat":"warframes","frames":["Cyte-09"],"mods":["Worthy Comradery","Energy Nexus","Equilibrium","Narrow Minded","Fast Deflection","Transient Fortitude","Archon Continuity","Adaptation","Blind Rage"]}
 }
 }

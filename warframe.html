@@ -252,6 +252,13 @@
     .st-list { margin: 0.2rem 0 0; padding-left: 1.1rem; font-size: 0.95rem; }
     .st-list li { margin-bottom: 0.5rem; overflow-wrap: anywhere; }
     .st-list .st-who { display: block; }
+    .st-stack { margin: 0.4rem 0 0.2rem; }
+    .st-stack summary { font-size: 0.85rem; line-height: 1.3; padding: 0.3rem 0; }
+    .st-stack .mv-table thead th { white-space: normal; color: var(--accent-bright); font-size: 0.78rem; letter-spacing: 0.04em; }
+    .st-stack .mv-table th { overflow-wrap: normal; word-break: normal; }
+    .st-stack .mv-table tbody th { white-space: nowrap; }
+    .mv-stacks .st-stack { margin-top: 0.8rem; }
+    .st-stack { overflow-x: auto; }
     /* Builds */
     .build h2 { margin-bottom: 0.1rem; }
     .build .meta { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 0.8rem; }
@@ -1292,6 +1299,7 @@
       body.appendChild(el('p', 'label', 'Stats'));
       body.appendChild(lines);
       if (m.ds && ranks) body.appendChild(el('p', 'mv-desc', m.ds));
+      const stackWrap = el('div', 'mv-stacks'); body.appendChild(stackWrap);        // stack tables for the rank shown (see stackTables)
 
       let rows = [];
       if (ranks && maxRank > 0) {
@@ -1321,6 +1329,8 @@
         if (ls.length) ls.forEach((t) => lines.appendChild(el('li', null, t)));
         else lines.appendChild(el('li', null, m.ds || 'No stats listed for this mod.'));
         rows.forEach((tr, i) => tr.classList.toggle('cur', i === r));
+        stackWrap.textContent = '';
+        stackTables(ls).forEach((tb) => stackWrap.appendChild(stackTableEl(tb, null, true)));
       };
       if (range) {
         range.addEventListener('input', () => { mv.rank = Number(range.value); paint(); });
@@ -1808,7 +1818,7 @@
        ("x1.3 Damage to Corpus") or plain text. A number is `cond` when its words say it only sometimes applies. */
     function parseStatLine(text) {
       const t = String(text).trim();
-      if (/^[A-Z][A-Za-z' ,-]{1,40}:$/.test(t)) return { type: 'head', text: t };
+      if (/^[A-Z][A-Za-z0-9' ,()-]{1,60}:$/.test(t)) return { type: 'head', text: t };
       let m = /^x(\d+(?:\.\d+)?)\s+(.+)$/.exec(t);
       if (m) return { type: 'mult', value: parseFloat(m[1]), unit: 'x', name: m[2].replace(/\.$/, '').trim(), text: t, cond: false };
       m = /^([+-])?(\d+(?:\.\d+)?)(%|m)?\s+(.+)$/.exec(t);
@@ -1818,6 +1828,94 @@
         return { type: 'num', value: (m[1] === '-' ? -1 : 1) * parseFloat(m[2]), unit: m[3] || '', name, text: t, cond: TRIGGER.test(name) };
       }
       return { type: 'text', text: t };
+    }
+    /* ---------- Stack tables ---------- */
+    /* Mods that grow as they stack get a table: one row per stack up to the most the mod allows. Three kinds, all read from the mod's own
+       stat lines (rank by rank, so a table is for the rank shown):
+       - "On Kill: +30% Multishot for 20s. Stacks up to 5x." (also "Stacks up to 90%", "Stacks up to 2 times", "stacking up to 3x" and a header
+         saying "(Max stacks 3)"): row k is k times the bonus.
+       - "+40% Status Chance per Combo Multiplier" / "+40% Critical Chance stacks with Combo Multiplier": the wiki's formula is bonus x (multiplier - 1),
+         so 1x adds nothing; the multiplier goes up by 1 for every 20 hits in a row, to 12x at 220 hits (wiki.warframe.com, Melee Combo Counter,
+         Blood Rush, Weeping Wounds).
+       - "+80% Melee Damage per Status Type affecting the target": bonus x the number of different statuses on the enemy; the wiki says 16 is the most
+         there can be at once (Condition Overload). With "Stacks up to 2x" as well (the Galvanized mods) it is a grid of statuses by stacks. */
+    const COMBO_MAX = 12, COMBO_HITS = 20, STATUS_MAX = 16;
+    const STACK_RE = /^(?:([A-Z][A-Za-z0-9' ,()-]{1,60}):\s+)?(.+?)(?:\s+for\s+(\d+(?:\.\d+)?)\s*(?:s|seconds))?[.,]?\s*(?:Stacks?|stacking) up to (\d+(?:\.\d+)?)\s*(x|%|times)\.?(?:\s.*)?$/i;
+    /* Multiply every number in an effect ("+30% Projectile Speed and +30% Beam Range") by f; a duration like 20s is left alone. */
+    const scaleText = (text, f) => text.replace(/(^|[^A-Za-z0-9.])([+-]?)(\d[\d,]*(?:\.\d+)?)(?!\d|s\b|\s*seconds)/g, (a, pre, sg, n) => pre + sg + fnum(parseFloat(n.replace(/,/g, '')) * f, 2));
+    function firstNum(text) { const m = /([+-]?)(\d[\d,]*(?:\.\d+)?)/.exec(text); return m ? (m[1] === '-' ? -1 : 1) * parseFloat(m[2].replace(/,/g, '')) : null; }
+    /* The stat a one-number effect changes ("+30% Multishot" -> ms), so the Stats screen can show the build's total at each stack. */
+    function effectKey(effect) {
+      const m = /^[+-]\d+(?:\.\d+)?%\s+([A-Za-z ]+?)(?:\s+when\s.*)?$/.exec(effect.trim());
+      return m ? STAT_KEY[m[1].trim().toLowerCase()] || null : null;
+    }
+    function stackTables(lines) {
+      const out = [];
+      let head = '', headMax = null;
+      (lines || []).forEach((raw) => {
+        const t = String(raw).trim();
+        if (/^[A-Z][A-Za-z0-9' ,()-]{1,60}:$/.test(t)) {
+          head = t.replace(/:$/, ''); const hm = /Max(?:imum)? stacks? (\d+)/i.exec(t); headMax = hm ? parseInt(hm[1], 10) : null; return;
+        }
+        const sm = STACK_RE.exec(t), perStatus = /\s+per Status Type affecting the target/i;
+        const lead = (sm && sm[1]) || head;
+        if (sm) {
+          let effect = sm[2].trim();
+          const step = firstNum(effect), cap = parseFloat(sm[4]), pct = sm[5] === '%';
+          if (step == null || !step || !cap) return;
+          const n = pct ? Math.ceil(cap / Math.abs(step)) : Math.round(cap), fk = (k) => (pct ? Math.min(k, cap / Math.abs(step)) : k);
+          const title = [lead, sm[3] ? 'lasts ' + sm[3] + 's' : '', 'up to ' + n + ' stack' + (n === 1 ? '' : 's')].filter(Boolean).join(' · ');
+          if (perStatus.test(effect)) {                                   // Galvanized Aptitude and its relatives: statuses on the enemy x stacks
+            effect = effect.replace(perStatus, '');
+            const cols = ['Status types'], rows = [];
+            for (let k = 1; k <= n; k++) cols.push(k + (k === 1 ? ' stack' : ' stacks'));
+            for (let st = 1; st <= STATUS_MAX; st++) { const r = [String(st)]; for (let k = 1; k <= n; k++) r.push(scaleText(effect, st * fk(k))); rows.push(r); }
+            out.push({ kind: 'grid', title: title + ' · ' + STATUS_MAX + ' status types at most', cols, rows, key: null, bonus: null });
+            return;
+          }
+          const rows = [], bonus = [];
+          for (let k = 1; k <= n; k++) { rows.push([String(k), scaleText(effect, fk(k))]); bonus.push(step * fk(k)); }
+          out.push({ kind: 'stack', title, cols: ['Stacks', 'Bonus'], rows, key: effectKey(effect), bonus });
+          return;
+        }
+        const p = parseStatLine(t);
+        if (p.type !== 'num') return;
+        let m;
+        if ((m = /^(.*?)\s*(?:stacks with|per) Combo Multiplier$/i.exec(p.name))) {
+          const effect = (p.value < 0 ? '-' : '+') + fnum(Math.abs(p.value), 2) + p.unit + ' ' + m[1], rows = [], bonus = [];
+          for (let c = 1; c <= COMBO_MAX; c++) { rows.push([c + 'x', String((c - 1) * COMBO_HITS), scaleText(effect, c - 1)]); bonus.push(p.value * (c - 1)); }
+          out.push({ kind: 'combo', title: 'by Combo Multiplier · 1x adds nothing, 12x needs ' + (COMBO_MAX - 1) * COMBO_HITS + ' hits in a row', cols: ['Combo multiplier', 'Hits in a row', 'Bonus'], rows,
+            key: p.unit === '%' ? STAT_KEY[m[1].trim().toLowerCase()] || null : null, bonus });
+        } else if ((m = /^(.*?)\s*per Status Type affecting the target$/i.exec(p.name))) {
+          const effect = (p.value < 0 ? '-' : '+') + fnum(Math.abs(p.value), 2) + p.unit + ' ' + m[1], rows = [];
+          for (let st = 1; st <= STATUS_MAX; st++) rows.push([String(st), scaleText(effect, st)]);
+          out.push({ kind: 'status', title: 'by Status Type · ' + STATUS_MAX + ' at most (every different status on the enemy counts)', cols: ['Status types', 'Bonus'], rows, key: null, bonus: null });
+        } else if (headMax) {
+          const step = firstNum(t), rows = [], bonus = [];
+          if (!step) return;
+          for (let k = 1; k <= headMax; k++) { rows.push([String(k), scaleText(t, k)]); bonus.push(step * k); }
+          out.push({ kind: 'stack', title: [head, 'up to ' + headMax + ' stacks'].join(' · '), cols: ['Stacks', 'Bonus'], rows, key: effectKey(t), bonus });
+        }
+      });
+      return out;
+    }
+    /* A table as a collapsible block. `calc` (from statsEngine) adds a column with the build's own total at each row, for a table that changes one stat. */
+    function stackTableEl(tb, calc, open) {
+      const det = el('details', 'mv-all st-stack'); det.open = !!open;
+      det.appendChild(el('summary', null, 'Stack table: ' + tb.title));
+      const c = calc && tb.key && tb.bonus ? calc[tb.key] : null;
+      const tbl = el('table', 'mv-table'), th = document.createElement('thead'), hr = document.createElement('tr');
+      tb.cols.concat(c ? [c.label + ' total'] : []).forEach((h) => { const x = el('th', null, h); x.scope = 'col'; hr.appendChild(x); });
+      th.appendChild(hr); tbl.appendChild(th);
+      const tbd = document.createElement('tbody');
+      tb.rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        r.forEach((v, j) => tr.appendChild(el(j === 0 ? 'th' : 'td', null, v)));
+        if (c) tr.appendChild(el('td', null, c.at(tb.bonus[i])));
+        tbd.appendChild(tr);
+      });
+      tbl.appendChild(tbd); det.appendChild(tbl);
+      return det;
     }
     /* The item's own numbers: { cat, stats } from the first of `cats` that lists the item (an Archwing build can hold an Arch-Gun or an Arch-Melee). */
     function gearFind(data, cats, item) {
@@ -1848,13 +1946,13 @@
         if (typeof rank !== 'number') { rank = m.l.length - 1; guessed.push(e.name); }
         rank = Math.min(rank, m.l.length - 1);
         let head = null;
-        const flush = () => { if (head) { cond.push({ mod: m.n, rank, text: head.map((p) => p.text).join(' '), parts: head }); head = null; } };
+        const flush = () => { if (head) { cond.push({ mod: m.n, rank, text: head.map((p) => p.text).join(' '), parts: head, tables: stackTables(head.map((p) => p.text)) }); head = null; } };
         (m.l[rank] || []).forEach((t) => {
           const p = parseStatLine(t);
           if (p.type === 'head') { flush(); head = [p]; return; }
           if (head) { head.push(p); return; }
-          if (p.type === 'text') { other.push({ mod: m.n, rank, text: p.text }); return; }
-          if (p.cond) { cond.push({ mod: m.n, rank, text: p.text, parts: [p] }); return; }
+          if (p.type === 'text') { other.push({ mod: m.n, rank, text: p.text, tables: stackTables([p.text]) }); return; }
+          if (p.cond) { cond.push({ mod: m.n, rank, text: p.text, parts: [p], tables: stackTables([p.text]) }); return; }
           const k = p.type === 'mult' ? 'x|' + p.name.toLowerCase() : (p.unit === '%' && STAT_KEY[p.name.toLowerCase()]) || 'o|' + p.name.toLowerCase() + '|' + p.unit;
           const a = sums[k] || (sums[k] = { key: k, name: p.name, unit: p.unit, mult: p.type === 'mult', value: p.type === 'mult' ? 1 : 0, who: [] });
           if (p.type === 'mult') a.value *= p.value; else a.value += p.value;
@@ -1863,7 +1961,7 @@
         flush();
       });
       const whoText = (a) => (a ? a.who.map((w) => w.mod + ' ' + (a.mult ? 'x' + fnum(w.value, 2) : sgn(w.value, 1) + a.unit)).join(', ') : '');
-      const rows = [], used = new Set();
+      const rows = [], used = new Set(), calc = {};
       if (isFrame) {
         FRAME_ROWS.forEach((d) => {
           used.add(d.k);
@@ -1876,6 +1974,10 @@
             if (d.cap && total > d.cap) { total = d.cap; note = 'capped at ' + d.cap + '%'; }
           }
           const dp = d.gear ? 0 : 1, unit = d.gear ? '' : '%';
+          calc[d.k] = { label: d.label, at: (extra) => {            // the same total with `extra` more percent from a stacking mod
+            const s2 = s + extra, t2 = d.gear ? base * (1 + s2 / 100) : Math.min(d.cap || Infinity, Math.max(0, 100 + s2));
+            return fnum(t2, dp) + unit;
+          } };
           rows.push({ key: d.k, label: d.label, base: fnum(base, dp) + unit, mods: s ? sgn(s, 1) + '%' : '', total: fnum(total, dp) + unit, num: total, who: whoText(a), note });
         });
       } else if (gs) {
@@ -1885,6 +1987,10 @@
           used.add(d.k);
           const a = sums[d.k], s = a ? a.value : 0, base = gs[d.k], factor = Math.max(0, 1 + s / 100);
           const total = d.k === 'rl' ? base / Math.max(0.01, factor) : base * factor;
+          calc[d.k] = { label: melee && d.melee ? d.melee : d.label, at: (extra) => {
+            const f2 = Math.max(0, 1 + (s + extra) / 100);
+            return fnum(d.k === 'rl' ? base / Math.max(0.01, f2) : base * f2, d.dp) + d.unit;
+          } };
           rows.push({ key: d.k, label: melee && d.melee ? d.melee : d.label, base: fnum(base, d.dp) + d.unit, mods: s ? sgn(s, 1) + '%' + (d.k === 'rl' ? ' speed' : '') : '',
             total: fnum(total, d.dp) + d.unit, num: total, who: whoText(a), note: '' });
         });
@@ -1893,7 +1999,7 @@
         const a = sums[k];
         return { name: a.name, text: (a.mult ? 'x' + fnum(a.value, 2) : sgn(a.value, 1) + a.unit) + ' ' + a.name, who: whoText(a) };
       });
-      return { gs, isFrame, rows, bonuses, cond, other, none, guessed };
+      return { gs, isFrame, rows, bonuses, cond, other, none, guessed, calc };
     }
     function ownStatsInfo(b, group) {
       const entries = [];
@@ -1967,8 +2073,14 @@
         const ul = el('ul', 'st-list'); items.forEach((it) => { const li = el('li'); fill(li, it); ul.appendChild(li); }); body.appendChild(ul);
       };
       list(r.rows.length ? 'Other bonuses from the mods' : 'What the mods add', r.bonuses, (li, b) => { li.appendChild(document.createTextNode(b.text)); li.appendChild(el('span', 'st-who', b.who)); });
-      list('Only some of the time (not added in)', r.cond, (li, c) => { li.appendChild(document.createTextNode(c.text)); li.appendChild(el('span', 'st-who', c.mod + ' rank ' + c.rank)); });
-      list('Other effects (not added in)', r.other, (li, o) => { li.appendChild(document.createTextNode(o.text)); li.appendChild(el('span', 'st-who', o.mod + ' rank ' + o.rank)); });
+      list('Only some of the time (not added in)', r.cond, (li, c) => {
+        li.appendChild(document.createTextNode(c.text)); li.appendChild(el('span', 'st-who', c.mod + ' rank ' + c.rank));
+        c.tables.forEach((tb) => li.appendChild(stackTableEl(tb, r.calc, false)));
+      });
+      list('Other effects (not added in)', r.other, (li, o) => {
+        li.appendChild(document.createTextNode(o.text)); li.appendChild(el('span', 'st-who', o.mod + ' rank ' + o.rank));
+        o.tables.forEach((tb) => li.appendChild(stackTableEl(tb, r.calc, false)));
+      });
       if (r.guessed.length) body.appendChild(el('p', 'fine', 'No rank is saved for ' + r.guessed.join(', ') + ', so ' + (r.guessed.length > 1 ? 'they count' : 'it counts') + ' at max rank.'));
       if (r.none.length) body.appendChild(el('p', 'fine', 'Not counted, no stats in the database: ' + r.none.join(', ') + '.'));
       body.appendChild(el('p', 'fine', 'Added up by this page from the mod list, each mod at its saved rank, and the item\'s numbers in the ' + MS.data.source + ' database. Arcanes, set bonuses, weak points and Forma are not counted, so it can differ from the game\'s own panel.'));

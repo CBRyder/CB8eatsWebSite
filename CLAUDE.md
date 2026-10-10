@@ -622,6 +622,31 @@ and **Theme**.
       (the screen says so). An Archwing build's item is looked up under archwing, then arch-gun, then arch-melee
       (`gearCats`), and a melee item's fire rate row reads "Attack speed". A kind with no `gearStats` (companions,
       necramechs, archwings, an item the database lacks) lists only what the mods add.
+    - **Stack tables (added 2026-10-10; CB: "with mods that go up per kill/combo make a table up to their max stack"):**
+      `stackTables(lines)` reads a mod's own stat lines (for one rank, so the table is for the rank shown) and returns a
+      table for each stacking effect; `stackTableEl()` draws it as a `<details class="st-stack">`. They show in two places: the
+      **View mod screen** (open, under the stats, redrawn when the rank slider moves; `.mv-stacks`) and the **Stats screen**
+      (collapsed, under the mod's line in "Only some of the time" / "Other effects"). In the Stats screen a table that changes
+      one stat the page works out (Multishot, Critical chance, Attack speed...) gets an extra column with **the build's own
+      total at each row** (`calc[key].at(extraPercent)` from `statsEngine`, which adds the stack's bonus to the always-on
+      sum), so Blood Rush on a 28% crit-chance Nikana Prime reads 39.2% at 2x up to 151.2% at 12x. Three kinds, all parsed from
+      the lines, nothing hand-listed per mod:
+      1. **Stacks**: `On Kill: +30% Multishot for 20s. Stacks up to 5x.` (also `Stacks up to 90%`, which is ceil(cap / step)
+         rows, the last one capped; `stacks up to 2 times`; `stacking up to 3x` in a sentence, even with more text after it;
+         an inline header such as `On Status Effect: +1 Range ...`; and a header that says `(Max stacks 3)` for the lines under
+         it). Row k multiplies every number in the effect by k (`scaleText`, a duration such as `20s` is left alone, so
+         `+30% Projectile Speed and +30% Beam Range` scales both).
+      2. **Combo Multiplier** (`... stacks with Combo Multiplier`, `... per Combo Multiplier`: Blood Rush, Weeping Wounds): bonus
+         x (multiplier - 1), 1x to 12x, with the hits in a row. **From the wiki (wiki.warframe.com: Blood Rush, Weeping Wounds, Melee
+         Combo Counter):** `Crit Chance = base x [1 + mods + BloodRush x (Combo Multi - 1)]`, the multiplier goes up by 1 for every
+         20 hits (2x at 20, 12x at 220; Venka Prime reaches 13x and Dex Nikana stops at 11x, neither is modelled), and 1x adds nothing.
+      3. **Status Type** (`... per Status Type affecting the target`: Condition Overload): bonus x the number of different statuses
+         on the enemy, 1 to 16 (the wiki's practical most: no cap in the mod, but Lifted and knockdown cancel each other). With
+         `Stacks up to Nx` as well (Galvanized Aptitude, Savvy, Shot) it is a grid of statuses by stacks. The status bonus is
+         additive with other damage mods in the game, the page lists it but does not total damage.
+      Not tabled (kept as plain text under "Other effects"): Healing Return and Strain Infection (per status / per Cyst, no
+      scaling table asked for), the companion bonds with "Max N stacks" in a sentence, Necrophagic Vigor and anything else
+      whose wording the three patterns above do not match; a new pattern means a new branch in `stackTables`.
     - **To refresh the base numbers:** `python3 tools/build-mod-stats.py --items <Mods.json> --gear <folder>` (use the
       same `Mods.json` as before so the mod data does not change; the npm copy differs), commit the JSON.
   - **Cards (CB, 2026-10-10: "one card for all the configs ... like tabs"):** `buildGroups()` puts every build of the same

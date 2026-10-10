@@ -812,7 +812,7 @@
         ? 'The server refused that write. The warframe/progress Firestore rule may not be published yet.'
         : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
     }
-    function renderLive() { renderGlance(); renderGoals(); renderBuilds(); }
+    function renderLive() { renderGlance(); renderGoals(); renderBuilds(); if (S.data) renderMods(); }
 
     /* ---------- add / edit a goal ---------- */
     let editing = null, delTimer = null;
@@ -918,9 +918,40 @@
     }
 
     /* ---------- render: mods ---------- */
+    /* A goal (or a part of one) can stand for a mod, and ticking it means CB owns that mod:
+       `mod: "Narrow Minded"` names the mod, and `ownsMods: true` on a goal says every goal or part
+       inside it is named exactly like its mod (the Primed, Archon, Umbral and Necramech collections).
+       The Mods tab then shows a ticked mod under Owned and takes it off Missing. Untick the goal and it goes back. */
+    function tickedMods() {
+      const out = new Set();
+      const walk = (list, inherit) => (list || []).forEach((t) => {
+        const all = inherit || t.ownsMods === true;
+        if (hasParts(t)) return walk(t.parts, all);
+        const name = typeof t.mod === 'string' ? t.mod : (all ? t.text : '');
+        if (name && isDone(t.id)) out.add(name.replace(/\s+/g, ' ').trim().toLowerCase());
+      });
+      walk(S.data.farm.tasks, false);
+      return out;
+    }
+    const gidOf = (g, name) => (g.from && g.from[name]) || g.id;   // the group a chip's stats are filed under
+    /* The Owned or Missing groups with the ticked goals applied: ticked mods leave Missing and appear in a first Owned group. */
+    function modGroups(view) {
+      const base = S.data.mods[view], ticked = tickedMods();
+      if (!ticked.size) return base;
+      const nm = (it) => parseChip(it).name.toLowerCase();
+      if (view === 'missing') return base.map((g) => ({ ...g, items: g.items.filter((it) => !ticked.has(nm(it))) })).filter((g) => g.items.length);
+      const have = new Set(); base.forEach((g) => g.items.forEach((it) => have.add(nm(it))));
+      const add = [], from = {};
+      S.data.mods.missing.forEach((g) => g.items.forEach((it) => {
+        const n = nm(it);
+        if (ticked.has(n) && !have.has(n)) { const c = parseChip(it); add.push(c.name); from[c.name] = g.id; have.add(n); }
+      }));
+      if (!add.length) return base;
+      return [{ id: 'ticked', name: 'Owned because you ticked the goal', note: 'These were on your Missing list. You ticked their goal on the Goals tab, so they count as owned. Untick the goal to put one back.', items: add, from }].concat(base);
+    }
     function renderMods() {
       const q = $('wf-q').value.trim().toLowerCase();
-      const groups = S.data.mods[ui.view];
+      const groups = modGroups(ui.view);
       const box = $('wf-groups'); box.textContent = '';
       const us = MS.data && MS.data.usage;            // the community tally, from warframe-mod-stats.json
       const commOn = !!(ui.community && us);
@@ -929,7 +960,7 @@
         const chips = g.items.map(parseChip); total += chips.length;
         let pool = (ui.view === 'missing' && ui.modFilter === 'plat') ? chips.filter((c) => c.tags.includes('plat')) : chips;
         if (commOn) {
-          pool.forEach((c) => { c.used = usedBy(g.id, c.name); });
+          pool.forEach((c) => { c.used = usedBy(gidOf(g, c.name), c.name); });
           pool = pool.filter((c) => c.used >= us.min).sort((a, b) => b.used - a.used);   // most used first (ties keep list order)
         }
         const hits = q ? pool.filter((c) => (c.name + ' ' + c.note).toLowerCase().includes(q)) : pool;
@@ -945,7 +976,7 @@
         sm.appendChild(el('span', 'gcount', hits.length !== chips.length ? hits.length + ' of ' + chips.length : String(chips.length)));
         d.appendChild(sm);
         if (g.note) d.appendChild(el('p', 'gnote', g.note));
-        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c, null, tapFor(g.id, c.name)))); d.appendChild(wrap);
+        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c, null, tapFor(gidOf(g, c.name), c.name)))); d.appendChild(wrap);
         box.appendChild(d);
       });
       const platOn = ui.view === 'missing' && ui.modFilter === 'plat';
@@ -1391,7 +1422,7 @@
     /* The stat keys of every mod on the Owned (or Missing) list, to tell which mods of a community build you have. */
     function listKeys(view) {
       const out = new Set();
-      S.data.mods[view].forEach((g) => g.items.forEach((it) => (statKeys(g.id, parseChip(it).name) || []).forEach((k) => out.add(k))));
+      modGroups(view).forEach((g) => g.items.forEach((it) => { const n = parseChip(it).name; (statKeys(gidOf(g, n), n) || []).forEach((k) => out.add(k)); }));
       return out;
     }
     function communityCard(b, cm, have) {

@@ -17,9 +17,13 @@ Community". Run this again after tallying more builds.
 
 Output shape (see CLAUDE.md, "View mod screen"):
   { built, source, usage: { players, builds, min, label, updated },
-    mods: { "<key>": { n, p, r, d, m, c, t, l, xr, ds, set, sp, tr, ex, intro, w, img, u } },
+    mods: { "<key>": { n, p, r, d, m, c, t, l, xr, ds, set, sp, tr, ex, ut, intro, w, img, u } },
     index: { "<groupId>|<chip name>": ["<key>", ...] },
-    partial: { "<groupId>|<chip name>": ["<name not found>", ...] } }
+    partial: { "<groupId>|<chip name>": ["<name not found>", ...] },
+    arcanes: { "Warframe": [names], "Primary": [...], "Secondary": [...], "Melee": [...] } }
+`ex` marks an Exilus mod and `ut` a utility mod (one that also fits an Exilus slot). `arcanes` is what the
+"Add build" form offers in its arcane (adapter) dropdown; pass `--arcanes /path/to/Arcanes.json` (same repo,
+same folder as Mods.json) to refresh it, otherwise the ones already in the output file are kept.
 `u` is [different players using the mod, builds using it]; a mod nobody in the tally uses has no `u`.
 A chip that stands for a whole family (for example "Bane of Corpus/Grineer/Infested") points
 at several keys; `partial` lists the family members the database does not have. Chips with no match are simply not in `index`, and the page leaves them
@@ -40,6 +44,7 @@ ap.add_argument('--data', default='warframe-data.json')
 ap.add_argument('--out', default='warframe-mod-stats.json')
 ap.add_argument('--usage', default=mod_usage.DEFAULT_PATH, help='the community tally')
 ap.add_argument('--community', default='warframe-community-builds.json', help='the community builds shown on the Builds tab')
+ap.add_argument('--arcanes', default=None, help='path to warframe-items Arcanes.json; leave out to keep the arcanes already in the output file')
 args = ap.parse_args()
 
 mods = json.load(open(args.items, encoding='utf-8'))
@@ -197,6 +202,8 @@ def record(m):
         rec['tr'] = bool(m['tradable'])
     if m.get('isExilus'):
         rec['ex'] = 1
+    if m.get('isUtility'):
+        rec['ut'] = 1
     if m.get('introduced', {}).get('name') and m['introduced']['name'] != 'Vanilla':
         rec['intro'] = m['introduced']['name']
     if m.get('wikiaUrl'):
@@ -251,6 +258,19 @@ out = {'built': datetime.date.today().isoformat(),
        'usage': {'players': players_total, 'builds': builds_total, 'min': need,
                  'label': "Overframe's top builds", 'updated': usage.get('updated')},
        'mods': store, 'index': index, 'partial': partial}
+ARCANE_TYPES = {'Warframe': ['Warframe Arcane'], 'Primary': ['Primary Arcane', 'Shotgun Arcane', 'Bow Arcane'],
+                'Secondary': ['Secondary Arcane'], 'Melee': ['Melee Arcane']}
+arcanes = None
+if args.arcanes:
+    raw_arc = json.load(open(args.arcanes, encoding='utf-8'))
+    arcanes = {k: sorted({a['name'] for a in raw_arc if a.get('type') in v}, key=str.lower) for k, v in ARCANE_TYPES.items()}
+elif os.path.exists(args.out):
+    try:
+        arcanes = json.load(open(args.out, encoding='utf-8')).get('arcanes')
+    except (ValueError, OSError):
+        arcanes = None
+if arcanes:
+    out['arcanes'] = arcanes
 with open(args.out, 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
 

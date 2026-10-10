@@ -65,6 +65,20 @@
     .customrow input { flex: 1 1 11rem; min-width: 0; }
     .bonusrow { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem; font-size: 0.95rem; cursor: pointer; min-height: 44px; }
     .bonusrow input { width: 24px; height: 24px; accent-color: var(--accent); flex: none; }
+    /* Add build form (a dialog with a mod dropdown per slot) and the cards for the builds you add */
+    dialog.bdlg { width: min(94vw, 34rem); }
+    .bdlg .field select, .bdlg .field input[type="text"], .bdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
+    .bdlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
+      border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
+    .slotgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.8rem; }
+    .slotgrid .field { margin: 0.45rem 0; min-width: 0; }
+    @media (min-width: 540px) { .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+    .addrow { margin: 0.2rem 0 0.9rem; }
+    .build.mine .cardhead { align-items: flex-start; }
+    .build.mine .slotline { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.6rem 0 0; }
+    .build.mine .slotline b { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin-right: 0.2rem; }
+    .build.mine .notetext { white-space: pre-line; overflow-wrap: anywhere; }
+    .build.mine .chip.miss { border-style: dashed; color: var(--text-dim); }
     .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
     .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
@@ -313,6 +327,35 @@
         <span class="spacer"></span>
         <button type="button" class="btn-sm" id="wf-cancel">Cancel</button>
         <button type="submit" class="btn-sm primary" id="wf-save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wfdlg bdlg" id="wf-bdlg" aria-labelledby="wf-bdlg-title">
+    <form id="wf-buildform" novalidate>
+      <h2 id="wf-bdlg-title">Add a build</h2>
+      <p class="muted">Name it, say what it is for, then pick a mod for each slot. Leave a slot on none if it is empty.</p>
+      <label class="field"><span>Build name</span>
+        <input type="text" id="wf-bname" maxlength="60" autocomplete="off" placeholder="For example Zephyr tank">
+      </label>
+      <div class="slotgrid">
+        <label class="field"><span>What is it for?</span>
+          <select id="wf-bcat"></select>
+        </label>
+        <label class="field"><span>Which one (optional)</span>
+          <input type="text" id="wf-bitem" maxlength="60" autocomplete="off" placeholder="For example Zephyr">
+        </label>
+      </div>
+      <div id="wf-bslots"></div>
+      <label class="field"><span>Notes (optional)</span>
+        <textarea id="wf-bnotes" maxlength="300" rows="3" placeholder="What it does, what it still needs"></textarea>
+      </label>
+      <p class="formerr" id="wf-berr" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm danger" id="wf-bdel" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="wf-bcancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="wf-bsave">Save build</button>
       </div>
     </form>
   </dialog>
@@ -610,7 +653,7 @@
       Object.keys(S.custom).forEach((id) => {
         if (!ID_RE.test(id)) return;
         const v = S.custom[id];
-        if (!v || typeof v !== 'object') return;
+        if (!v || typeof v !== 'object' || v.kind === 'build') return;   // builds you add share this map but are not goals
         const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
         if (fx && fx.hidden) return;
         const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -735,7 +778,7 @@
         ? 'The server refused that write. The warframe/progress Firestore rule may not be published yet.'
         : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
     }
-    function renderLive() { renderGlance(); renderGoals(); }
+    function renderLive() { renderGlance(); renderGoals(); renderBuilds(); }
 
     /* ---------- add / edit a goal ---------- */
     let editing = null, delTimer = null;
@@ -896,7 +939,7 @@
     /* ---------- View mod screen ---------- */
     /* warframe-mod-stats.json is built by tools/build-mod-stats.py from the WFCD item database. It is
        fetched after the main data; until it arrives (or if it fails) the chips are plain, untappable text. */
-    const MS = { data: null };
+    const MS = { data: null, byName: {} };
     const IMG_BASE = 'https://cdn.jsdelivr.net/gh/WFCD/warframe-items@master/data/img/';
     const mv = { keys: [], i: 0, rank: 0, chip: null, tap: null };
     function statKeys(groupId, name) { return (MS.data && MS.data.index[groupId + '|' + name]) || null; }
@@ -919,7 +962,9 @@
         const res = await fetch('warframe-mod-stats.json', { cache: 'no-store' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         MS.data = await res.json();
-      } catch (e) { console.warn('Could not load warframe-mod-stats.json:', e); MS.data = null; return; }
+      } catch (e) { console.warn('Could not load warframe-mod-stats.json:', e); MS.data = null; MS.byName = {}; return; }
+      MS.byName = {};
+      Object.keys(MS.data.mods).forEach((k) => { const n = MS.data.mods[k].n.toLowerCase(); (MS.byName[n] = MS.byName[n] || []).push(k); });
       renderMods(); renderBuilds();
     }
     const cap = (w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '');
@@ -1079,6 +1124,224 @@
       });
     }
 
+
+    /* ---------- builds you add yourself ---------- */
+    /* Saved in the same Firestore map as added goals, warframe/progress.custom.<id> with kind: 'build', so no rule change is
+       needed: { kind, name, cat, item, aura, exilus, arcane, mods: [10 names, '' for an empty slot], notes, at }. Mods are saved by name. */
+    const BUILD_SLOTS = 10;
+    const BUILD_CATS = [
+      { id: 'warframe', label: 'Warframe', types: ['Warframe Mod'], aura: 'Aura', arcanes: 'Warframe' },
+      { id: 'primary', label: 'Primary weapon', types: ['Primary Mod', 'Shotgun Mod'], arcanes: 'Primary' },
+      { id: 'secondary', label: 'Secondary weapon', types: ['Secondary Mod'], arcanes: 'Secondary' },
+      { id: 'melee', label: 'Melee weapon', types: ['Melee Mod'], aura: 'Stance', stance: true, arcanes: 'Melee' },
+      { id: 'archwing', label: 'Archwing', types: ['Archwing Mod'] },
+      { id: 'archgun', label: 'Arch-Gun', types: ['Arch-Gun Mod'] },
+      { id: 'archmelee', label: 'Arch-Melee', types: ['Arch-Melee Mod'] },
+      { id: 'companion', label: 'Companion', types: ['Companion Mod'] },
+      { id: 'necramech', label: 'Necramech', types: ['Necramech Mod'] },
+    ];
+    const catOf = (id) => BUILD_CATS.find((c) => c.id === id) || null;
+    let bEditing = null, bDelTimer = null;
+    const cleanText = (v, max) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
+
+    /* The mods each dropdown offers for a category, from warframe-mod-stats.json: each is { name, state } with state
+       own (on the Owned list), miss (on the Missing list) or other, sorted A to Z and with duplicate names folded. */
+    function buildPools(catId) {
+      const pools = { general: [], aura: [], exilus: [], arcane: [] };
+      const c = catOf(catId);
+      if (!c || !MS.data) return pools;
+      const own = listKeys('owned'), miss = listKeys('missing');
+      const maps = { general: {}, aura: {}, exilus: {} };
+      const put = (which, k) => {
+        const m = MS.data.mods[k], low = m.n.toLowerCase(), state = own.has(k) ? 'own' : miss.has(k) ? 'miss' : 'other';
+        const seen = maps[which][low];
+        if (!seen) { maps[which][low] = { name: m.n, state }; pools[which].push(maps[which][low]); }
+        else if (state === 'own' || (state === 'miss' && seen.state === 'other')) seen.state = state;
+      };
+      Object.keys(MS.data.mods).forEach((k) => {
+        const m = MS.data.mods[k];
+        if (c.aura === 'Aura' && m.c === 'Aura') put('aura', k);
+        else if (c.stance && (m.t === 'Stance Mod' || m.t === 'Posture Mod')) put('aura', k);
+        else if (c.types.includes(m.t) && m.c !== 'Aura') { put('general', k); if (m.ex || m.ut) put('exilus', k); }
+      });
+      const az = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+      ['general', 'aura', 'exilus'].forEach((w) => pools[w].sort(az));
+      const arc = (MS.data.arcanes && c.arcanes && MS.data.arcanes[c.arcanes]) || [];
+      pools.arcane = arc.map((n) => ({ name: n, state: 'other' }));
+      return pools;
+    }
+    /* Fill a dropdown: a "none" choice, then your owned mods, then your missing ones, then the rest. */
+    function fillSlot(sel, pool, value, otherLabel, keepUnknown) {
+      sel.textContent = '';
+      sel.appendChild(new Option('— none —', ''));
+      [['own', 'You own'], ['miss', 'You are missing'], ['other', otherLabel]].forEach(([st, label]) => {
+        const items = pool.filter((x) => x.state === st);
+        if (!items.length) return;
+        const og = document.createElement('optgroup'); og.label = label;
+        items.forEach((x) => og.appendChild(new Option(x.name, x.name)));
+        sel.appendChild(og);
+      });
+      const known = !value || pool.some((x) => x.name === value);
+      /* A saved mod the list no longer has stays on offer when you edit (so a save does not drop it); a choice left over
+         from another category is just cleared. */
+      if (!known && keepUnknown) sel.insertBefore(new Option(value + ' (not in the list now)', value), sel.options[0].nextSibling);
+      sel.value = known || keepUnknown ? (value || '') : '';
+    }
+    function readBuildForm() {
+      const v = (id) => { const s = $(id); return s ? s.value : ''; };
+      const mods = [];
+      for (let i = 0; i < BUILD_SLOTS; i++) mods.push(cleanText(v('wf-b-m' + i), 80));
+      return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem'), 60), aura: cleanText(v('wf-b-aura'), 80),
+        exilus: cleanText(v('wf-b-exilus'), 80), arcane: cleanText(v('wf-b-arcane'), 80), mods, notes: String(v('wf-bnotes') || '').trim().slice(0, 300) };
+    }
+    /* Draw the slot dropdowns for the chosen category, keeping any choice that is still on offer. */
+    function drawSlots(vals, keepUnknown) {
+      const box = $('wf-bslots'); box.textContent = '';
+      const c = catOf($('wf-bcat').value) || BUILD_CATS[0], pools = buildPools(c.id);
+      const grid = el('div', 'slotgrid');
+      const add = (id, label, pool, value, other) => {
+        const f = el('label', 'field'); f.appendChild(el('span', null, label));
+        const sel = document.createElement('select'); sel.id = id;
+        fillSlot(sel, pool, value, other, keepUnknown);
+        f.appendChild(sel); grid.appendChild(f);
+      };
+      if (c.aura && pools.aura.length) add('wf-b-aura', c.aura, pools.aura, vals.aura, 'Not on either list');
+      if (pools.exilus.length) add('wf-b-exilus', 'Exilus', pools.exilus, vals.exilus, 'Not on either list');
+      for (let i = 0; i < BUILD_SLOTS; i++) add('wf-b-m' + i, 'Mod ' + (i + 1), pools.general, vals.mods[i], 'Not on either list');
+      if (pools.arcane.length) add('wf-b-arcane', 'Arcane (adapter)', pools.arcane, vals.arcane, 'All arcanes');
+      box.appendChild(grid);
+    }
+    function resetBuildDelete() { clearTimeout(bDelTimer); $('wf-bdel').textContent = 'Delete'; $('wf-bdel').dataset.armed = ''; }
+    function openBuildDialog(b) {
+      if (!S.owner || !S.sync) return needOwner();
+      if (!MS.data) return flash('The mod list has not loaded yet. Try again in a moment.');
+      bEditing = b || null;
+      $('wf-bdlg-title').textContent = b ? 'Edit build' : 'Add a build';
+      $('wf-bsave').textContent = b ? 'Save changes' : 'Save build';
+      $('wf-bdel').hidden = !b; resetBuildDelete();
+      $('wf-berr').textContent = '';
+      const sel = $('wf-bcat');
+      if (!sel.options.length) BUILD_CATS.forEach((c) => sel.appendChild(new Option(c.label, c.id)));
+      sel.value = b ? b.cat : 'warframe';
+      $('wf-bname').value = b ? b.name : '';
+      $('wf-bitem').value = b ? b.item : '';
+      $('wf-bnotes').value = b ? b.notes : '';
+      drawSlots(b || { aura: '', exilus: '', arcane: '', mods: [] }, true);
+      const dlg = $('wf-bdlg');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeBuildDialog() {
+      const dlg = $('wf-bdlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function newBuildId() { return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+    async function saveBuild(ev) {
+      ev.preventDefault();
+      const err = (m) => { $('wf-berr').textContent = m; };
+      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save builds.');
+      const f = readBuildForm();
+      if (!f.name) return err('Give the build a name.');
+      if (!catOf(f.cat)) return err('Pick what the build is for.');
+      const all = [['Aura or stance', f.aura], ['Exilus', f.exilus]].concat(f.mods.map((m, i) => ['Mod ' + (i + 1), m]));
+      if (!all.some((x) => x[1])) return err('Pick at least one mod.');
+      const seen = {};
+      for (const [slot, name] of all) {
+        if (!name) continue;
+        const low = name.toLowerCase();
+        if (seen[low]) return err(slot + ' is the same mod as ' + seen[low] + '. A build cannot use one mod twice.');
+        seen[low] = slot;
+      }
+      const id = bEditing ? bEditing.id : newBuildId();
+      const was = S.custom[id];
+      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, aura: f.aura, exilus: f.exilus, arcane: f.arcane, mods: f.mods, notes: f.notes,
+        at: (was && Number(was.at)) || Date.now() };
+      const wasEditing = !!bEditing;
+      S.custom[id] = val; renderBuilds(); closeBuildDialog();
+      try {
+        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
+        flash(wasEditing ? 'Build updated.' : 'Build added.');
+      } catch (e) {
+        if (was) S.custom[id] = was; else delete S.custom[id];
+        renderBuilds(); writeFailed(e);
+      }
+    }
+    async function removeBuild() {
+      if (!bEditing || !S.owner || !S.sync) return;
+      const id = bEditing.id, was = S.custom[id];
+      delete S.custom[id]; renderBuilds(); closeBuildDialog();
+      try { await S.sync.remove(id); flash('Build deleted.'); }
+      catch (e) { if (was) S.custom[id] = was; renderBuilds(); writeFailed(e); }
+    }
+    function initBuildDialog() {
+      $('wf-bcat').addEventListener('change', () => { const keep = readBuildForm(); drawSlots(keep); });
+      $('wf-bcancel').addEventListener('click', closeBuildDialog);
+      $('wf-buildform').addEventListener('submit', saveBuild);
+      $('wf-bdel').addEventListener('click', () => {
+        if ($('wf-bdel').dataset.armed) { resetBuildDelete(); removeBuild(); return; }
+        $('wf-bdel').dataset.armed = '1'; $('wf-bdel').textContent = 'Tap again to delete';
+        bDelTimer = setTimeout(resetBuildDelete, 4000);
+      });
+    }
+    /* The builds you added, oldest first, cleaned up for display. */
+    function userBuilds() {
+      const out = [];
+      Object.keys(S.custom).forEach((id) => {
+        if (!ID_RE.test(id)) return;
+        const v = S.custom[id];
+        if (!v || typeof v !== 'object' || v.kind !== 'build') return;
+        const c = catOf(v.cat), name = cleanText(v.name, 60);
+        if (!c || !name) return;
+        const mods = Array.isArray(v.mods) ? v.mods.slice(0, BUILD_SLOTS).map((x) => cleanText(x, 80)) : [];
+        while (mods.length < BUILD_SLOTS) mods.push('');
+        out.push({ id, name, cat: c.id, item: cleanText(v.item, 60), aura: cleanText(v.aura, 80), exilus: cleanText(v.exilus, 80), arcane: cleanText(v.arcane, 80),
+          mods, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, 300), at: Number(v.at) || 0 });
+      });
+      out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+    function ownBuildCard(b, have) {
+      const c = el('div', 'wfcard build mine'); c.dataset.build = b.id;
+      c.appendChild(el('span', 'pill', catOf(b.cat).label));
+      const head = el('div', 'cardhead');
+      head.appendChild(el('h2', null, b.name));
+      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + b.name);
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = () => openBuildDialog(b);
+      head.appendChild(ed);
+      c.appendChild(head);
+      if (b.item) c.appendChild(el('p', 'meta', b.item));
+      const chip = (name) => {
+        const keys = MS.byName[name.toLowerCase()];
+        const state = have && keys ? (keys.some((k) => have.own.has(k)) ? 'own' : keys.some((k) => have.miss.has(k)) ? 'miss' : null) : null;
+        const ch = el(keys ? 'button' : 'span', 'chip' + (state === 'miss' ? ' miss' : '') + (keys ? ' tap' : ''));
+        if (keys) {
+          ch.type = 'button'; ch.dataset.mod = name; ch.setAttribute('aria-haspopup', 'dialog');
+          ch.addEventListener('click', () => openMod({ keys, view: 'build', miss: [], build: b.name }, { name, count: null, rank: null, max: false, note: '', tags: [] }));
+        }
+        if (state === 'miss') ch.title = 'On your Missing list';
+        ch.appendChild(document.createTextNode(name));
+        return ch;
+      };
+      const line = (label, names, arcane) => {
+        const row = el('div', 'slotline'); row.appendChild(el('b', null, label));
+        names.forEach((n) => row.appendChild(arcane ? el('span', 'chip', n) : chip(n)));
+        c.appendChild(row);
+      };
+      const mods = b.mods.filter(Boolean);
+      if (b.aura) line(b.cat === 'melee' ? 'Stance' : 'Aura', [b.aura]);
+      if (b.exilus) line('Exilus', [b.exilus]);
+      if (mods.length) { c.appendChild(el('p', 'label', 'Mods ' + mods.length + ' of ' + BUILD_SLOTS)); const r = el('div', 'modrow'); mods.forEach((n) => r.appendChild(chip(n))); c.appendChild(r); }
+      if (b.arcane) line('Arcane', [b.arcane], true);
+      if (have) {
+        const names = [b.aura, b.exilus].concat(b.mods).filter(Boolean);
+        let own = 0, miss = 0;
+        names.forEach((n) => { const keys = MS.byName[n.toLowerCase()]; if (!keys) return; if (keys.some((k) => have.own.has(k))) own++; else if (keys.some((k) => have.miss.has(k))) miss++; });
+        c.appendChild(el('p', 'muted', 'On your lists: ' + own + ' owned, ' + miss + ' missing' + (names.length - own - miss ? ', ' + (names.length - own - miss) + ' on neither.' : '.')));
+      }
+      if (b.notes) { c.appendChild(el('p', 'label', 'Notes')); c.appendChild(el('p', 'muted notetext', b.notes)); }
+      return c;
+    }
+
     /* ---------- render: builds ---------- */
     /* warframe-community-builds.json: top-rated builds by other players, fetched after the main data.
        The page works without it (the Community builds button stays greyed out). */
@@ -1172,6 +1435,14 @@
       });
       tools.appendChild(seg); p.appendChild(tools);
       if (community) { renderCommunity(p, cm); return; }
+      const addRow = el('div', 'addrow');
+      const addBtn = el('button', 'btn-sm primary', '+ Add build'); addBtn.type = 'button'; addBtn.id = 'bv-add';
+      if (!S.owner || !MS.data) addBtn.setAttribute('aria-disabled', 'true');
+      if (!MS.data) addBtn.title = 'The mod list has not loaded';
+      addBtn.onclick = () => openBuildDialog(null);
+      addRow.appendChild(addBtn); p.appendChild(addRow);
+      const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
+      userBuilds().forEach((b) => p.appendChild(ownBuildCard(b, have)));
       S.data.builds.forEach((b) => {
         const c = el('div', 'wfcard build');
         c.appendChild(el('span', 'pill', b.status));
@@ -1321,7 +1592,7 @@
       S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
       indexGoals(S.data.farm.tasks);
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
-      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initModDialog();
+      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initBuildDialog(); initModDialog();
       loadModStats(); loadCommunity();
       await startSync();
     }

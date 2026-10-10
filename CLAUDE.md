@@ -534,6 +534,24 @@ and **Theme**.
   - **History is only as shared as the doc:** two devices adding at the same moment can lose one history
     entry (each write sets `runs` to an absolute number), which shows up as a signed "Before the history
     started" row. CB is the only writer, so this was accepted.
+  - **Edit button on the card (added 2026-10-10; CB: "a edit button in the top right ... it can change everything the
+    top red as the resource, the bottom red as the description and of the quantity"):** `#tok-edit`, top right of the
+    card (it stays there when a long title wraps), owner only, opens `#wf-tokdlg` with **Resource** (the title: the
+    default "Mother Tokens", any resource from `resources` in `warframe-data.json`, or Other with a typed name, up to 40
+    characters), **Quantity you have**, **Quantity goal** (1 to 100,000,000; the default is `farm.target`) and
+    **Description** (up to 300 characters; it replaces *both* automatic lines, "N to go. Shop picks ..." and "Shop
+    refreshes in about N days", and an empty box brings them back, with the automatic text as the placeholder). The
+    glance cell's label becomes the resource name too, and the typing box asks for "Amount" instead of "Tokens".
+    **Back to the defaults** (shown only when something is customised) deletes the settings and leaves the total alone.
+    - **Storage, still no rule change:** the settings are one field inside the `custom` map,
+      `custom.tokencard = { name?, note?, target? }` (a key equal to its default is left out; with nothing left the whole
+      field is deleted). `tokCard()` reads and cleans it (only text counts for name and note, a goal must be a whole
+      number in range, anything bad falls back to the default) and `customTasks()` skips the id `tokencard`. If the
+      quantity you have changed, the same single `updateDoc` also writes `runs` and one history entry
+      (`custom.tokenlog.e.<key> = { n: new - old, at }`), so the history still adds up to the total; if only the goal or
+      text changed, nothing else is written. Optimistic, with a full rollback and the usual "server refused" message.
+      Do not add a top-level field for this without asking CB to republish the rule.
+    - `tokTarget()` (not `farm.target`) is what the bar, the "of N", the glance and `tokensLeft()` use.
 - **Add build (Builds tab, added 2026-10-10; CB: "10 drop downs plus aura slot, exilus and adapter"):** under
   the My builds / Community builds switch, a **+ Add build** button (`#bv-add`, owner only, greyed until
   `warframe-mod-stats.json` has loaded) opens a form (`#wf-bdlg`): build name, what it is for (Warframe,
@@ -604,7 +622,7 @@ and **Theme**.
     r10, Fast Deflection r5, Transient Fortitude r8, Archon Continuity r10, Adaptation r6, Blind Rage r5; the
     Exilus slot is locked; capacity 1 of 74 left).
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
-  theme: {...}, custom: {goalId: {name, qty, plat, at}, tokenlog: {e: {key: {n, at}}} (the token history), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  theme: {...}, custom: {goalId: {name, qty, plat, at}, tokenlog: {e: {key: {n, at}}} (the token history), tokencard: {name?, note?, target?} (the Mother Tokens card's own title, description and goal), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace

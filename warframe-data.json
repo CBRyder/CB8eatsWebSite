@@ -905,7 +905,8 @@
        }
       ]
      }
-    ]
+    ],
+    "ownsMods": true
    },
    {
     "id": "allarchon",
@@ -942,7 +943,8 @@
       "text": "Archon Vitality",
       "note": "Chipper, Kahl's Garrison."
      }
-    ]
+    ],
+    "ownsMods": true
    },
    {
     "id": "allumbral",
@@ -965,7 +967,8 @@
       "text": "Umbral Vitality",
       "doneDefault": true
      }
-    ]
+    ],
+    "ownsMods": true
    },
    {
     "id": "allnecra",
@@ -1097,7 +1100,8 @@
       "id": "nm-vitality",
       "text": "Necramech Vitality"
      }
-    ]
+    ],
+    "ownsMods": true
    },
    {
     "id": "bladed",
@@ -1106,7 +1110,8 @@
     "note": "Cambion Drift bounties or Duviri Endless, or about 15 to 20 plat from players.",
     "tags": [
      "plat"
-    ]
+    ],
+    "mod": "Bladed Rounds"
    },
    {
     "id": "narrow",
@@ -1115,7 +1120,8 @@
     "note": "Orokin Derelict Vault, rotation A, about 4%. Rank 10 gives +99% duration and -66% range.",
     "tags": [
      "plat"
-    ]
+    ],
+    "mod": "Narrow Minded"
    },
    {
     "id": "maw",

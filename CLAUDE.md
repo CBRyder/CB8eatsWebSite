@@ -497,6 +497,16 @@ and **Theme**.
     `wrangler.jsonc`'s `run_worker_first`; the worker 404s it on every host except the dev one.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
+- **A ticked goal makes its mod owned (added 2026-10-10; CB: "i checked narrow minded off on the website ... let
+  the check mark make it owned"):** a goal, or a part of one, can stand for a mod. `mod: "Narrow Minded"` on a goal
+  names the mod (today `narrow` and `bladed`), and `ownsMods: true` on a goal says every goal and part inside it is
+  named exactly like its mod (the four collections: `allprimed`, `allarchon`, `allumbral`, `allnecra`). When such a
+  goal is ticked (a saved tick, or `doneDefault`), `modGroups()` takes that mod off the Missing view and puts it in a
+  first Owned group, "Owned because you ticked the goal"; untick the goal and it goes back, nothing is saved or
+  edited (it is computed on every render, and `renderLive()` now redraws the Mods tab too). A mod that is already on
+  Owned is never listed twice, and `listKeys()` uses the same groups, so the Add build form's "You own" list
+  agrees. The match is by the chip's name (a family chip such as "Bane of Corpus/Grineer/Infested" is not matched).
+  To link a new goal to a mod, put the mod's name in `mod` exactly as the Missing list spells it.
 - **Mother Token counter (changed 2026-10-10, again later that day; CB: "remove the red and make the top
   red section the typing section, the green be the add button and below those is a history Date and
   Time"):** the Goals tab's top card counts **tokens**, not runs. It is a number box (`#tok-in`, a minus

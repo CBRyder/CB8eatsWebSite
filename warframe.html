@@ -76,6 +76,11 @@
       border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
     .slotgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.8rem; }
     .slotgrid .field { margin: 0.45rem 0; min-width: 0; }
+    /* One slot: the label and a small rank dropdown share the top line, the mod dropdown fills the line below. */
+    .slotgrid .field.pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.5rem; row-gap: 0.3rem; align-items: center; }
+    .slotgrid .field.pick > span { grid-column: 1; grid-row: 1; }
+    .slotgrid .field.pick > select { grid-column: 1 / -1; grid-row: 2; }
+    .bdlg .field.pick > select.rk { grid-column: 2; grid-row: 1; width: 8.4rem; min-height: 34px; padding-top: 0.1rem; padding-bottom: 0.1rem; font-size: 0.88rem; }
     @media (min-width: 540px) { .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
     .addrow { margin: 0.2rem 0 0.9rem; }
     .build.mine .cardhead { align-items: flex-start; }
@@ -83,6 +88,7 @@
     .build.mine .slotline b { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin-right: 0.2rem; }
     .build.mine .notetext { white-space: pre-line; overflow-wrap: anywhere; }
     .build.mine .chip.miss { border-style: dashed; color: var(--text-dim); }
+    .build.mine .pill + .pill { margin-left: 0.4rem; }
     .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
     .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
@@ -338,7 +344,7 @@
   <dialog class="wfdlg bdlg" id="wf-bdlg" aria-labelledby="wf-bdlg-title">
     <form id="wf-buildform" novalidate>
       <h2 id="wf-bdlg-title">Add a build</h2>
-      <p class="muted">Name it, say what it is for, then pick a mod for each slot. Leave a slot on none if it is empty.</p>
+      <p class="muted">Name it, say what it is for, then pick a mod and its rank for each slot. Leave a slot on none if it is empty. Rank ? means you do not know it.</p>
       <label class="field"><span>Build name</span>
         <input type="text" id="wf-bname" maxlength="60" autocomplete="off" placeholder="For example Zephyr tank">
       </label>
@@ -349,10 +355,13 @@
         <label class="field"><span>Which one (optional)</span>
           <input type="text" id="wf-bitem" maxlength="60" autocomplete="off" placeholder="For example Zephyr">
         </label>
+        <label class="field"><span>Config (optional)</span>
+          <select id="wf-bconfig"></select>
+        </label>
       </div>
       <div id="wf-bslots"></div>
       <label class="field"><span>Notes (optional)</span>
-        <textarea id="wf-bnotes" maxlength="300" rows="3" placeholder="What it does, what it still needs"></textarea>
+        <textarea id="wf-bnotes" maxlength="500" rows="3" placeholder="What it does, what it still needs"></textarea>
       </label>
       <p class="formerr" id="wf-berr" role="alert"></p>
       <div class="dlgbtns">
@@ -1146,7 +1155,7 @@
         box.appendChild(document.createTextNode(tap.build + ' · rank ' + tap.rank + (c.max ? ' (max rank)' : '')));
       } else {
         box.appendChild(el('b', null, 'In your build'));
-        box.appendChild(document.createTextNode(tap.build + (c.max ? ' · max rank' : '')));
+        box.appendChild(document.createTextNode(tap.build + (typeof tap.rank === 'number' ? ' · rank ' + tap.rank + (c.max ? ' (max rank)' : '') : c.max ? ' · max rank' : '')));
       }
       body.appendChild(box);
       const us = MS.data.usage;
@@ -1192,15 +1201,21 @@
 
     /* ---------- builds you add yourself ---------- */
     /* Saved in the same Firestore map as added goals, warframe/progress.custom.<id> with kind: 'build', so no rule change is
-       needed: { kind, name, cat, item, aura, exilus, arcane, mods: [10 names, '' for an empty slot], notes, at }. Mods are saved by name. */
+       needed: { kind, name, cat, item, config, aura, auraRank, exilus, exilusRank, arcane, arcaneRank, arcane2, arcane2Rank,
+       mods: [10 names, '' for an empty slot], ranks: [10 ranks, null when not known], notes, at }. Mods are saved by name. The builds that
+       ship in warframe-data.json (burston, cyte, cyte-a) are edited the same way: saving writes custom.<their id>, which then wins over the
+       file's `form`; deleting one saves { kind: 'build', hidden: true } instead. */
     const BUILD_SLOTS = 10;
     const BUILD_CATS = [
-      { id: 'warframe', label: 'Warframe', types: ['Warframe Mod'], aura: 'Aura', arcanes: 'Warframe' },
-      { id: 'primary', label: 'Primary weapon', types: ['Primary Mod', 'Shotgun Mod'], arcanes: 'Primary' },
-      { id: 'secondary', label: 'Secondary weapon', types: ['Secondary Mod'], arcanes: 'Secondary' },
-      { id: 'melee', label: 'Melee weapon', types: ['Melee Mod'], aura: 'Stance', stance: true, arcanes: 'Melee' },
+      /* arcaneSlots: one dropdown each, drawing on that kind of arcane. A Warframe has two arcane slots, a weapon one; an
+         Arch-Gun has two (top Primary, bottom Secondary). Exilus: a Warframe and a Primary, Secondary or Melee weapon have the
+         slot (Exilus adapter), the others do not (the dropdown only shows when the category has Exilus mods). */
+      { id: 'warframe', label: 'Warframe', types: ['Warframe Mod'], aura: 'Aura', arcaneSlots: [['Arcane 1', 'Warframe'], ['Arcane 2', 'Warframe']] },
+      { id: 'primary', label: 'Primary weapon', types: ['Primary Mod', 'Shotgun Mod'], arcaneSlots: [['Arcane', 'Primary']] },
+      { id: 'secondary', label: 'Secondary weapon', types: ['Secondary Mod'], arcaneSlots: [['Arcane', 'Secondary']] },
+      { id: 'melee', label: 'Melee weapon', types: ['Melee Mod'], aura: 'Stance', stance: true, arcaneSlots: [['Arcane', 'Melee']] },
       { id: 'archwing', label: 'Archwing', types: ['Archwing Mod'] },
-      { id: 'archgun', label: 'Arch-Gun', types: ['Arch-Gun Mod'] },
+      { id: 'archgun', label: 'Arch-Gun', types: ['Arch-Gun Mod'], arcaneSlots: [['Arcane 1 (Primary)', 'Primary'], ['Arcane 2 (Secondary)', 'Secondary']] },
       { id: 'archmelee', label: 'Arch-Melee', types: ['Arch-Melee Mod'] },
       { id: 'companion', label: 'Companion', types: ['Companion Mod'] },
       { id: 'necramech', label: 'Necramech', types: ['Necramech Mod'] },
@@ -1208,11 +1223,21 @@
     const catOf = (id) => BUILD_CATS.find((c) => c.id === id) || null;
     let bEditing = null, bDelTimer = null;
     const cleanText = (v, max) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
+    const CONFIGS = ['Config A', 'Config B', 'Config C'];
+    const ARC_MAX = 5;                       // most arcanes rank 0 to 5 (a few stop lower), so the arcane rank picker offers 0 to 5
+    const NOTES_MAX = 500;
+    const rankOf = (v) => (Number.isInteger(v) && v >= 0 && v <= 99 ? v : null);
+    /* The highest rank a mod can have, from the stats file; null when the mod is not in it or has no ranks. */
+    function modMax(name) {
+      const ks = MS.data && name ? MS.byName[String(name).toLowerCase()] : null;
+      const mx = ks ? Math.max.apply(null, ks.map((k) => MS.data.mods[k].m || 0)) : 0;
+      return mx > 0 ? mx : null;
+    }
 
     /* The mods each dropdown offers for a category, from warframe-mod-stats.json: each is { name, state } with state
        own (on the Owned list), miss (on the Missing list) or other, sorted A to Z and with duplicate names folded. */
     function buildPools(catId) {
-      const pools = { general: [], aura: [], exilus: [], arcane: [] };
+      const pools = { general: [], aura: [], exilus: [], arcanes: [] };
       const c = catOf(catId);
       if (!c || !MS.data) return pools;
       const own = listKeys('owned'), miss = listKeys('missing');
@@ -1231,8 +1256,7 @@
       });
       const az = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
       ['general', 'aura', 'exilus'].forEach((w) => pools[w].sort(az));
-      const arc = (MS.data.arcanes && c.arcanes && MS.data.arcanes[c.arcanes]) || [];
-      pools.arcane = arc.map((n) => ({ name: n, state: 'other' }));
+      pools.arcanes = (c.arcaneSlots || []).map(([label, kind]) => ({ label, pool: ((MS.data.arcanes && MS.data.arcanes[kind]) || []).map((n) => ({ name: n, state: 'other' })) }));
       return pools;
     }
     /* Fill a dropdown: a "none" choice, then your owned mods, then your missing ones, then the rest. */
@@ -1252,28 +1276,49 @@
       if (!known && keepUnknown) sel.insertBefore(new Option(value + ' (not in the list now)', value), sel.options[0].nextSibling);
       sel.value = known || keepUnknown ? (value || '') : '';
     }
+    /* Fill a rank dropdown. value: a number keeps that rank, null shows "Rank ?" (not known), undefined means a mod was just
+       picked, so it starts at its max rank (an arcane starts on "Rank ?"). No max, no dropdown. */
+    function fillRank(rs, max, value, arcane) {
+      rs.textContent = '';
+      rs.hidden = !max;
+      if (!max) return;
+      rs.appendChild(new Option('Rank ?', ''));
+      for (let r = 0; r <= max; r++) rs.appendChild(new Option('Rank ' + r + '/' + max, String(r)));
+      const v = value === undefined ? (arcane ? null : max) : value;
+      rs.value = v == null ? '' : String(Math.min(v, max));
+    }
     function readBuildForm() {
       const v = (id) => { const s = $(id); return s ? s.value : ''; };
-      const mods = [];
-      for (let i = 0; i < BUILD_SLOTS; i++) mods.push(cleanText(v('wf-b-m' + i), 80));
-      return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem'), 60), aura: cleanText(v('wf-b-aura'), 80),
-        exilus: cleanText(v('wf-b-exilus'), 80), arcane: cleanText(v('wf-b-arcane'), 80), mods, notes: String(v('wf-bnotes') || '').trim().slice(0, 300) };
+      const rk = (id) => { const s = $(id + '-r'); return s && !s.hidden && s.value !== '' ? rankOf(Number(s.value)) : null; };
+      const mods = [], ranks = [];
+      for (let i = 0; i < BUILD_SLOTS; i++) { const n = cleanText(v('wf-b-m' + i), 80); mods.push(n); ranks.push(n ? rk('wf-b-m' + i) : null); }
+      const aura = cleanText(v('wf-b-aura'), 80), exilus = cleanText(v('wf-b-exilus'), 80), arcane = cleanText(v('wf-b-arcane'), 80), arcane2 = cleanText(v('wf-b-arcane2'), 80);
+      return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem'), 60), config: cleanText(v('wf-bconfig'), 20),
+        aura, auraRank: aura ? rk('wf-b-aura') : null, exilus, exilusRank: exilus ? rk('wf-b-exilus') : null,
+        arcane, arcaneRank: arcane ? rk('wf-b-arcane') : null, arcane2, arcane2Rank: arcane2 ? rk('wf-b-arcane2') : null,
+        mods, ranks, notes: String(v('wf-bnotes') || '').trim().slice(0, NOTES_MAX) };
     }
     /* Draw the slot dropdowns for the chosen category, keeping any choice that is still on offer. */
     function drawSlots(vals, keepUnknown) {
       const box = $('wf-bslots'); box.textContent = '';
       const c = catOf($('wf-bcat').value) || BUILD_CATS[0], pools = buildPools(c.id);
       const grid = el('div', 'slotgrid');
-      const add = (id, label, pool, value, other) => {
-        const f = el('label', 'field'); f.appendChild(el('span', null, label));
-        const sel = document.createElement('select'); sel.id = id;
+      /* One slot: the mod (or arcane) dropdown and, beside it, a rank dropdown that follows the choice. */
+      const add = (id, label, pool, value, other, rank, arc) => {
+        const f = el('div', 'field pick'); f.appendChild(el('span', null, label));
+        const sel = document.createElement('select'); sel.id = id; sel.setAttribute('aria-label', label);
         fillSlot(sel, pool, value, other, keepUnknown);
-        f.appendChild(sel); grid.appendChild(f);
+        const rs = document.createElement('select'); rs.id = id + '-r'; rs.className = 'rk'; rs.setAttribute('aria-label', label + ' rank');
+        const top = () => (arc ? (sel.value ? ARC_MAX : null) : modMax(sel.value));
+        fillRank(rs, top(), rank == null ? null : rank, arc);
+        sel.addEventListener('change', () => fillRank(rs, top(), undefined, arc));
+        f.appendChild(sel); f.appendChild(rs); grid.appendChild(f);
       };
-      if (c.aura && pools.aura.length) add('wf-b-aura', c.aura, pools.aura, vals.aura, 'Not on either list');
-      if (pools.exilus.length) add('wf-b-exilus', 'Exilus', pools.exilus, vals.exilus, 'Not on either list');
-      for (let i = 0; i < BUILD_SLOTS; i++) add('wf-b-m' + i, 'Mod ' + (i + 1), pools.general, vals.mods[i], 'Not on either list');
-      if (pools.arcane.length) add('wf-b-arcane', 'Arcane (adapter)', pools.arcane, vals.arcane, 'All arcanes');
+      const ranks = vals.ranks || [];
+      if (c.aura && pools.aura.length) add('wf-b-aura', c.aura, pools.aura, vals.aura, 'Not on either list', vals.auraRank);
+      if (pools.exilus.length) add('wf-b-exilus', 'Exilus', pools.exilus, vals.exilus, 'Not on either list', vals.exilusRank);
+      for (let i = 0; i < BUILD_SLOTS; i++) add('wf-b-m' + i, 'Mod ' + (i + 1), pools.general, vals.mods[i], 'Not on either list', ranks[i]);
+      pools.arcanes.forEach((a, i) => { if (a.pool.length) add(i ? 'wf-b-arcane2' : 'wf-b-arcane', a.label, a.pool, i ? vals.arcane2 : vals.arcane, 'All arcanes', i ? vals.arcane2Rank : vals.arcaneRank, true); });
       box.appendChild(grid);
     }
     function resetBuildDelete() { clearTimeout(bDelTimer); $('wf-bdel').textContent = 'Delete'; $('wf-bdel').dataset.armed = ''; }
@@ -1290,8 +1335,12 @@
       sel.value = b ? b.cat : 'warframe';
       $('wf-bname').value = b ? b.name : '';
       $('wf-bitem').value = b ? b.item : '';
+      const cf = $('wf-bconfig'), cv = b ? b.config : '';
+      cf.textContent = ''; cf.appendChild(new Option('— not set —', ''));
+      CONFIGS.concat(cv && !CONFIGS.includes(cv) ? [cv] : []).forEach((x) => cf.appendChild(new Option(x, x)));
+      cf.value = cv;
       $('wf-bnotes').value = b ? b.notes : '';
-      drawSlots(b || { aura: '', exilus: '', arcane: '', mods: [] }, true);
+      drawSlots(b || { aura: '', exilus: '', arcane: '', arcane2: '', mods: [], ranks: [] }, true);
       const dlg = $('wf-bdlg');
       if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
     }
@@ -1316,9 +1365,11 @@
         if (seen[low]) return err(slot + ' is the same mod as ' + seen[low] + '. A build cannot use one mod twice.');
         seen[low] = slot;
       }
+      if (f.arcane && f.arcane.toLowerCase() === f.arcane2.toLowerCase()) return err('Arcane 1 and Arcane 2 are the same arcane. A build cannot use one arcane twice.');
       const id = bEditing ? bEditing.id : newBuildId();
       const was = S.custom[id];
-      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, aura: f.aura, exilus: f.exilus, arcane: f.arcane, mods: f.mods, notes: f.notes,
+      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, config: f.config, aura: f.aura, auraRank: f.auraRank, exilus: f.exilus, exilusRank: f.exilusRank,
+        arcane: f.arcane, arcaneRank: f.arcaneRank, arcane2: f.arcane2, arcane2Rank: f.arcane2Rank, mods: f.mods, ranks: f.ranks, notes: f.notes,
         at: (was && Number(was.at)) || Date.now() };
       const wasEditing = !!bEditing;
       S.custom[id] = val; renderBuilds(); closeBuildDialog();
@@ -1332,10 +1383,14 @@
     }
     async function removeBuild() {
       if (!bEditing || !S.owner || !S.sync) return;
-      const id = bEditing.id, was = S.custom[id];
-      delete S.custom[id]; renderBuilds(); closeBuildDialog();
-      try { await S.sync.remove(id); flash('Build deleted.'); }
-      catch (e) { if (was) S.custom[id] = was; renderBuilds(); writeFailed(e); }
+      const id = bEditing.id, was = S.custom[id], seed = !!bEditing.seed;
+      /* A build that ships in warframe-data.json cannot be removed from the file by the page, so deleting it saves a "hidden" marker. */
+      if (seed) S.custom[id] = { kind: 'build', hidden: true, at: Date.now() }; else delete S.custom[id];
+      renderBuilds(); closeBuildDialog();
+      try {
+        if (seed) await S.sync.write({ ['custom.' + id]: S.custom[id] }, { done: S.done, runs: S.tokens, custom: S.custom }); else await S.sync.remove(id);
+        flash('Build deleted.');
+      } catch (e) { if (was) S.custom[id] = was; else delete S.custom[id]; renderBuilds(); writeFailed(e); }
     }
     function initBuildDialog() {
       $('wf-bcat').addEventListener('change', () => { const keep = readBuildForm(); drawSlots(keep); });
@@ -1347,26 +1402,45 @@
         bDelTimer = setTimeout(resetBuildDelete, 4000);
       });
     }
+    /* One saved build, cleaned up for display (null when it is not a usable build or was deleted). */
+    function cleanBuild(id, v) {
+      if (!ID_RE.test(id) || !v || typeof v !== 'object' || v.kind !== 'build' || v.hidden) return null;
+      const c = catOf(v.cat), name = cleanText(v.name, 60);
+      if (!c || !name) return null;
+      const mods = Array.isArray(v.mods) ? v.mods.slice(0, BUILD_SLOTS).map((x) => cleanText(x, 80)) : [];
+      while (mods.length < BUILD_SLOTS) mods.push('');
+      const ranks = mods.map((n, i) => (n && Array.isArray(v.ranks) ? rankOf(v.ranks[i]) : null));
+      const t = (x) => cleanText(x, 80), aura = t(v.aura), exilus = t(v.exilus), arcane = t(v.arcane), arcane2 = t(v.arcane2);
+      return { id, name, cat: c.id, item: cleanText(v.item, 60), config: cleanText(v.config, 20),
+        aura, auraRank: aura ? rankOf(v.auraRank) : null, exilus, exilusRank: exilus ? rankOf(v.exilusRank) : null,
+        arcane, arcaneRank: arcane ? rankOf(v.arcaneRank) : null, arcane2, arcane2Rank: arcane2 ? rankOf(v.arcane2Rank) : null,
+        mods, ranks, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, NOTES_MAX), at: Number(v.at) || 0 };
+    }
+    const fileBuilds = () => (S.data && Array.isArray(S.data.builds) ? S.data.builds : []);
     /* The builds you added, oldest first, cleaned up for display. */
     function userBuilds() {
-      const out = [];
-      Object.keys(S.custom).forEach((id) => {
-        if (!ID_RE.test(id)) return;
-        const v = S.custom[id];
-        if (!v || typeof v !== 'object' || v.kind !== 'build') return;
-        const c = catOf(v.cat), name = cleanText(v.name, 60);
-        if (!c || !name) return;
-        const mods = Array.isArray(v.mods) ? v.mods.slice(0, BUILD_SLOTS).map((x) => cleanText(x, 80)) : [];
-        while (mods.length < BUILD_SLOTS) mods.push('');
-        out.push({ id, name, cat: c.id, item: cleanText(v.item, 60), aura: cleanText(v.aura, 80), exilus: cleanText(v.exilus, 80), arcane: cleanText(v.arcane, 80),
-          mods, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, 300), at: Number(v.at) || 0 });
-      });
+      const skip = new Set(fileBuilds().map((s) => s.id)), out = [];
+      Object.keys(S.custom).forEach((id) => { if (skip.has(id)) return; const b = cleanBuild(id, S.custom[id]); if (b) out.push(b); });
       out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+    /* The builds that come with the page (warframe-data.json `builds`, each with a `form` in the same shape as a saved build, plus
+       the extras the form cannot hold: stats, what was learned, next step). Once you save one, custom.<id> wins over the file. */
+    function seedBuilds() {
+      const out = [];
+      fileBuilds().forEach((s) => {
+        const ov = S.custom[s.id], saved = ov && typeof ov === 'object' && ov.kind === 'build' ? ov : null;
+        if (saved && saved.hidden) return;                       // deleted on this page
+        const b = (saved && cleanBuild(s.id, saved)) || cleanBuild(s.id, Object.assign({ kind: 'build', name: s.name }, s.form));
+        if (b) { b.seed = s; out.push(b); }
+      });
       return out;
     }
     function ownBuildCard(b, have) {
       const c = el('div', 'wfcard build mine'); c.dataset.build = b.id;
+      const s = b.seed;
       c.appendChild(el('span', 'pill', catOf(b.cat).label));
+      if (s && s.status) c.appendChild(el('span', 'pill', s.status));
       const head = el('div', 'cardhead');
       head.appendChild(el('h2', null, b.name));
       const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + b.name);
@@ -1374,29 +1448,37 @@
       ed.onclick = () => openBuildDialog(b);
       head.appendChild(ed);
       c.appendChild(head);
-      if (b.item) c.appendChild(el('p', 'meta', b.item));
-      const chip = (name) => {
-        const keys = MS.byName[name.toLowerCase()];
+      const meta = [b.item, b.config].filter(Boolean).join(' · ');
+      if (meta) c.appendChild(el('p', 'meta', meta));
+      if (s && s.goal) c.appendChild(el('p', 'meta', s.goal));
+      /* A mod chip: tap it for the View mod screen, opened at the rank the build uses. */
+      const chip = (name, rank) => {
+        const keys = MS.byName[name.toLowerCase()], mx = modMax(name), isMax = rank != null && mx != null && rank === mx;
         const state = have && keys ? (keys.some((k) => have.own.has(k)) ? 'own' : keys.some((k) => have.miss.has(k)) ? 'miss' : null) : null;
-        const ch = el(keys ? 'button' : 'span', 'chip' + (state === 'miss' ? ' miss' : '') + (keys ? ' tap' : ''));
+        const ch = el(keys ? 'button' : 'span', 'chip' + (isMax ? ' max' : '') + (state === 'miss' ? ' miss' : '') + (keys ? ' tap' : ''));
         if (keys) {
           ch.type = 'button'; ch.dataset.mod = name; ch.setAttribute('aria-haspopup', 'dialog');
-          ch.addEventListener('click', () => openMod({ keys, view: 'build', miss: [], build: b.name }, { name, count: null, rank: null, max: false, note: '', tags: [] }));
+          ch.addEventListener('click', () => openMod({ keys, view: 'build', miss: [], build: b.name, rank: rank == null ? undefined : rank }, { name, count: null, rank: null, max: isMax, note: '', tags: [] }));
         }
         if (state === 'miss') ch.title = 'On your Missing list';
         ch.appendChild(document.createTextNode(name));
+        if (rank != null) ch.appendChild(el('span', 'n', 'r' + rank + (mx ? '/' + mx : '')));
         return ch;
       };
-      const line = (label, names, arcane) => {
+      const line = (label, items, arcane) => {
         const row = el('div', 'slotline'); row.appendChild(el('b', null, label));
-        names.forEach((n) => row.appendChild(arcane ? el('span', 'chip', n) : chip(n)));
+        items.forEach(([n, r]) => {
+          if (!arcane) { row.appendChild(chip(n, r)); return; }
+          const ch = el('span', 'chip', n); if (r != null) ch.appendChild(el('span', 'n', 'r' + r)); row.appendChild(ch);
+        });
         c.appendChild(row);
       };
-      const mods = b.mods.filter(Boolean);
-      if (b.aura) line(b.cat === 'melee' ? 'Stance' : 'Aura', [b.aura]);
-      if (b.exilus) line('Exilus', [b.exilus]);
-      if (mods.length) { c.appendChild(el('p', 'label', 'Mods ' + mods.length + ' of ' + BUILD_SLOTS)); const r = el('div', 'modrow'); mods.forEach((n) => r.appendChild(chip(n))); c.appendChild(r); }
-      if (b.arcane) line('Arcane', [b.arcane], true);
+      const mods = b.mods.map((n, i) => [n, b.ranks[i]]).filter((x) => x[0]);
+      if (b.aura) line(b.cat === 'melee' ? 'Stance' : 'Aura', [[b.aura, b.auraRank]]);
+      if (b.exilus) line('Exilus', [[b.exilus, b.exilusRank]]);
+      if (mods.length) { c.appendChild(el('p', 'label', 'Mods ' + mods.length)); const r = el('div', 'modrow'); mods.forEach((m) => r.appendChild(chip(m[0], m[1]))); c.appendChild(r); }
+      const arcs = [[b.arcane, b.arcaneRank], [b.arcane2, b.arcane2Rank]].filter((a) => a[0]);
+      if (arcs.length) line(arcs.length > 1 ? 'Arcanes' : 'Arcane', arcs, true);
       if (have) {
         const names = [b.aura, b.exilus].concat(b.mods).filter(Boolean);
         let own = 0, miss = 0;
@@ -1404,6 +1486,21 @@
         c.appendChild(el('p', 'muted', 'On your lists: ' + own + ' owned, ' + miss + ' missing' + (names.length - own - miss ? ', ' + (names.length - own - miss) + ' on neither.' : '.')));
       }
       if (b.notes) { c.appendChild(el('p', 'label', 'Notes')); c.appendChild(el('p', 'muted notetext', b.notes)); }
+      if (s) {                                                   // what a saved build cannot hold: kept in warframe-data.json
+        if (s.stats) {
+          c.appendChild(el('p', 'label', 'Stats'));
+          const g = el('div', 'stats');
+          s.stats.forEach((st) => { const x = el('div', 'stat'); x.appendChild(el('div', 'k', st[0])); x.appendChild(el('div', 'v', st[1])); g.appendChild(x); });
+          c.appendChild(g);
+          if (s.statsNote) c.appendChild(el('p', 'fine', s.statsNote));
+        }
+        if (s.slots) { c.appendChild(el('p', 'label', 'Slot polarities')); c.appendChild(el('p', 'muted', s.slots)); }
+        if (s.notes) {
+          c.appendChild(el('p', 'label', 'What we learned'));
+          const ul = el('ul', 'blist'); s.notes.forEach((n) => ul.appendChild(el('li', null, n))); c.appendChild(ul);
+        }
+        if (s.next) { c.appendChild(el('p', 'label', 'Next')); c.appendChild(el('p', 'muted', s.next)); }
+      }
       return c;
     }
 
@@ -1507,50 +1604,7 @@
       addBtn.onclick = () => openBuildDialog(null);
       addRow.appendChild(addBtn); p.appendChild(addRow);
       const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
-      userBuilds().forEach((b) => p.appendChild(ownBuildCard(b, have)));
-      S.data.builds.forEach((b) => {
-        const c = el('div', 'wfcard build');
-        c.appendChild(el('span', 'pill', b.status));
-        c.appendChild(el('h2', null, b.name));
-        c.appendChild(el('p', 'meta', b.config + ' · ' + b.goal));
-        if (b.stats) {
-          const g = el('div', 'stats');
-          b.stats.forEach((s) => {
-            const x = el('div', 'stat'); x.appendChild(el('div', 'k', s[0])); x.appendChild(el('div', 'v', s[1])); g.appendChild(x);
-          });
-          c.appendChild(g);
-          if (b.statsNote) c.appendChild(el('p', 'fine', b.statsNote));
-        }
-        if (b.mods) {
-          c.appendChild(el('p', 'label', 'Mods'));
-          const r = el('div', 'modrow');
-          b.mods.forEach((m) => {
-            const keys = statKeys('builds', m[0]);
-            const ch = el(keys ? 'button' : 'span', 'chip' + (m[2] === 'max' ? ' max' : '') + (m[1] === 'out' ? ' out' : '') + (keys ? ' tap' : ''));
-            if (keys) {
-              ch.type = 'button'; ch.dataset.mod = m[0]; ch.setAttribute('aria-haspopup', 'dialog');
-              ch.addEventListener('click', () => openMod({ keys, view: 'build', miss: missFor('builds', m[0]), build: b.name }, { name: m[0], count: null, rank: null, max: m[2] === 'max', note: '', tags: [] }));
-            }
-            ch.appendChild(document.createTextNode(m[0]));
-            if (m[2] && m[2] !== 'max') ch.appendChild(el('span', 'nt', m[2]));
-            if (m[1] === 'out') ch.appendChild(el('span', 'nt', 'out for now'));
-            r.appendChild(ch);
-          });
-          c.appendChild(r);
-        }
-        if (b.slots) { c.appendChild(el('p', 'label', 'Slot polarities')); c.appendChild(el('p', 'muted', b.slots)); }
-        if (b.notes) {
-          c.appendChild(el('p', 'label', 'What we learned'));
-          const ul = el('ul', 'blist'); b.notes.forEach((n) => ul.appendChild(el('li', null, n))); c.appendChild(ul);
-        }
-        if (b.next) { c.appendChild(el('p', 'label', 'Next')); c.appendChild(el('p', 'muted', b.next)); }
-        if (b.lists) {
-          const dl = el('dl', 'kv');
-          b.lists.forEach((l) => { dl.appendChild(el('dt', null, l[0])); dl.appendChild(el('dd', null, l[1])); });
-          c.appendChild(dl);
-        }
-        p.appendChild(c);
-      });
+      userBuilds().concat(seedBuilds()).forEach((b) => p.appendChild(ownBuildCard(b, have)));
     }
 
     /* ---------- theme tab ---------- */

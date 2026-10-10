@@ -398,7 +398,7 @@ and **Theme**.
     index: { "<groupId>|<chip name>": [mod keys] },
     partial: { "<groupId>|<chip name>": [names the database lacks] },
     arcanes: { Warframe: [names], Primary: [...], Secondary: [...], Melee: [...] } }`. `arcanes` feeds the Add build
-    form's arcane (adapter) dropdown; refresh it with `--arcanes <folder>/Arcanes.json` (same repo as Mods.json),
+    form's arcane dropdowns; refresh it with `--arcanes <folder>/Arcanes.json` (same repo as Mods.json),
     otherwise the generator keeps the ones already in the file. The chip name is
     what `parseChip()` returns; builds use group id `builds`.
   - **It is generated, not hand-edited:** `python3 tools/build-mod-stats.py --items <Mods.json>`
@@ -529,25 +529,59 @@ and **Theme**.
   `warframe-mod-stats.json` has loaded) opens a form (`#wf-bdlg`): build name, what it is for (Warframe,
   Primary, Secondary, Melee, Archwing, Arch-Gun, Arch-Melee, Companion, Necramech; `BUILD_CATS` in
   `warframe.html`), an optional item name, **10 mod dropdowns** (`wf-b-m0`..`wf-b-m9`), an **Aura** dropdown
-  (a **Stance** one for melee), an **Exilus** dropdown (only mods flagged `ex` or `ut`, so it is hidden for
-  categories that have none) and an **Arcane (adapter)** dropdown (Warframe, Primary, Secondary and Melee
-  only), plus notes. I read "adapter" as the arcane slot a weapon gets from an Arcane Adapter; say so if CB
-  meant something else. Each dropdown offers that category's mods from `warframe-mod-stats.json`, grouped
+  (a **Stance** one for melee), an **Exilus** dropdown (only mods flagged `ex` or `ut`; shown for a Warframe and
+  for Primary, Secondary and Melee weapons, the ones that take an Exilus adapter, hidden for the rest) and the
+  **arcane dropdowns** (`arcaneSlots` in `BUILD_CATS`; "adapter" in CB's first message was read as the arcane
+  slot a weapon gets from an Arcane Adapter). **CB, 2026-10-10: "the 2 arcanes for warframes, the one for the
+  weapons"**, so a Warframe has **Arcane 1 and Arcane 2** (`wf-b-arcane`, `wf-b-arcane2`, both the Warframe
+  arcanes, and the same arcane cannot be in both), Primary, Secondary and Melee have one **Arcane**, and an
+  **Arch-Gun** has two (the wiki: the top slot takes a Primary arcane, the bottom a Secondary one). Archwing,
+  Arch-Melee, Companion and Necramech have none (the wiki says robotic companions cannot equip arcanes), plus
+  notes. The Exilus lists were checked against the wiki's Exilus Mods category on 2026-10-10: nothing the wiki
+  lists was missing, and the only extras are five the database flags (Hushed Invisibility, Intruder, Shock
+  Absorbers, Overview, Primed Shotgun Ammo Mutation). Each dropdown offers that category's mods from `warframe-mod-stats.json`, grouped
   "You own" / "You are missing" / "Not on either list" (so a mod that is on neither of the lists can still be
   picked), A to Z, each name once. A build cannot use one mod twice (the form says which slots clash). Changing
   the category keeps the choices that still fit and clears the rest.
   - **Storage, no rule change:** each build is `warframe/progress.custom.<id>` with `kind: 'build'` (id
-    `b` + time + random), value `{ kind, name, cat, item, aura, exilus, arcane, mods: [10 names, '' for an empty
-    slot], notes, at }`. It shares the `custom` map with the added goals, so `customTasks()` skips anything with
+    `b` + time + random), value `{ kind, name, cat, item, config, aura, auraRank, exilus, exilusRank, arcane, arcaneRank,
+    arcane2, arcane2Rank, mods: [10 names, '' for an empty slot], ranks: [10 ranks, null when not known], notes, at }`
+    (`arcane2` is the second Warframe or Arch-Gun arcane; builds saved before it existed just have `arcane`; builds
+    saved before ranks and config existed have none of the new keys and load as "Rank ?"). `cleanBuild()` is the one
+    place that reads a saved build. It shares the `custom` map with the added goals, so `customTasks()` skips anything with
     `kind === 'build'` and the goal list never shows them; `userBuilds()` reads the other way. The rule's
     `custom.size() <= 200` limit is shared. Mods are saved by **name**, not by `m123` key (the keys change every
     time the generator runs); an edit keeps a saved mod the list no longer has, labelled "(not in the list now)".
-  - **Cards** (`.build.mine`, oldest first, above the hand-kept builds in `warframe-data.json`): category pill,
-    name, Edit button, item, aura/stance, Exilus, the mods (tap one for the View mod screen; dashed = on your Missing list),
-    the arcane, "On your lists" counts and the notes. Edit has a two-tap Delete like the goal form. Writes are
-    optimistic and roll back with the usual "server refused" message. `renderLive()` now also redraws the builds,
-    so a change from another device shows up.
-  - No rank pickers yet: the View mod screen opens each mod at its max rank.
+  - **Cards** (`.build.mine`, `data-build` = id; the builds you added oldest first, then the ones that come with
+    the page): category pill, name, Edit button, item and config, aura/stance, Exilus, the mods (tap one for the View
+    mod screen; dashed = on your Missing list), the arcanes, "On your lists" counts and the notes. Edit has a
+    two-tap Delete like the goal form. Writes are optimistic and roll back with the usual "server refused" message.
+    `renderLive()` also redraws the builds, so a change from another device shows up.
+  - **Ranks and config (added 2026-10-10; CB: "make my builds editable"):** every slot (aura/stance, Exilus, the
+    10 mods, the arcanes) has a small **rank dropdown** on the label row (`wf-b-m0-r` etc., class `rk`): "Rank ?"
+    (not known, saved as `null`), then 0 to the mod's max rank (`modMax(name)`, the biggest `m` among the mods of
+    that name in `warframe-mod-stats.json`; an arcane offers 0 to 5, since most arcanes stop there). A newly
+    picked mod starts at its **max rank**, an arcane on "Rank ?"; a build saved with no rank stays unknown until
+    CB changes it (saving never turns "?" into max). A slot with no mod has no rank dropdown. **Config** is a
+    dropdown (not set, Config A, B, C; an older free-text value stays on offer). The card shows `r7/10` on each
+    chip (`max` styling at the top rank) and tapping a chip opens the View mod screen **at that rank**, with an
+    "In your build" box saying so. Notes now hold up to 500 characters.
+  - **The hand-kept builds are editable too (Burston Prime, Cyte-09 Config A, Config B).** In `warframe-data.json`
+    each entry of `builds[]` is `{ id, name, goal?, status?, form: { cat, item, config, aura, auraRank?, exilus,
+    mods: [10 names], ranks: [10 ranks or null], arcane?, arcaneRank?, arcane2?, arcane2Rank?, notes }, stats?,
+    statsNote?, slots?, notes? (the "What we learned" bullets), next? }`. `form` has the same shape as a saved
+    build; the rest are extras the form cannot hold and are always shown under the card (they are not editable on
+    the page). `seedBuilds()` draws them: if `custom.<id>` holds a saved build it **wins over `form`** (the first
+    Edit + Save writes it), otherwise `form` is shown. **Delete** on one writes `custom.<id> = { kind: 'build',
+    hidden: true }` (the page cannot edit the file) and the card disappears; the same id can never be re-added
+    from the page, so to bring one back Claude changes the id in the JSON. Anything already saved under a seed id
+    is skipped by `userBuilds()`. **To add a build to the file:** write its `form` (mods in slot order, `null` for a
+    rank not known, ranks read from the in-game pips and drain as in the Cyte-09 reading) and give it a short
+    unique `id` (letters, digits, `-`, `_`); `tools/build-mod-stats.py` reads `form` (aura, exilus, mods) as well as
+    the old `mods` so the chips are tappable, so **re-run it** and commit the regenerated stats. Config A is
+    `cyte-a`, read from the game on 2026-10-10 (Worthy Comradery r5, Energy Nexus r2, Equilibrium r7, Narrow Minded
+    r10, Fast Deflection r5, Transient Fortitude r8, Archon Continuity r10, Adaptation r6, Blind Rage r5; the
+    Exilus slot is locked; capacity 1 of 74 left).
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
   theme: {...}, custom: {goalId: {name, qty, plat, at}, tokenlog: {e: {key: {n, at}}} (the token history), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only

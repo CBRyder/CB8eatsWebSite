@@ -491,7 +491,22 @@ and **Theme**.
     `wrangler.jsonc`'s `run_worker_first`; the worker 404s it on every host except the dev one.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
-- **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,
+- **Mother Token counter (changed 2026-10-10; CB: "3 tiers ... 10, 15, 20" and "a custom amount"):** the
+  Goals tab's top card counts **tokens**, not runs. Three buttons add a Tier 1 / 2 / 3 Isolation Vault
+  (`farm.tiers` in `warframe-data.json`: `{id, label, tokens}` = 10, 15, 20) plus `farm.vaultBonus` (7) when
+  the "I opened the vault" box is ticked (saved per device in the localStorage `ui` entry as `bonus`, on by
+  default). So a Tier 3 run is 27, which is what the old `perRun: 27` was. **The 7 bonus is CB's guess** ("idk
+  that tho"; the wiki's Isolation Vault page says opening the vault gives an extra drop-table reward, not a
+  token count), so the page says so. A fourth button, **Custom**, opens a number box beside Add / Cancel: a
+  whole number adds, a minus takes off (spending at the shop), and the total never goes below 0. **Undo**
+  reverses the last add (in memory only). The old `perRun`, `runsNeeded` and `runLabel` fields are gone from
+  the JSON; `target`, `picks`, `pickCosts` and `shopRefresh` stay and are still edited by hand.
+  **Storage trick:** the total is saved in the existing Firestore field `runs` (an int, written with
+  `updateDoc({runs: n})`), so **no Firestore rule change is needed**. It held a run count (it was 0 when this
+  shipped, so nothing was converted); in the code it is `S.tokens`. Do not add a separate `tokens` field
+  without asking CB to republish the rule with it in `hasOnly`. A page cached from before this change would
+  read the token total as a run count until it reloads.
+- **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
   theme: {...}, custom: {goalId: {name, qty, plat, at}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page

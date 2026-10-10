@@ -549,7 +549,7 @@ and **Theme**.
     so a change from another device shows up.
   - No rank pickers yet: the View mod screen opens each mod at its max rank.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
-  theme: {...}, custom: {goalId: {name, qty, plat, at}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  theme: {...}, custom: {goalId: {name, qty, plat, at}, tokenlog: {e: {key: {n, at}}} (the token history), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace

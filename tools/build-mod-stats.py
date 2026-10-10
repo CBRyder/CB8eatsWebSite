@@ -10,10 +10,16 @@ data/json/Mods.json, or https://github.com/WFCD/warframe-items). The script read
 mod name on the Mods tab (owned and missing groups) and the mods in the saved builds,
 finds each one in that database, and writes a compact file with the stats at every rank.
 
+It also reads the community tally (tools/mod-usage.json, see tools/mod_usage.py) and writes how many
+different players use each mod into the mod's `u` field, so the Mods tab can offer "Most used by the
+Community". Run this again after tallying more builds.
+
 Output shape (see CLAUDE.md, "View mod screen"):
-  { built, source, mods: { "<key>": { n, p, r, d, m, c, t, l, xr, ds, set, sp, tr, ex, intro, w, img } },
+  { built, source, usage: { players, builds, min, label, updated },
+    mods: { "<key>": { n, p, r, d, m, c, t, l, xr, ds, set, sp, tr, ex, intro, w, img, u } },
     index: { "<groupId>|<chip name>": ["<key>", ...] },
     partial: { "<groupId>|<chip name>": ["<name not found>", ...] } }
+`u` is [different players using the mod, builds using it]; a mod nobody in the tally uses has no `u`.
 A chip that stands for a whole family (for example "Bane of Corpus/Grineer/Infested") points
 at several keys; `partial` lists the family members the database does not have. Chips with no match are simply not in `index`, and the page leaves them
 as plain, untappable chips.
@@ -21,16 +27,23 @@ as plain, untappable chips.
 The script prints every chip it could not match and every pick that was a judgement call,
 so look at that list after a run.
 """
-import argparse, collections, datetime, json, re, sys
+import argparse, collections, datetime, json, os, re, sys
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mod_usage
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--items', required=True, help='path to warframe-items Mods.json')
 ap.add_argument('--data', default='warframe-data.json')
 ap.add_argument('--out', default='warframe-mod-stats.json')
+ap.add_argument('--usage', default=mod_usage.DEFAULT_PATH, help='the community tally')
 args = ap.parse_args()
 
 mods = json.load(open(args.items, encoding='utf-8'))
 data = json.load(open(args.data, encoding='utf-8'))
+usage = mod_usage.load(args.usage)
+players_total, builds_total, per_mod = mod_usage.counts(usage)
 
 # --- which kinds of mod a group of chips is most likely to hold (used to break ties) ---
 WARFRAME = ['Warframe Mod']
@@ -175,6 +188,9 @@ def record(m):
         partners = sorted(set(sets[m['modSet']]) - {m['name']})
         if partners:
             rec['sp'] = partners
+    use = per_mod.get(m['name'].lower())
+    if use:
+        rec['u'] = [use['players'], use['builds']]
     if m.get('tradable') is not None:
         rec['tr'] = bool(m['tradable'])
     if m.get('isExilus'):
@@ -220,8 +236,11 @@ for b in data.get('builds', []):
     for md in b.get('mods', []):
         add('builds', md[0])
 
+need = mod_usage.min_players(players_total)
 out = {'built': datetime.date.today().isoformat(),
        'source': 'WFCD warframe-items Mods.json',
+       'usage': {'players': players_total, 'builds': builds_total, 'min': need,
+                 'label': "Overframe's top builds", 'updated': usage.get('updated')},
        'mods': store, 'index': index, 'partial': partial}
 with open(args.out, 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
@@ -236,3 +255,17 @@ for k, v in partial.items():
 print('JUDGEMENT CALLS (%d):' % len(calls))
 for c in calls:
     print('  ' + c)
+
+# --- the community tally against the lists on the page ---
+on_page = {rec['n'].lower() for rec in store.values()}
+popular = sorted((e for e in per_mod.values() if e['players'] >= need), key=lambda e: (-e['players'], e['name']))
+shown = [e for e in popular if e['name'].lower() in on_page]
+elsewhere = [e for e in popular if e['name'].lower() not in on_page]
+db_names = set(by_name)
+print('COMMUNITY: %d builds by %d players; "most used" needs %d players; %d mods reach it, %d of them on the page lists.'
+      % (builds_total, players_total, need, len(popular), len(shown)))
+print('MOST USED BUT ON NEITHER LIST (%d):' % len(elsewhere))
+for e in elsewhere:
+    print('  %3d players  %3d builds  %s%s' % (e['players'], e['builds'], e['name'], '' if e['name'].lower() in db_names else '   (not in the database)'))
+print('TALLY NAMES THE DATABASE DOES NOT HAVE (%d): %s' % (
+    sum(1 for n in per_mod if n not in db_names), ', '.join(sorted(e['name'] for n, e in per_mod.items() if n not in db_names))))

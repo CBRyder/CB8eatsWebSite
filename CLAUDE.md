@@ -390,10 +390,12 @@ and **Theme**.
   opens a screen with one button per member. Chips with no match stay plain text.
   - **Data:** `warframe-mod-stats.json`, fetched with `cache: 'no-store'` *after* the main data
     (`loadModStats()`); if it fails the chips stay plain and the page logs one `console.warn`.
-    Shape: `{ built, source, mods: { m0: { n name, p polarity, r rarity, d baseDrain, m max rank,
+    Shape: `{ built, source, usage: { players, builds, min, label, updated }, mods: { m0: { n name,
+    p polarity, r rarity, d baseDrain, m max rank,
     c compat, t type, l [[stat lines] per rank 0..m], xr extra ranks the database lists beyond
     max (some Railjack mods), ds description, set, sp set partners, tr tradable, ex exilus,
-    intro, w wiki url, img picture file } }, index: { "<groupId>|<chip name>": [mod keys] },
+    intro, w wiki url, img picture file, u [different players, builds] from the community tally } },
+    index: { "<groupId>|<chip name>": [mod keys] },
     partial: { "<groupId>|<chip name>": [names the database lacks] } }`. The chip name is
     what `parseChip()` returns; builds use group id `builds`.
   - **It is generated, not hand-edited:** `python3 tools/build-mod-stats.py --items <Mods.json>`
@@ -410,6 +412,46 @@ and **Theme**.
     The sandbox cannot reach jsDelivr (use `raw.githubusercontent.com` there).
   - The data file is one of the dev-only data files (see the Dev hub section), so it is in
     `DEV_DATA` in `worker.js` and in `wrangler.jsonc`'s `run_worker_first`.
+- **"Most used by the Community" filter (added 2026-10-09):** a button on the Mods tab (`#mf-comm`),
+  in both the Owned and the Missing view, that keeps only the mods enough *different players* use
+  and puts the most used first, with the number on each chip (`c.used`, "24 players"). It works
+  together with Buy with plat. `ui.community` (true/false) is saved in the same localStorage entry
+  as the other filters; if `warframe-mod-stats.json` has no `usage` (file missing or old) the button
+  is greyed out and nothing is filtered. A family chip uses its most used member's number. The View
+  mod screen also gets a "Community use" box ("N different players use this mod, in M builds").
+  - **How it is counted (CB's rule: count how many different people use the same mod, don't rely on
+    another site's number):** `tools/mod-usage.json` is **our own tally**, one record per build that
+    has been read, keyed `<source>:<id>` (so a build is never counted twice) with the player who made it
+    (`by`), a category and the mods. A mod's popularity is the number of **different players** (`by`,
+    ignoring case) whose builds use it, so one player posting dozens of near-identical builds counts
+    once; the number of builds is kept alongside. "Most used" means at least `min_players()` players:
+    3% of all players counted, never fewer than 3 (5 with the first 160 players). The tally is seeded
+    (2026-10-09) with Overframe's top 100 builds in each of its six categories: 600 builds by 160
+    players (one player alone made 201 of them, which is exactly why players are counted, not
+    builds). The sample is the highest-rated builds, so it leans towards older, popular items, and
+    the names are matched to the database by name (628 of 634 match; the rest are augment or
+    Railjack variants).
+  - **STANDING RULE (CB, 2026-10-09): any time you read a build, tally it.** That means a build from
+    Overframe or anywhere else, or one of CB's own in-game builds (read it off the screen, `--source
+    ingame`). One command per build, then regenerate and commit both files:
+    `python3 tools/mod_usage.py add --source overframe --id <id> --by <player> --cat <category>
+    --mods "A, B, C"` (add `--items <Mods.json>` to catch misspelt names; it refuses a build that is
+    already in the tally), then `python3 tools/build-mod-stats.py --items <Mods.json>`.
+    `python3 tools/mod_usage.py report` prints the totals, the top mods and which players made the
+    most builds. Never edit counts by hand.
+  - **How the seed was read (Overframe is client-rendered, so a plain fetch gets nothing):** in the
+    built-in browser on `overframe.gg`, `GET /api/v1/builds/<id>/` (same origin) returns `author.username`,
+    `title`, `item`, `score`, `formas`, `item_rank` and `slots[]` (`slot_id`, `mod`, `rank`); the top 100
+    build ids per category are the `a[href*="/build/<id>/"]` links on `/builds/<category>/`
+    (`warframes`, `primary-weapons`, `secondary-weapons`, `melee-weapons`, `archwing`, `sentinels`).
+    Overframe mod ids have no name in the API: the names come from the rendered item list at
+    `/items/mods/?page=N-0`, and a few ids missing from it were read off the build page. Slots whose id is
+    an arcane are left out of the tally.
+  - The generator prints the popular mods that are on **neither** the Owned nor the Missing list
+    (29 in the first run, e.g. Gladiator Might, Venomous Clip, Hunter Munitions): the filter can only
+    show mods the lists contain, so tell CB when that list is long.
+  - `tools/` is in `.assetsignore`, so the scripts and the tally (other players' usernames) are not
+    published with the site.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,

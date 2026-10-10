@@ -1,7 +1,7 @@
 {
  "updated": "2026-10-10",
  "updatedLabel": "10 Oct 2026",
- "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. Builds and the farm list are kept by hand.",
+ "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. The same day CB's Cyte-09 Config A showed Narrow Minded owned at max (moved from Missing to Owned) and an Energy Nexus at rank 2 (noted on the Energy Nexus line). Builds and the farm list are kept by hand.",
  "caveat": "Mod categories come from a database current to about March 2025, so newer mods may be filed loosely. A dot means at least one max-rank copy, judged from the drain number, so it is approximate.",
  "meta": {
   "types": 394,
@@ -1247,7 +1247,7 @@
      "Continuity* x3",
      "Stretch* x4",
      "Overextended*",
-     "Energy Nexus* x2",
+     "Energy Nexus* x2 (another copy is r2/5)",
      "Augur Accord*",
      "Augur Message*",
      "Augur Reach*",
@@ -1266,7 +1266,8 @@
      "Boreal's Hatred*",
      "Nira's Hatred*",
      "Nira's Anguish*",
-     "Motus Signal* x5"
+     "Motus Signal* x5",
+     "Narrow Minded*"
     ]
    },
    {
@@ -1801,12 +1802,6 @@
     "id": "m-other",
     "name": "Other Warframe mods",
     "items": [
-     {
-      "t": "Narrow Minded (Orokin Derelict Vault rotation A, about 4% - rank 10 gives +99% duration and -66% range)",
-      "tags": [
-       "plat"
-      ]
-     },
      {
       "t": "Fleeting Expertise (Derelict Vault)",
       "tags": [

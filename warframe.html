@@ -89,6 +89,14 @@
     .build.mine .notetext { white-space: pre-line; overflow-wrap: anywhere; }
     .build.mine .chip.miss { border-style: dashed; color: var(--text-dim); }
     .build.mine .pill + .pill { margin-left: 0.4rem; }
+    /* One card per Warframe or weapon, a tab for each config */
+    .cfgtabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.3rem; }
+    .cfgtabs button { font: inherit; font-size: 0.9rem; font-weight: 600; min-height: 40px; padding: 0.3rem 1rem; color: var(--text-dim); background: transparent;
+      border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+    .cfgtabs button[aria-selected="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); border-color: transparent; }
+    .cfgtabs button.cfgadd { border-style: dashed; }
+    .cfgtabs button[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .cfgtabs button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
     .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
     .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
@@ -428,7 +436,7 @@
       return n;
     }
 
-    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all' };
+    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all', btab: {} };
     try {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
@@ -440,6 +448,7 @@
         if (p && p.community === true) ui.community = true;
         if (p && p.builds === 'community') ui.builds = 'community';
         if (p && typeof p.bcat === 'string' && /^[a-z-]{1,30}$/.test(p.bcat)) ui.bcat = p.bcat;
+        if (p && p.btab && typeof p.btab === 'object') Object.keys(p.btab).slice(0, 100).forEach((k) => { if (typeof p.btab[k] === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(p.btab[k])) ui.btab[k.slice(0, 80)] = p.btab[k]; });
       }
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
@@ -1322,7 +1331,7 @@
       box.appendChild(grid);
     }
     function resetBuildDelete() { clearTimeout(bDelTimer); $('wf-bdel').textContent = 'Delete'; $('wf-bdel').dataset.armed = ''; }
-    function openBuildDialog(b) {
+    function openBuildDialog(b, preset) {
       if (!S.owner || !S.sync) return needOwner();
       if (!MS.data) return flash('The mod list has not loaded yet. Try again in a moment.');
       bEditing = b || null;
@@ -1332,10 +1341,11 @@
       $('wf-berr').textContent = '';
       const sel = $('wf-bcat');
       if (!sel.options.length) BUILD_CATS.forEach((c) => sel.appendChild(new Option(c.label, c.id)));
-      sel.value = b ? b.cat : 'warframe';
-      $('wf-bname').value = b ? b.name : '';
-      $('wf-bitem').value = b ? b.item : '';
-      const cf = $('wf-bconfig'), cv = b ? b.config : '';
+      const pre = !b && preset ? preset : null;             // "+ Config" on a card starts a new build for the same item
+      sel.value = b ? b.cat : pre ? pre.cat : 'warframe';
+      $('wf-bname').value = b ? b.name : pre ? pre.name : '';
+      $('wf-bitem').value = b ? b.item : pre ? pre.item : '';
+      const cf = $('wf-bconfig'), cv = b ? b.config : pre ? pre.config : '';
       cf.textContent = ''; cf.appendChild(new Option('— not set —', ''));
       CONFIGS.concat(cv && !CONFIGS.includes(cv) ? [cv] : []).forEach((x) => cf.appendChild(new Option(x, x)));
       cf.value = cv;
@@ -1372,6 +1382,7 @@
         arcane: f.arcane, arcaneRank: f.arcaneRank, arcane2: f.arcane2, arcane2Rank: f.arcane2Rank, mods: f.mods, ranks: f.ranks, notes: f.notes,
         at: (was && Number(was.at)) || Date.now() };
       const wasEditing = !!bEditing;
+      if (val.item) { ui.btab[groupKey(val.cat, val.item)] = id; saveUi(); }       // show the tab you just saved
       S.custom[id] = val; renderBuilds(); closeBuildDialog();
       try {
         await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
@@ -1436,20 +1447,65 @@
       });
       return out;
     }
-    function ownBuildCard(b, have) {
-      const c = el('div', 'wfcard build mine'); c.dataset.build = b.id;
+    /* One card per Warframe or weapon: builds of the same kind and item (Cyte-09 in Config A and in Config B) are tabs on one
+       card, ordered Config A, B, C, then anything else. A build with no item stays a card of its own. */
+    const groupKey = (cat, item) => cat + '|' + String(item || '').toLowerCase();
+    const cfgRank = (c) => { const i = CONFIGS.indexOf(c); return i < 0 ? CONFIGS.length : i; };
+    function buildGroups(list) {
+      const groups = [], by = {};
+      list.forEach((b) => {
+        if (!b.item) { groups.push({ solo: b }); return; }
+        const key = groupKey(b.cat, b.item);
+        if (!by[key]) { by[key] = { key, cat: b.cat, item: b.item, builds: [] }; groups.push(by[key]); }
+        by[key].builds.push(b);
+      });
+      groups.forEach((g) => { if (g.builds) g.builds.sort((a, b) => cfgRank(a.config) - cfgRank(b.config)); });
+      return groups;
+    }
+    /* A tab's text: the config, or the build's name when it has none; if two tabs would read the same, add the name. */
+    function tabLabels(builds) {
+      const base = builds.map((b) => b.config || b.name);
+      return builds.map((b, i) => (base.filter((x) => x === base[i]).length > 1 && b.config ? b.config + ' (' + b.name + ')' : base[i]));
+    }
+    function ownBuildCard(b, have, group) {
+      const c = el('div', 'wfcard build mine'); c.dataset.build = b.id; c.dataset.name = b.name;
+      if (group) { c.dataset.group = group.key; c.dataset.builds = group.builds.map((x) => x.id).join(' '); }
       const s = b.seed;
       c.appendChild(el('span', 'pill', catOf(b.cat).label));
       if (s && s.status) c.appendChild(el('span', 'pill', s.status));
       const head = el('div', 'cardhead');
-      head.appendChild(el('h2', null, b.name));
-      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + b.name);
+      head.appendChild(el('h2', null, group ? group.item : b.name));
+      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + (group ? group.item + (b.config ? ' ' + b.config : '') : b.name));
       if (!S.owner) ed.setAttribute('aria-disabled', 'true');
       ed.onclick = () => openBuildDialog(b);
       head.appendChild(ed);
       c.appendChild(head);
-      const meta = [b.item, b.config].filter(Boolean).join(' · ');
-      if (meta) c.appendChild(el('p', 'meta', meta));
+      if (group) {
+        const tabs = el('div', 'cfgtabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', group.item + ' configs');
+        const labels = tabLabels(group.builds);
+        group.builds.forEach((x, i) => {
+          const t = el('button', null, labels[i]); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.tab = x.id;
+          t.setAttribute('aria-selected', x.id === b.id ? 'true' : 'false');
+          t.addEventListener('click', () => {
+            ui.btab[group.key] = x.id; saveUi(); renderBuilds();
+            const n = $('p-builds').querySelector('.cfgtabs button[data-tab="' + x.id + '"]'); if (n) n.focus();
+          });
+          tabs.appendChild(t);
+        });
+        const free = CONFIGS.find((k) => !group.builds.some((x) => x.config === k));
+        if (free) {                                                        // + Config: a new build for this item, in the first config nobody uses yet
+          const add = el('button', 'cfgadd', '+ ' + free); add.type = 'button'; add.dataset.add = '1';
+          add.setAttribute('aria-label', 'Add ' + free + ' for ' + group.item);
+          if (!S.owner || !MS.data) add.setAttribute('aria-disabled', 'true');
+          add.addEventListener('click', () => openBuildDialog(null, { cat: group.cat, item: group.item, config: free, name: group.item }));
+          tabs.appendChild(add);
+        }
+        c.appendChild(tabs);
+        if (b.name && b.name.toLowerCase() !== group.item.toLowerCase()) c.appendChild(el('p', 'meta bname', b.name));
+      } else {
+        const meta = [b.item, b.config].filter(Boolean).join(' · ');
+        if (meta) c.appendChild(el('p', 'meta', meta));
+      }
       if (s && s.goal) c.appendChild(el('p', 'meta', s.goal));
       /* A mod chip: tap it for the View mod screen, opened at the rank the build uses. */
       const chip = (name, rank) => {
@@ -1604,7 +1660,17 @@
       addBtn.onclick = () => openBuildDialog(null);
       addRow.appendChild(addBtn); p.appendChild(addRow);
       const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
-      userBuilds().concat(seedBuilds()).forEach((b) => p.appendChild(ownBuildCard(b, have)));
+      /* Cards you made come first, oldest first; a card that holds one of the page's own builds keeps that build's place, so adding
+         a config to Cyte-09 does not move it. */
+      const seeds = seedBuilds(), seedAt = (g) => (g.builds ? Math.min.apply(null, g.builds.map((x) => (seeds.indexOf(x) < 0 ? 1e9 : seeds.indexOf(x)))) : 1e9);
+      const groups = buildGroups(userBuilds().concat(seeds));
+      groups.forEach((g, i) => { g.pos = seedAt(g) < 1e9 ? 1e6 + seedAt(g) : i; });
+      groups.sort((a, b) => a.pos - b.pos);
+      groups.forEach((g) => {
+        if (g.solo) { p.appendChild(ownBuildCard(g.solo, have)); return; }
+        const open = g.builds.find((x) => x.id === ui.btab[g.key]) || g.builds[0];
+        p.appendChild(ownBuildCard(open, have, g));
+      });
     }
 
     /* ---------- theme tab ---------- */

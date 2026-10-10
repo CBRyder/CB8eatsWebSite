@@ -562,11 +562,21 @@ and **Theme**.
     `kind === 'build'` and the goal list never shows them; `userBuilds()` reads the other way. The rule's
     `custom.size() <= 200` limit is shared. Mods are saved by **name**, not by `m123` key (the keys change every
     time the generator runs); an edit keeps a saved mod the list no longer has, labelled "(not in the list now)".
-  - **Cards** (`.build.mine`, `data-build` = id; the builds you added oldest first, then the ones that come with
-    the page): category pill, name, Edit button, item and config, aura/stance, Exilus, the mods (tap one for the View
-    mod screen; dashed = on your Missing list), the arcanes, "On your lists" counts and the notes. Edit has a
-    two-tap Delete like the goal form. Writes are optimistic and roll back with the usual "server refused" message.
-    `renderLive()` also redraws the builds, so a change from another device shows up.
+  - **Cards (CB, 2026-10-10: "one card for all the configs ... like tabs"):** `buildGroups()` puts every build of the same
+    kind and **item** (case-insensitive) on **one card**, with a tab per build (`.cfgtabs`, `role=tablist`): tab text is
+    the config (Config A, B, C first, then the rest; a build with no config uses its name; two tabs that would read
+    the same get the build name added). The card is titled with the item; the open build's own name shows under the tabs
+    when it differs from the item. A **+ Config X** tab (first config nobody uses yet, owner only) opens the form
+    with kind, item, name and config filled in. **Edit and Delete act on the open tab.** The open tab is
+    remembered per card on this device (`ui.btab`, key `kind|item`, in the same localStorage entry as the other
+    filters), and saving a build opens its tab. A build with **no item** is a plain card of its own, titled with its
+    name. Card order: the ones you made oldest first, then the ones from `warframe-data.json`; a card that holds one
+    of those keeps its place (adding a config to Cyte-09 does not move it). The card (`.build.mine`) has
+    `data-build` = the open build's id, `data-builds` = all ids on it, `data-group` = the key, `data-name`. Inside:
+    category pill (plus the file build's `status`), name, Edit button, tabs, aura/stance, Exilus, the mods (tap
+    one for the View mod screen; dashed = on your Missing list), the arcanes, "On your lists" counts and the notes.
+    Edit has a two-tap Delete like the goal form. Writes are optimistic and roll back with the usual "server
+    refused" message. `renderLive()` also redraws the builds, so a change from another device shows up.
   - **Ranks and config (added 2026-10-10; CB: "make my builds editable"):** every slot (aura/stance, Exilus, the
     10 mods, the arcanes) has a small **rank dropdown** on the label row (`wf-b-m0-r` etc., class `rk`): "Rank ?"
     (not known, saved as `null`), then 0 to the mod's max rank (`modMax(name)`, the biggest `m` among the mods of
@@ -576,7 +586,8 @@ and **Theme**.
     dropdown (not set, Config A, B, C; an older free-text value stays on offer). The card shows `r7/10` on each
     chip (`max` styling at the top rank) and tapping a chip opens the View mod screen **at that rank**, with an
     "In your build" box saying so. Notes now hold up to 500 characters.
-  - **The hand-kept builds are editable too (Burston Prime, Cyte-09 Config A, Config B).** In `warframe-data.json`
+  - **The hand-kept builds are editable too (Burston Prime, and Cyte-09 as two tabs, Config A and Config B; give both the
+    same `item` and `form.cat` so they share a card, and the same `name` so no name line shows).** In `warframe-data.json`
     each entry of `builds[]` is `{ id, name, goal?, status?, form: { cat, item, config, aura, auraRank?, exilus,
     mods: [10 names], ranks: [10 ranks or null], arcane?, arcaneRank?, arcane2?, arcane2Rank?, notes }, stats?,
     statsNote?, slots?, notes? (the "What we learned" bullets), next? }`. `form` has the same shape as a saved

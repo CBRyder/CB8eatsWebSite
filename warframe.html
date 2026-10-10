@@ -393,7 +393,7 @@
   <dialog class="wfdlg bdlg" id="wf-bdlg" aria-labelledby="wf-bdlg-title">
     <form id="wf-buildform" novalidate>
       <h2 id="wf-bdlg-title">Add a build</h2>
-      <p class="muted">Name it, say what it is for, then pick a mod and its rank for each slot. Leave a slot on none if it is empty. Rank ? means you do not know it.</p>
+      <p class="muted">Name it, say what it is for and which one, then pick a mod and its rank for each slot. Leave a slot on none if it is empty. Rank ? means you do not know it.</p>
       <label class="field"><span>Build name</span>
         <input type="text" id="wf-bname" maxlength="60" autocomplete="off" placeholder="For example Zephyr tank">
       </label>
@@ -401,13 +401,16 @@
         <label class="field"><span>What is it for?</span>
           <select id="wf-bcat"></select>
         </label>
-        <label class="field"><span>Which one (optional)</span>
-          <input type="text" id="wf-bitem" maxlength="60" autocomplete="off" placeholder="For example Zephyr">
+        <label class="field"><span>Which one</span>
+          <select id="wf-bitem" required></select>
         </label>
         <label class="field"><span>Config (optional)</span>
           <select id="wf-bconfig"></select>
         </label>
       </div>
+      <label class="field" id="wf-bitem-other-wrap" hidden><span>Name of the item</span>
+        <input type="text" id="wf-bitem-other" maxlength="60" autocomplete="off" placeholder="Type the name">
+      </label>
       <div id="wf-bslots"></div>
       <label class="field"><span>Notes (optional)</span>
         <textarea id="wf-bnotes" maxlength="500" rows="3" placeholder="What it does, what it still needs"></textarea>
@@ -1461,11 +1464,27 @@
       const mods = [], ranks = [];
       for (let i = 0; i < BUILD_SLOTS; i++) { const n = cleanText(v('wf-b-m' + i), 80); mods.push(n); ranks.push(n ? rk('wf-b-m' + i) : null); }
       const aura = cleanText(v('wf-b-aura'), 80), exilus = cleanText(v('wf-b-exilus'), 80), arcane = cleanText(v('wf-b-arcane'), 80), arcane2 = cleanText(v('wf-b-arcane2'), 80);
-      return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem'), 60), config: cleanText(v('wf-bconfig'), 20),
+      return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem') === OTHER_ITEM ? v('wf-bitem-other') : v('wf-bitem'), 60), config: cleanText(v('wf-bconfig'), 20),
         aura, auraRank: aura ? rk('wf-b-aura') : null, exilus, exilusRank: exilus ? rk('wf-b-exilus') : null,
         arcane, arcaneRank: arcane ? rk('wf-b-arcane') : null, arcane2, arcane2Rank: arcane2 ? rk('wf-b-arcane2') : null,
         mods, ranks, notes: String(v('wf-bnotes') || '').trim().slice(0, NOTES_MAX) };
     }
+    /* The "Which one" dropdown: the items of the chosen kind (Warframes, Primary weapons, ...) from `gear` in
+       warframe-mod-stats.json, A to Z, then "Other (type the name)" for anything the list does not have. It is required.
+       An item that is not in the list (an older build that was typed by hand, or a new item) is shown as Other. */
+    const OTHER_ITEM = '__other';
+    function fillItems(catId, value) {
+      const sel = $('wf-bitem'), list = (MS.data && MS.data.gear && MS.data.gear[catId]) || [];
+      sel.textContent = '';
+      sel.appendChild(new Option('Pick one…', ''));
+      list.forEach((n) => sel.appendChild(new Option(n, n)));
+      sel.appendChild(new Option('Other (type the name)', OTHER_ITEM));
+      const v = cleanText(value, 60), known = !v || list.includes(v);
+      sel.value = known ? v : OTHER_ITEM;
+      $('wf-bitem-other').value = known ? '' : v;
+      syncItemOther();
+    }
+    function syncItemOther() { $('wf-bitem-other-wrap').hidden = $('wf-bitem').value !== OTHER_ITEM; }
     /* Draw the slot dropdowns for the chosen category, keeping any choice that is still on offer. */
     function drawSlots(vals, keepUnknown) {
       const box = $('wf-bslots'); box.textContent = '';
@@ -1503,7 +1522,7 @@
       const pre = !b && preset ? preset : null;             // "+ Config" on a card starts a new build for the same item
       sel.value = b ? b.cat : pre ? pre.cat : 'warframe';
       $('wf-bname').value = b ? b.name : pre ? pre.name : '';
-      $('wf-bitem').value = b ? b.item : pre ? pre.item : '';
+      fillItems(sel.value, b ? b.item : pre ? pre.item : '');
       const cf = $('wf-bconfig'), cv = b ? b.config : pre ? pre.config : '';
       cf.textContent = ''; cf.appendChild(new Option('— not set —', ''));
       CONFIGS.concat(cv && !CONFIGS.includes(cv) ? [cv] : []).forEach((x) => cf.appendChild(new Option(x, x)));
@@ -1525,6 +1544,8 @@
       const f = readBuildForm();
       if (!f.name) return err('Give the build a name.');
       if (!catOf(f.cat)) return err('Pick what the build is for.');
+      if ($('wf-bitem').value === OTHER_ITEM && !f.item) return err('Type the name of the item.');
+      if (!f.item) return err('Pick which ' + catOf(f.cat).label.toLowerCase() + ' this build is for.');
       const all = [['Aura or stance', f.aura], ['Exilus', f.exilus]].concat(f.mods.map((m, i) => ['Mod ' + (i + 1), m]));
       if (!all.some((x) => x[1])) return err('Pick at least one mod.');
       const seen = {};
@@ -1563,7 +1584,14 @@
       } catch (e) { if (was) S.custom[id] = was; else delete S.custom[id]; renderBuilds(); writeFailed(e); }
     }
     function initBuildDialog() {
-      $('wf-bcat').addEventListener('change', () => { const keep = readBuildForm(); drawSlots(keep); });
+      /* Changing the kind refills "Which one" with that kind's items: the choice stays if it is on the new list (or was typed by hand), otherwise it is cleared. */
+      $('wf-bcat').addEventListener('change', () => {
+        const keep = readBuildForm(), typed = $('wf-bitem').value === OTHER_ITEM;
+        fillItems(keep.cat, keep.item);
+        if (!typed && $('wf-bitem').value === OTHER_ITEM) { $('wf-bitem').value = ''; $('wf-bitem-other').value = ''; syncItemOther(); }
+        drawSlots(readBuildForm());
+      });
+      $('wf-bitem').addEventListener('change', syncItemOther);
       $('wf-bcancel').addEventListener('click', closeBuildDialog);
       $('wf-buildform').addEventListener('submit', saveBuild);
       $('wf-bdel').addEventListener('click', () => {

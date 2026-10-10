@@ -20,10 +20,15 @@ Output shape (see CLAUDE.md, "View mod screen"):
     mods: { "<key>": { n, p, r, d, m, c, t, l, xr, ds, set, sp, tr, ex, ut, intro, w, img, u } },
     index: { "<groupId>|<chip name>": ["<key>", ...] },
     partial: { "<groupId>|<chip name>": ["<name not found>", ...] },
-    arcanes: { "Warframe": [names], "Primary": [...], "Secondary": [...], "Melee": [...] } }
+    arcanes: { "Warframe": [names], "Primary": [...], "Secondary": [...], "Melee": [...] },
+    gear: { "<build category id>": [item names, A to Z] } }
 `ex` marks an Exilus mod and `ut` a utility mod (one that also fits an Exilus slot). `arcanes` is what the
 "Add build" form offers in its arcane (adapter) dropdown; pass `--arcanes /path/to/Arcanes.json` (same repo,
 same folder as Mods.json) to refresh it, otherwise the ones already in the output file are kept.
+`gear` is what the "Add build" form's "Which one" dropdown offers for each kind of build (warframe, primary, secondary,
+melee, archwing, archgun, archmelee, companion, necramech); pass `--gear /path/to/folder` (the folder that holds
+Warframes.json, Primary.json, Secondary.json, Melee.json, Archwing.json, Arch-Gun.json, Arch-Melee.json, Sentinels.json and
+Pets.json, e.g. node_modules/warframe-items/data/json) to refresh it, otherwise the ones already in the output file are kept.
 `u` is [different players using the mod, builds using it]; a mod nobody in the tally uses has no `u`.
 A chip that stands for a whole family (for example "Bane of Corpus/Grineer/Infested") points
 at several keys; `partial` lists the family members the database does not have. Chips with no match are simply not in `index`, and the page leaves them
@@ -44,6 +49,7 @@ ap.add_argument('--data', default='warframe-data.json')
 ap.add_argument('--out', default='warframe-mod-stats.json')
 ap.add_argument('--usage', default=mod_usage.DEFAULT_PATH, help='the community tally')
 ap.add_argument('--community', default='warframe-community-builds.json', help='the community builds shown on the Builds tab')
+ap.add_argument('--gear', default=None, help='folder with the warframe-items Warframes.json, Primary.json, ... files; leave out to keep the gear already in the output file')
 ap.add_argument('--arcanes', default=None, help='path to warframe-items Arcanes.json; leave out to keep the arcanes already in the output file')
 args = ap.parse_args()
 
@@ -273,6 +279,38 @@ elif os.path.exists(args.out):
         arcanes = None
 if arcanes:
     out['arcanes'] = arcanes
+
+# What each "Which one" dropdown offers: the item names for each kind of build, from the warframe-items files.
+GEAR_SOURCES = {          # build category id -> [(file, keep this entry?)]
+    'warframe': [('Warframes.json', lambda x: x.get('productCategory') == 'Suits')],
+    'necramech': [('Warframes.json', lambda x: x.get('productCategory') == 'MechSuits')],
+    'primary': [('Primary.json', lambda x: x.get('productCategory') != 'OperatorAmps')],
+    'secondary': [('Secondary.json', lambda x: True)],
+    'melee': [('Melee.json', lambda x: x.get('type') != 'Zaw Component')],
+    'archwing': [('Archwing.json', lambda x: True)],
+    'archgun': [('Arch-Gun.json', lambda x: True)],
+    'archmelee': [('Arch-Melee.json', lambda x: True)],
+    'companion': [('Sentinels.json', lambda x: True), ('Pets.json', lambda x: x.get('type') in ('Pets', 'Warframe'))],
+}
+gear = None
+if args.gear:
+    gear = {}
+    for cat, sources in GEAR_SOURCES.items():
+        names = set()
+        for fname, keep in sources:
+            path = os.path.join(args.gear, fname)
+            if not os.path.exists(path):
+                print('WARNING: %s is not in %s, so the %s list is short' % (fname, args.gear, cat))
+                continue
+            names |= {x['name'] for x in json.load(open(path, encoding='utf-8')) if keep(x) and x.get('name')}
+        gear[cat] = sorted(names, key=str.lower)
+elif os.path.exists(args.out):
+    try:
+        gear = json.load(open(args.out, encoding='utf-8')).get('gear')
+    except (ValueError, OSError):
+        gear = None
+if gear:
+    out['gear'] = gear
 with open(args.out, 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
 

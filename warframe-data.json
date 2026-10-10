@@ -1130,34 +1130,41 @@
     "id": "ax52",
     "group": "Weapons and companions",
     "text": "AX-52 from Amir",
-    "note": "Per the item database. Spends currency, so confirm before buying.",
+    "note": "Per the item database. The blueprint costs 30,000 standing and you were at 15,500 on 10 Oct, so 14,500 to go. Spends currency, so confirm before buying.",
     "tags": [
      "foundry"
     ],
     "parts": [
      {
       "id": "ax52-bp",
-      "text": "Blueprint from Amir"
+      "text": "Blueprint from Amir",
+      "note": "30,000 standing. You had 15,500 on 10 Oct (14,500 to go)."
      },
      {
       "id": "ax52-efervon",
-      "text": "60 Efervon Sample"
+      "text": "60 Efervon Sample",
+      "note": "None in your inventory on 10 Oct."
      },
      {
       "id": "ax52-pitchweave",
-      "text": "60 Höllvanian Pitchweave Fragment"
+      "text": "60 Höllvanian Pitchweave Fragment",
+      "note": "None in your inventory on 10 Oct."
      },
      {
       "id": "ax52-chitin",
-      "text": "25 Techrot Chitin"
+      "text": "25 Techrot Chitin",
+      "note": "None in your inventory on 10 Oct."
      },
      {
       "id": "ax52-motherboard",
-      "text": "5 Techrot Motherboard"
+      "text": "5 Techrot Motherboard",
+      "note": "None in your inventory on 10 Oct."
      },
      {
       "id": "ax52-credits",
-      "text": "25,000 credits"
+      "text": "25,000 credits",
+      "note": "You had 570,635 on 10 Oct.",
+      "doneDefault": true
      },
      {
       "id": "ax52-build",

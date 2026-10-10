@@ -57,14 +57,18 @@
     .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s ease; }
     .stepper { display: flex; gap: 0.6rem; margin-top: 0.9rem; flex-wrap: wrap; }
     .stepper .btn-sm { min-width: 48px; }
-    .tierrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; margin-top: 0.9rem; }
-    .tierbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.4rem 0.15rem; min-width: 0; line-height: 1.15; border-radius: 16px; font-size: 0.85rem; }
-    .tierbtn small { font-size: 0.8rem; font-weight: 500; opacity: 0.9; }
-    .tierrow [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
-    .customrow { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
-    .customrow input { flex: 1 1 11rem; min-width: 0; }
-    .bonusrow { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem; font-size: 0.95rem; cursor: pointer; min-height: 44px; }
-    .bonusrow input { width: 24px; height: 24px; accent-color: var(--accent); flex: none; }
+    .tokrow { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 0.45rem; margin-top: 0.9rem; }
+    .tokrow input { width: 100%; box-sizing: border-box; min-width: 0; }
+    .tokrow .btn-sm { min-width: 0; padding-left: 0.3rem; padding-right: 0.3rem; }
+    .tokrow [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .tokhead { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.1rem; min-height: 44px; }
+    .tokhead h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; }
+    .tokhead [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .toklist { list-style: none; margin: 0.2rem 0 0; padding: 0; max-height: 16rem; overflow-y: auto; border-top: 1px solid var(--border-soft); }
+    .toklist li { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; padding: 0.5rem 0.1rem; border-bottom: 1px solid var(--border-soft); font-variant-numeric: tabular-nums; }
+    .toklist .amt { font-weight: 700; color: var(--accent-bright); flex: none; }
+    .toklist .amt.neg { color: var(--text-dim); }
+    .toklist .when { color: var(--text-dim); font-size: 0.9rem; text-align: right; min-width: 0; overflow-wrap: anywhere; }
     /* Add build form (a dialog with a mod dropdown per slot) and the cards for the builds you add */
     dialog.bdlg { width: min(94vw, 34rem); }
     .bdlg .field select, .bdlg .field input[type="text"], .bdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
@@ -415,7 +419,7 @@
       return n;
     }
 
-    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all', bonus: true };
+    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all' };
     try {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
@@ -425,7 +429,6 @@
         if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
         if (p && (p.modFilter === 'all' || p.modFilter === 'plat')) ui.modFilter = p.modFilter;
         if (p && p.community === true) ui.community = true;
-        if (p && p.bonus === false) ui.bonus = false;
         if (p && p.builds === 'community') ui.builds = 'community';
         if (p && typeof p.bcat === 'string' && /^[a-z-]{1,30}$/.test(p.bcat)) ui.bcat = p.bcat;
       }
@@ -433,7 +436,9 @@
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
 
     // S.tokens is the Mother Tokens counted so far. It is saved in the Firestore field `runs` (see CLAUDE.md), so the published rule needs no change.
-    const S = { data: null, done: {}, tokens: 0, lastDelta: null, customOpen: false, customVal: '', custom: {}, owner: false, sync: null, index: {} };
+    const S = { data: null, done: {}, tokens: 0, tokVal: '', custom: {}, owner: false, sync: null, index: {} };
+    const TOKLOG = 'tokenlog';   // custom.tokenlog = { e: { <key>: { n: amount, at: ms } } }, the Mother Tokens history (see CLAUDE.md)
+    const TOK_KEY_RE = /^t[0-9]{10,14}[a-z0-9]{0,8}$/;
     const openGroups = {};
     const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
     const CUSTOM_GROUP = 'Added by you';
@@ -462,8 +467,6 @@
       return n;
     }
     function tokens() { return S.tokens; }
-    function vaultBonus() { return ui.bonus ? (S.data.farm.vaultBonus || 0) : 0; }
-    function tierAmount(t) { return t.tokens + vaultBonus(); }
     function tokensLeft() { return Math.max(0, S.data.farm.target - S.tokens); }
     let flashTimer = null;
     function flash(msg) {
@@ -541,7 +544,9 @@
     }
 
     function renderGoals() {
-      const f = S.data.farm, p = $('p-goals'); p.textContent = '';
+      const f = S.data.farm, p = $('p-goals');
+      const hadFocus = !!(document.activeElement && document.activeElement.id === 'tok-in');   // a re-render must not drop what is being typed
+      p.textContent = '';
       const card = el('div', 'wfcard');
       card.appendChild(el('h2', null, 'Mother Tokens'));
       const big = el('p', 'big'); big.appendChild(document.createTextNode(String(tokens())));
@@ -550,67 +555,55 @@
       const bar = el('div', 'bar'); const fill = document.createElement('i');
       fill.style.width = Math.min(100, tokens() / f.target * 100) + '%';
       bar.appendChild(fill); card.appendChild(bar);
-      const tiers = f.tiers || [], top = tiers[tiers.length - 1];
       const left = tokensLeft();
-      card.appendChild(el('p', 'muted', (left > 0
-        ? left + ' to go' + (top ? ', about ' + Math.ceil(left / tierAmount(top)) + ' ' + top.label + ' vaults at ' + tierAmount(top) + ' each.' : '.')
-        : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').'));
+      card.appendChild(el('p', 'muted', (left > 0 ? left + ' to go.' : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').'));
       const d = daysUntil(f.shopRefresh);
       card.appendChild(el('p', 'muted', d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.'));
 
-      const row = el('div', 'tierrow');
-      tiers.forEach((t) => {
-        const b = el('button', 'btn-sm primary tierbtn'); b.type = 'button';
-        b.appendChild(el('span', null, t.label));
-        b.appendChild(el('small', null, '+' + tierAmount(t)));
-        b.setAttribute('aria-label', 'Add a ' + t.label + ' vault: ' + tierAmount(t) + ' tokens');
-        if (!S.owner) b.setAttribute('aria-disabled', 'true');
-        b.onclick = () => changeTokens(tierAmount(t));
-        row.appendChild(b);
-      });
-      const cb = el('button', 'btn-sm tierbtn', ''); cb.type = 'button'; cb.id = 'tok-custom';
-      cb.appendChild(el('span', null, 'Custom'));
-      cb.appendChild(el('small', null, 'amount'));
-      cb.setAttribute('aria-expanded', S.customOpen ? 'true' : 'false');
-      if (!S.owner) cb.setAttribute('aria-disabled', 'true');
-      cb.onclick = () => {
-        if (!S.owner || !S.sync) return needOwner();
-        S.customOpen = !S.customOpen; renderGoals();
-        if (S.customOpen) { const i = $('tok-custom-in'); if (i) i.focus(); }
-      };
-      row.appendChild(cb);
+      // The typing box and the Add button.
+      const row = el('div', 'tokrow');
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.id = 'tok-in'; inp.step = '1';
+      inp.placeholder = 'Tokens, - to spend'; inp.value = S.tokVal;
+      inp.setAttribute('aria-label', 'Mother Tokens to add. A minus takes tokens off.');
+      inp.oninput = () => { S.tokVal = inp.value; };
+      inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addTyped(); } };
+      const go = el('button', 'btn-sm primary', 'Add'); go.type = 'button'; go.id = 'tok-add';
+      if (!S.owner) go.setAttribute('aria-disabled', 'true');
+      go.onclick = addTyped;
+      row.appendChild(inp); row.appendChild(go);
       card.appendChild(row);
+      if (hadFocus) setTimeout(() => { const i = $('tok-in'); if (i && document.activeElement !== i) i.focus(); }, 0);
 
-      if (S.customOpen) {
-        const cr = el('div', 'customrow');
-        const inp = document.createElement('input');
-        inp.type = 'number'; inp.id = 'tok-custom-in'; inp.step = '1'; inp.inputMode = 'numeric';
-        inp.placeholder = 'Tokens (a minus takes them off)'; inp.value = S.customVal;
-        inp.setAttribute('aria-label', 'Custom token amount');
-        inp.oninput = () => { S.customVal = inp.value; };
-        inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addCustom(); } };
-        const go = el('button', 'btn-sm primary', 'Add'); go.type = 'button'; go.id = 'tok-custom-add'; go.onclick = addCustom;
-        const no = el('button', 'btn-sm', 'Cancel'); no.type = 'button'; no.onclick = () => { S.customOpen = false; S.customVal = ''; renderGoals(); };
-        cr.appendChild(inp); cr.appendChild(go); cr.appendChild(no);
-        card.appendChild(cr);
-      }
-
-      const bo = el('label', 'bonusrow');
-      const bx = document.createElement('input'); bx.type = 'checkbox'; bx.id = 'tok-bonus'; bx.checked = ui.bonus;
-      bx.onchange = () => { ui.bonus = bx.checked; saveUi(); renderGoals(); };
-      bo.appendChild(bx);
-      bo.appendChild(el('span', null, 'I opened the vault (+' + (f.vaultBonus || 0) + ')'));
-      card.appendChild(bo);
-      card.appendChild(el('p', 'muted', 'The +' + (f.vaultBonus || 0) + ' vault bonus is a guess that fits the old 27 per Tier 3 run. Untick it if a vault gave only the plain amount.'));
-
-      if (S.lastDelta) {
-        const ur = el('div', 'stepper');
-        const un = el('button', 'btn-sm', 'Undo ' + (S.lastDelta > 0 ? '+' : '') + S.lastDelta); un.type = 'button'; un.id = 'tok-undo';
+      // History: every Add with its date and time, newest first. Undo takes back the newest one.
+      const log = tokenLog();
+      const hh = el('div', 'tokhead');
+      hh.appendChild(el('h3', null, 'History'));
+      if (log.length) {
+        const un = el('button', 'btn-sm', 'Undo ' + signed(log[0].n)); un.type = 'button'; un.id = 'tok-undo';
         if (!S.owner) un.setAttribute('aria-disabled', 'true');
-        un.onclick = () => changeTokens(-S.lastDelta, true);
-        ur.appendChild(un);
-        card.appendChild(ur);
+        un.onclick = undoTokens;
+        hh.appendChild(un);
       }
+      card.appendChild(hh);
+      const before = S.tokens - log.reduce((t, x) => t + x.n, 0);
+      if (log.length || before !== 0) {
+        const ul = el('ul', 'toklist'); ul.id = 'tok-log';
+        log.forEach((x) => {
+          const li = el('li'); li.dataset.key = x.key;
+          li.appendChild(el('span', 'amt' + (x.n < 0 ? ' neg' : ''), signed(x.n)));
+          const tm = el('time', 'when', whenText(x.at)); tm.dateTime = new Date(x.at).toISOString();
+          li.appendChild(tm); ul.appendChild(li);
+        });
+        if (before !== 0) {
+          const li = el('li'); li.dataset.key = 'before';
+          li.appendChild(el('span', 'amt' + (before < 0 ? ' neg' : ''), signed(before)));
+          li.appendChild(el('span', 'when', 'Before the history started'));
+          ul.appendChild(li);
+        }
+        card.appendChild(ul);
+      }
+      if (!log.length) card.appendChild(el('p', 'muted', 'Each Add is listed here with its date and time.'));
       p.appendChild(card);
 
       const wrap = el('div', 'wfcard');
@@ -651,7 +644,7 @@
       const fixes = (S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object') ? S.data.farm.customFixes : {};
       const out = [];
       Object.keys(S.custom).forEach((id) => {
-        if (!ID_RE.test(id)) return;
+        if (!ID_RE.test(id) || id === TOKLOG) return;   // the token history shares this map but is not a goal
         const v = S.custom[id];
         if (!v || typeof v !== 'object' || v.kind === 'build') return;   // builds you add share this map but are not goals
         const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
@@ -749,26 +742,67 @@
         S.done[id] = prev; renderLive(); writeFailed(e);
       }
     }
-    // Adds (or, with a minus, takes off) Mother Tokens. Saved in the Firestore field `runs`.
-    async function changeTokens(delta, isUndo) {
+    /* The Mother Tokens history. One Firestore field, custom.tokenlog, holds every entry:
+       { e: { <key>: { n: the change that was really applied, at: ms } } }. It counts once towards the
+       rule's limit of 200 entries in `custom`, and needs no rule change (custom is a map). */
+    function tokenLog() {
+      const v = S.custom[TOKLOG], out = [];
+      if (v && typeof v === 'object' && v.e && typeof v.e === 'object' && !Array.isArray(v.e)) {
+        Object.keys(v.e).forEach((k) => {
+          const x = v.e[k], n = x && Number(x.n), at = x && Number(x.at);
+          if (!TOK_KEY_RE.test(k) || !Number.isInteger(n) || n === 0 || !Number.isFinite(at) || at <= 0) return;
+          out.push({ key: k, n, at });
+        });
+      }
+      out.sort((a, b) => (b.at - a.at) || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+      return out;
+    }
+    function logPut(key, val) {
+      const v = S.custom[TOKLOG] && typeof S.custom[TOKLOG] === 'object' ? S.custom[TOKLOG] : (S.custom[TOKLOG] = {});
+      if (!v.e || typeof v.e !== 'object') v.e = {};
+      if (val === null) delete v.e[key]; else v.e[key] = val;
+    }
+    function signed(n) { return (n > 0 ? '+' : '') + n; }
+    function whenText(ms) {
+      const d = new Date(ms), o = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+      if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
+      return d.toLocaleString('en-US', o);
+    }
+    // Adds (or, with a minus, takes off) Mother Tokens: the total goes in the Firestore field `runs`
+    // and the change is written to the history in the same update, so the two never disagree.
+    async function changeTokens(delta) {
       if (!S.owner || !S.sync) return needOwner();
-      const prev = S.tokens, prevLast = S.lastDelta, next = Math.max(0, prev + delta);
-      if (next === prev) return;
-      S.tokens = next; S.lastDelta = isUndo ? null : next - prev; renderLive();
+      const prev = S.tokens, next = Math.max(0, prev + delta), applied = next - prev;
+      if (!applied) return;
+      const at = Date.now(), key = 't' + at + Math.random().toString(36).slice(2, 6).replace(/[^a-z0-9]/g, 'x');
+      S.tokens = next; logPut(key, { n: applied, at }); renderLive();
       try {
-        await S.sync.write({ runs: next }, { done: S.done, runs: next });
+        await S.sync.write({ runs: next, ['custom.' + TOKLOG + '.e.' + key]: { n: applied, at } }, { done: S.done, runs: next, custom: S.custom });
       } catch (e) {
-        S.tokens = prev; S.lastDelta = prevLast; renderLive(); writeFailed(e);
+        S.tokens = prev; logPut(key, null); renderLive(); writeFailed(e);
       }
     }
-    function addCustom() {
-      const raw = String(S.customVal || '').trim();
+    // Takes back the newest entry in the history.
+    async function undoTokens() {
+      if (!S.owner || !S.sync) return needOwner();
+      const log = tokenLog(); if (!log.length) return;
+      const last = log[0], prev = S.tokens, next = Math.max(0, prev - last.n), saved = S.custom[TOKLOG].e[last.key];
+      S.tokens = next; logPut(last.key, null); renderLive();
+      try {
+        await S.sync.write({ runs: next, ['custom.' + TOKLOG + '.e.' + last.key]: S.sync.del() }, { done: S.done, runs: next, custom: S.custom });
+      } catch (e) {
+        S.tokens = prev; logPut(last.key, saved); renderLive(); writeFailed(e);
+      }
+    }
+    function addTyped() {
+      if (!S.owner || !S.sync) return needOwner();
+      const raw = String(S.tokVal || '').trim();
       const n = Number(raw);
       if (!raw || !Number.isInteger(n) || n === 0 || Math.abs(n) > 100000) {
         flash('Type a whole number of tokens, like 168. A minus takes tokens off, like -45.');
         return;
       }
-      S.customOpen = false; S.customVal = '';
+      S.tokVal = '';
       changeTokens(n);
     }
     function writeFailed(e) {
@@ -1544,6 +1578,7 @@
           try { await fs.updateDoc(ref, fields); }
           catch (e) { if (e && e.code === 'not-found') await fs.setDoc(ref, full); else throw e; }
         },
+        del() { return fs.deleteField(); },
         async remove(id) {
           try { await fs.updateDoc(ref, { ['custom.' + id]: fs.deleteField(), ['done.' + id]: fs.deleteField() }); }
           catch (e) { if (!(e && e.code === 'not-found')) throw e; }

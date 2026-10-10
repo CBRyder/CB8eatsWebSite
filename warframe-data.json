@@ -1143,22 +1143,26 @@
      {
       "id": "ax52-efervon",
       "text": "60 Efervon Sample",
-      "note": "None in your inventory on 10 Oct."
+      "note": "You told me you have 962 (10 Oct).",
+      "doneDefault": true
      },
      {
       "id": "ax52-pitchweave",
       "text": "60 Höllvanian Pitchweave Fragment",
-      "note": "None in your inventory on 10 Oct."
+      "note": "You told me you have 746 (10 Oct).",
+      "doneDefault": true
      },
      {
       "id": "ax52-chitin",
       "text": "25 Techrot Chitin",
-      "note": "None in your inventory on 10 Oct."
+      "note": "You told me you have 340 (10 Oct).",
+      "doneDefault": true
      },
      {
       "id": "ax52-motherboard",
       "text": "5 Techrot Motherboard",
-      "note": "None in your inventory on 10 Oct."
+      "note": "You told me you have 14 (10 Oct).",
+      "doneDefault": true
      },
      {
       "id": "ax52-credits",

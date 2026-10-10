@@ -1,7 +1,7 @@
 {
- "updated": "2026-10-09",
- "updatedLabel": "9 Oct 2026",
- "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. Builds and the farm list are kept by hand.",
+ "updated": "2026-10-10",
+ "updatedLabel": "10 Oct 2026",
+ "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. Builds and the farm list are kept by hand.",
  "caveat": "Mod categories come from a database current to about March 2025, so newer mods may be filed loosely. A dot means at least one max-rank copy, judged from the drain number, so it is approximate.",
  "meta": {
   "types": 394,
@@ -2419,6 +2419,24 @@
       "tags": [
        "plat"
       ]
+     },
+     {
+      "t": "Hunter Munitions",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vigilante Supplies",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Vigilante Armaments (Cetus bounty, level 20 to 40, rotation B)",
+      "tags": [
+       "plat"
+      ]
      }
     ]
    },
@@ -2599,6 +2617,12 @@
       "tags": [
        "plat"
       ]
+     },
+     {
+      "t": "Contagious Spread",
+      "tags": [
+       "plat"
+      ]
      }
     ]
    },
@@ -2776,6 +2800,12 @@
      },
      {
       "t": "Primed Target Cracker",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Pistol Elementalist",
       "tags": [
        "plat"
       ]
@@ -2984,6 +3014,12 @@
       "tags": [
        "plat"
       ]
+     },
+     {
+      "t": "Gladiator Might (Cetus bounty, level 20 to 40, rotation B)",
+      "tags": [
+       "plat"
+      ]
      }
     ]
    },
@@ -3165,6 +3201,72 @@
       "tags": [
        "plat"
       ]
+     },
+     {
+      "t": "Link Fiber",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Link Redirection",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Maul",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Hastened Deflection",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Hunter Recovery (Cetus Ghoul bounty, level 40 to 50, rotation A)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Resourceful Retriever",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tek Assault (Orb Vallis bounty, level 10 to 30, rotation C)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Tek Enhance (Orb Vallis bounty, level 20 to 40, rotation C)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Manifold Bond",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Martyr Symbiosis",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Cordon",
+      "tags": [
+       "plat"
+      ]
      }
     ]
    },
@@ -3209,7 +3311,85 @@
      "Runtime",
      "Soft Safe",
      "Untraceable",
-     "Requiem set: Fass/Jahu/Khra/Lohk/Netra/Ris/Vome/Xata/Oull (plus Tome Canticle and Invocation versions)"
+     "Requiem set: Fass/Jahu/Khra/Lohk/Netra/Ris/Vome/Xata/Oull (plus Tome Canticle and Invocation versions)",
+     {
+      "t": "Venomous Clip",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Electrified Barrel",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Combustion Rounds",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Contamination Casing (Profit-Taker)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Hypothermic Shell (Profit-Taker)",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Magnetized Cycle",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Containment Breach",
+      "tags": [
+       "plat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-archwing",
+    "name": "Archwing and Arch-Melee",
+    "items": [
+     {
+      "t": "System Reroute",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Energy Amplifier",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Hyperion Thrusters",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Primed Morphic Transformer",
+      "tags": [
+       "plat"
+      ]
+     },
+     {
+      "t": "Glacial Edge",
+      "tags": [
+       "plat"
+      ]
+     }
     ]
    },
    {

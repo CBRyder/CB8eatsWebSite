@@ -461,7 +461,10 @@ and **Theme**.
     an arcane are left out of the tally.
   - The generator prints the popular mods that are on **neither** the Owned nor the Missing list
     (29 in the first run, e.g. Gladiator Might, Venomous Clip, Hunter Munitions): the filter can only
-    show mods the lists contain, so tell CB when that list is long.
+    show mods the lists contain, so tell CB when that list is long. **On 2026-10-10 CB said to add all
+    29 to Missing** (a new Missing group `m-archwing`, "Archwing and Arch-Melee", plus the rest filed under
+    their weapon group; all tagged `plat`), so the list is 0 now. When a rescan or a bigger tally makes it
+    non-empty again, ask CB and do the same.
   - `tools/` is in `.assetsignore`, so the scripts and the tally (other players' usernames) are not
     published with the site.
 - **Community builds on the Builds tab (added 2026-10-09; CB: "have some of these builds on the website

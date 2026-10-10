@@ -9,10 +9,25 @@
   "scannedLabel": "8 Oct 2026"
  },
  "farm": {
-  "perRun": 27,
   "target": 520,
-  "runsNeeded": 20,
-  "runLabel": "tier 3 Isolation Vault runs",
+  "vaultBonus": 7,
+  "tiers": [
+   {
+    "id": "t1",
+    "label": "Tier 1",
+    "tokens": 10
+   },
+   {
+    "id": "t2",
+    "label": "Tier 2",
+    "tokens": 15
+   },
+   {
+    "id": "t3",
+    "label": "Tier 3",
+    "tokens": 20
+   }
+  ],
   "picks": [
    "#1",
    "#10",

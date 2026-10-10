@@ -57,6 +57,14 @@
     .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s ease; }
     .stepper { display: flex; gap: 0.6rem; margin-top: 0.9rem; flex-wrap: wrap; }
     .stepper .btn-sm { min-width: 48px; }
+    .tierrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; margin-top: 0.9rem; }
+    .tierbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.4rem 0.15rem; min-width: 0; line-height: 1.15; border-radius: 16px; font-size: 0.85rem; }
+    .tierbtn small { font-size: 0.8rem; font-weight: 500; opacity: 0.9; }
+    .tierrow [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .customrow { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+    .customrow input { flex: 1 1 11rem; min-width: 0; }
+    .bonusrow { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem; font-size: 0.95rem; cursor: pointer; min-height: 44px; }
+    .bonusrow input { width: 24px; height: 24px; accent-color: var(--accent); flex: none; }
     .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
     .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
@@ -364,7 +372,7 @@
       return n;
     }
 
-    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all' };
+    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all', bonus: true };
     try {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
@@ -374,13 +382,15 @@
         if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
         if (p && (p.modFilter === 'all' || p.modFilter === 'plat')) ui.modFilter = p.modFilter;
         if (p && p.community === true) ui.community = true;
+        if (p && p.bonus === false) ui.bonus = false;
         if (p && p.builds === 'community') ui.builds = 'community';
         if (p && typeof p.bcat === 'string' && /^[a-z-]{1,30}$/.test(p.bcat)) ui.bcat = p.bcat;
       }
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
 
-    const S = { data: null, done: {}, runs: 0, custom: {}, owner: false, sync: null, index: {} };
+    // S.tokens is the Mother Tokens counted so far. It is saved in the Firestore field `runs` (see CLAUDE.md), so the published rule needs no change.
+    const S = { data: null, done: {}, tokens: 0, lastDelta: null, customOpen: false, customVal: '', custom: {}, owner: false, sync: null, index: {} };
     const openGroups = {};
     const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
     const CUSTOM_GROUP = 'Added by you';
@@ -408,7 +418,10 @@
       if (c.note) n.appendChild(el('span', 'nt', c.note));
       return n;
     }
-    function tokens() { return S.runs * S.data.farm.perRun; }
+    function tokens() { return S.tokens; }
+    function vaultBonus() { return ui.bonus ? (S.data.farm.vaultBonus || 0) : 0; }
+    function tierAmount(t) { return t.tokens + vaultBonus(); }
+    function tokensLeft() { return Math.max(0, S.data.farm.target - S.tokens); }
     let flashTimer = null;
     function flash(msg) {
       const f = $('wf-flash'); if (!f) return;
@@ -426,7 +439,7 @@
     function renderGlance() {
       const g = $('wf-glance'); g.textContent = '';
       const cells = [
-        ['Tokens', tokens() + ' / ' + S.data.farm.target, S.runs + ' of ' + S.data.farm.runsNeeded + ' runs'],
+        ['Tokens', tokens() + ' / ' + S.data.farm.target, tokensLeft() > 0 ? tokensLeft() + ' to go' : 'Enough for the picks'],
         ['Burston Prime', isDone('bp30') ? 'Rank 30' : 'Needs rank 30', isDone('rebuild') ? 'Build redone' : 'Rebuild waits'],
         ['Mods', S.data.meta.types + ' types', S.data.meta.cards.toLocaleString('en-US') + ' cards'],
       ];
@@ -494,17 +507,67 @@
       const bar = el('div', 'bar'); const fill = document.createElement('i');
       fill.style.width = Math.min(100, tokens() / f.target * 100) + '%';
       bar.appendChild(fill); card.appendChild(bar);
-      card.appendChild(el('p', 'muted', S.runs + ' of ' + f.runsNeeded + ' ' + f.runLabel + ', ' + f.perRun + ' tokens each. Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').'));
+      const tiers = f.tiers || [], top = tiers[tiers.length - 1];
+      const left = tokensLeft();
+      card.appendChild(el('p', 'muted', (left > 0
+        ? left + ' to go' + (top ? ', about ' + Math.ceil(left / tierAmount(top)) + ' ' + top.label + ' vaults at ' + tierAmount(top) + ' each.' : '.')
+        : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').'));
       const d = daysUntil(f.shopRefresh);
       card.appendChild(el('p', 'muted', d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.'));
-      const row = el('div', 'stepper');
-      const minus = el('button', 'btn-sm', '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'Remove one run');
-      const plus = el('button', 'btn-sm primary', 'Run done'); plus.type = 'button';
-      [minus, plus].forEach((b) => { if (!S.owner) b.setAttribute('aria-disabled', 'true'); });
-      minus.onclick = () => changeRuns(-1);
-      plus.onclick = () => changeRuns(1);
-      row.appendChild(minus); row.appendChild(plus);
+
+      const row = el('div', 'tierrow');
+      tiers.forEach((t) => {
+        const b = el('button', 'btn-sm primary tierbtn'); b.type = 'button';
+        b.appendChild(el('span', null, t.label));
+        b.appendChild(el('small', null, '+' + tierAmount(t)));
+        b.setAttribute('aria-label', 'Add a ' + t.label + ' vault: ' + tierAmount(t) + ' tokens');
+        if (!S.owner) b.setAttribute('aria-disabled', 'true');
+        b.onclick = () => changeTokens(tierAmount(t));
+        row.appendChild(b);
+      });
+      const cb = el('button', 'btn-sm tierbtn', ''); cb.type = 'button'; cb.id = 'tok-custom';
+      cb.appendChild(el('span', null, 'Custom'));
+      cb.appendChild(el('small', null, 'amount'));
+      cb.setAttribute('aria-expanded', S.customOpen ? 'true' : 'false');
+      if (!S.owner) cb.setAttribute('aria-disabled', 'true');
+      cb.onclick = () => {
+        if (!S.owner || !S.sync) return needOwner();
+        S.customOpen = !S.customOpen; renderGoals();
+        if (S.customOpen) { const i = $('tok-custom-in'); if (i) i.focus(); }
+      };
+      row.appendChild(cb);
       card.appendChild(row);
+
+      if (S.customOpen) {
+        const cr = el('div', 'customrow');
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.id = 'tok-custom-in'; inp.step = '1'; inp.inputMode = 'numeric';
+        inp.placeholder = 'Tokens (a minus takes them off)'; inp.value = S.customVal;
+        inp.setAttribute('aria-label', 'Custom token amount');
+        inp.oninput = () => { S.customVal = inp.value; };
+        inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addCustom(); } };
+        const go = el('button', 'btn-sm primary', 'Add'); go.type = 'button'; go.id = 'tok-custom-add'; go.onclick = addCustom;
+        const no = el('button', 'btn-sm', 'Cancel'); no.type = 'button'; no.onclick = () => { S.customOpen = false; S.customVal = ''; renderGoals(); };
+        cr.appendChild(inp); cr.appendChild(go); cr.appendChild(no);
+        card.appendChild(cr);
+      }
+
+      const bo = el('label', 'bonusrow');
+      const bx = document.createElement('input'); bx.type = 'checkbox'; bx.id = 'tok-bonus'; bx.checked = ui.bonus;
+      bx.onchange = () => { ui.bonus = bx.checked; saveUi(); renderGoals(); };
+      bo.appendChild(bx);
+      bo.appendChild(el('span', null, 'I opened the vault (+' + (f.vaultBonus || 0) + ')'));
+      card.appendChild(bo);
+      card.appendChild(el('p', 'muted', 'The +' + (f.vaultBonus || 0) + ' vault bonus is a guess that fits the old 27 per Tier 3 run. Untick it if a vault gave only the plain amount.'));
+
+      if (S.lastDelta) {
+        const ur = el('div', 'stepper');
+        const un = el('button', 'btn-sm', 'Undo ' + (S.lastDelta > 0 ? '+' : '') + S.lastDelta); un.type = 'button'; un.id = 'tok-undo';
+        if (!S.owner) un.setAttribute('aria-disabled', 'true');
+        un.onclick = () => changeTokens(-S.lastDelta, true);
+        ur.appendChild(un);
+        card.appendChild(ur);
+      }
       p.appendChild(card);
 
       const wrap = el('div', 'wfcard');
@@ -638,21 +701,32 @@
       const prev = isDone(id), next = !prev;
       S.done[id] = next; renderLive();
       try {
-        await S.sync.write({ ['done.' + id]: next }, { done: S.done, runs: S.runs });
+        await S.sync.write({ ['done.' + id]: next }, { done: S.done, runs: S.tokens });
       } catch (e) {
         S.done[id] = prev; renderLive(); writeFailed(e);
       }
     }
-    async function changeRuns(delta) {
+    // Adds (or, with a minus, takes off) Mother Tokens. Saved in the Firestore field `runs`.
+    async function changeTokens(delta, isUndo) {
       if (!S.owner || !S.sync) return needOwner();
-      const prev = S.runs, next = Math.max(0, prev + delta);
+      const prev = S.tokens, prevLast = S.lastDelta, next = Math.max(0, prev + delta);
       if (next === prev) return;
-      S.runs = next; renderLive();
+      S.tokens = next; S.lastDelta = isUndo ? null : next - prev; renderLive();
       try {
         await S.sync.write({ runs: next }, { done: S.done, runs: next });
       } catch (e) {
-        S.runs = prev; renderLive(); writeFailed(e);
+        S.tokens = prev; S.lastDelta = prevLast; renderLive(); writeFailed(e);
       }
+    }
+    function addCustom() {
+      const raw = String(S.customVal || '').trim();
+      const n = Number(raw);
+      if (!raw || !Number.isInteger(n) || n === 0 || Math.abs(n) > 100000) {
+        flash('Type a whole number of tokens, like 168. A minus takes tokens off, like -45.');
+        return;
+      }
+      S.customOpen = false; S.customVal = '';
+      changeTokens(n);
     }
     function writeFailed(e) {
       console.error('Write failed:', e);
@@ -736,7 +810,7 @@
       const overridden = !!(editing && editing.custom.fixed);
       S.custom[id] = val; renderLive(); closeGoalDialog();
       try {
-        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.runs, custom: S.custom });
+        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
         flash(overridden ? 'Saved. A correction in the site data still overrides this goal, so ask Claude to clear it.' : (editing ? 'Goal updated.' : 'Goal added.'));
       } catch (e) {
         if (was) S.custom[id] = was; else delete S.custom[id];
@@ -1150,7 +1224,7 @@
     function initTheme() {
       T.mountEditor($('p-theme'), {
         canSave: () => !!(S.owner && S.sync),
-        save: (t) => S.sync.write({ theme: t }, { done: S.done, runs: S.runs, theme: t }),
+        save: (t) => S.sync.write({ theme: t }, { done: S.done, runs: S.tokens, theme: t }),
         onError: writeFailed,
       });
     }
@@ -1216,7 +1290,7 @@
         fs.onSnapshot(ref, (snap) => {
           const d = snap.data() || {};
           S.done = d.done && typeof d.done === 'object' ? d.done : {};
-          S.runs = Number.isInteger(d.runs) ? d.runs : 0;
+          S.tokens = Number.isInteger(d.runs) ? d.runs : 0;
           S.custom = d.custom && typeof d.custom === 'object' && !Array.isArray(d.custom) ? d.custom : {};
           T.setRemote(d.theme || null);
           setSync('☁ synced live');

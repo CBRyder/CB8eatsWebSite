@@ -23,7 +23,7 @@
       "/tracker", "/tracker.html",
       "/coa-tracker", "/coa-tracker.html",
       "/warframe", "/warframe.html",
-      "/resource-inventory.json", "/coa-inventory.json", "/warframe-data.json", "/warframe-mod-stats.json"
+      "/resource-inventory.json", "/coa-inventory.json", "/warframe-data.json", "/warframe-mod-stats.json", "/warframe-community-builds.json"
     ]
   },
   "vars": {

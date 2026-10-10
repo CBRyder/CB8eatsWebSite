@@ -435,10 +435,22 @@ and **Theme**.
     Overframe or anywhere else, or one of CB's own in-game builds (read it off the screen, `--source
     ingame`). One command per build, then regenerate and commit both files:
     `python3 tools/mod_usage.py add --source overframe --id <id> --by <player> --cat <category>
-    --mods "A, B, C"` (add `--items <Mods.json>` to catch misspelt names; it refuses a build that is
-    already in the tally), then `python3 tools/build-mod-stats.py --items <Mods.json>`.
+    --frames "Zephyr" --mods "A, B, C"` (add `--items <Mods.json>` to catch misspelt names; it refuses
+    a build that is already in the tally), then `python3 tools/build-mod-stats.py --items <Mods.json>`.
     `python3 tools/mod_usage.py report` prints the totals, the top mods and which players made the
     most builds. Never edit counts by hand.
+  - **Also note which frames each build is on (CB, 2026-10-09: "sometimes that plays into it").** A
+    tally record may carry `frames: ["Zephyr", ...]`: the Warframes the build is made for or leans
+    on. A frame build is on its own frame; a Necramech build is `Voidrig`/`Bonewidow`; for a weapon,
+    archwing or companion build it is the frame(s) the author pairs it with. Base names only (`Mesa`,
+    not `Mesa Prime`; `Excalibur Umbra` stays separate). Overframe has **no frame field**: it is only
+    in the title (titles like "Harrow's Arsenal | ...") and the free-text `description` of
+    `/api/v1/builds/<id>/`, so read those. Pass `--frames` to `add` (use `--replace` to add it to a
+    build already tallied). Frames never change a mod's count; they are context. The 600 seeded
+    builds were filled in on 2026-10-09: the 30 on the Builds tab by hand from the write-ups, the
+    rest by a scan (a frame counts when the title names it or the write-up mentions it 3+ times; a
+    frame build gets its own frame from the build URL's item slug); expect a few misses and odd
+    pairings in those, and read the write-up before trusting one. `report` shows which frames are named most.
   - **How the seed was read (Overframe is client-rendered, so a plain fetch gets nothing):** in the
     built-in browser on `overframe.gg`, `GET /api/v1/builds/<id>/` (same origin) returns `author.username`,
     `title`, `item`, `score`, `formas`, `item_rank` and `slots[]` (`slot_id`, `mod`, `rank`); the top 100
@@ -452,6 +464,31 @@ and **Theme**.
     show mods the lists contain, so tell CB when that list is long.
   - `tools/` is in `.assetsignore`, so the scripts and the tally (other players' usernames) are not
     published with the site.
+- **Community builds on the Builds tab (added 2026-10-09; CB: "have some of these builds on the website
+  for viewing"):** the Builds tab has a **My builds / Community builds** switch (`#bv-mine`,
+  `#bv-community`; `ui.builds` and `ui.bcat` are saved in the same localStorage entry as the other
+  filters). Community builds shows cards from `warframe-community-builds.json`, with category buttons
+  (Warframes, Primary, Secondary, Melee, Archwing, Companions) and for each build: item, title, "by
+  <player> · Overframe score N · F forma · rank R · updated D", a **Frame(s)** row with a one-line
+  note when the author names a frame (see the standing rule above; a Warframe build needs no row, it
+  is on its own frame), the mods with their ranks, the arcanes, "On your lists: A owned, B missing, C
+  on neither", and an "Open on Overframe" link. A mod the Missing list has is drawn dashed; a max-rank
+  mod has the usual `max` marker; tapping a mod opens the View mod screen **at the rank the build
+  uses**, with an "In this community build" box. If the file is missing the button is greyed out
+  and My builds shows (one `console.warn`).
+  - **Data:** `warframe-community-builds.json`, fetched with `cache: 'no-store'` (`loadCommunity()`),
+    `{ built, source, note, cats: [[id, label]], builds: [{ id, cat, item, title, by, score, formas,
+    rank, updated, frames?, frameNote?, mods: [[name, rank]], arcanes: [[name, rank]] }] }`. 30 builds today,
+    the top 5 per category (one per item, at most two per player). The category id for companions is
+    `companions` (Overframe calls it `sentinels`). **Every build in it is also in `tools/mod-usage.json`**
+    (same id, same player), so the tally and the page agree.
+  - **To add or refresh builds:** read them the way the seed was read (see above), put them in the file,
+    tally them (`mod_usage.py add`, with frames), then run `python3 tools/build-mod-stats.py --items
+    <Mods.json>`, which also reads this file (`--community`, default
+    `warframe-community-builds.json`) and gives its mod chips group id `community` in
+    `warframe-mod-stats.json` so they are tappable. Commit all three files.
+  - It is a dev-only data file like the others: in `DEV_DATA` in `worker.js` and in
+    `wrangler.jsonc`'s `run_worker_first`; the worker 404s it on every host except the dev one.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int,
@@ -545,7 +582,7 @@ content. They live together under one hub page with three big cards (`dev.html`;
 - **The lock: Cloudflare Access on the dev hostname, and dev pages only exist there.**
   `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/warframe` (and their `.html`
   forms) and the data files `resource-inventory.json`, `coa-inventory.json`,
-  `warframe-data.json`, `warframe-mod-stats.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
+  `warframe-data.json`, `warframe-mod-stats.json`, `warframe-community-builds.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
   `workers.dev` address) the pages 302 to `https://www.dev.cb8eats.com/...` and the data
   files 404, so nothing dev-related can be read from the public hostname. Variants like
   `/%64ev`, `//tracker`, `/Tracker` are normalized in the Worker or answered by the asset

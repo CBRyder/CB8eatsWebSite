@@ -180,6 +180,16 @@
     .mv-box .fine { display: block; margin: 0.4rem 0 0; }
     .chip .n.uc { color: var(--accent-bright); }
     .legend .commline { display: block; margin-top: 0.4rem; }
+    .pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.8rem; }
+    .pills button { font: inherit; font-size: 0.88rem; font-weight: 600; min-height: 40px; padding: 0.3rem 0.9rem; color: var(--text-dim); background: transparent; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+    .pills button[aria-pressed="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); border-color: transparent; }
+    .pills button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    .modrow .chip.miss { border-style: dashed; color: var(--text-dim); }
+    .build.comm .meta { margin-bottom: 0.3rem; }
+    .build.comm .frames { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.5rem 0 0; }
+    .build.comm .frames b { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; margin-right: 0.2rem; }
+    .fchip { padding: 0.15rem 0.7rem; font-size: 0.88rem; font-weight: 600; color: var(--text); border: 1px solid var(--accent-2); border-radius: 999px; background: var(--card); }
+    .framenote { margin-top: 0.3rem; overflow-wrap: anywhere; }
     .mv-link { display: inline-block; margin-top: 0.7rem; min-height: 40px; line-height: 40px; color: var(--accent-bright); }
     /* Builds */
     .build h2 { margin-bottom: 0.1rem; }
@@ -354,7 +364,7 @@
       return n;
     }
 
-    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false };
+    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all' };
     try {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
@@ -364,6 +374,8 @@
         if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
         if (p && (p.modFilter === 'all' || p.modFilter === 'plat')) ui.modFilter = p.modFilter;
         if (p && p.community === true) ui.community = true;
+        if (p && p.builds === 'community') ui.builds = 'community';
+        if (p && typeof p.bcat === 'string' && /^[a-z-]{1,30}$/.test(p.bcat)) ui.bcat = p.bcat;
       }
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
@@ -859,7 +871,7 @@
       const m = MS.data.mods[mv.keys[mv.i]];
       const ranks = m.l && m.l.length ? m.l : null;
       const maxRank = ranks ? ranks.length - 1 : 0;
-      mv.rank = maxRank;
+      mv.rank = typeof mv.tap.rank === 'number' ? Math.min(mv.tap.rank, maxRank) : maxRank;   // a community build opens at the rank it uses
       $('wf-mod-title').textContent = m.n;
       const showCompat = m.c && !(m.t || '').toLowerCase().includes(m.c.toLowerCase());
       $('wf-mod-sub').textContent = [m.r, m.t, showCompat ? m.c : ''].filter(Boolean).join(' · ');
@@ -945,6 +957,9 @@
         box.appendChild(el('b', null, 'Not in your collection yet'));
         box.appendChild(document.createTextNode(c.note ? 'Where to get it: ' + c.note : 'No source written down for this one yet.'));
         (c.tags || []).filter((t) => TAG_LABEL[t]).forEach((t) => box.appendChild(el('span', tagClass(t), TAG_LABEL[t])));
+      } else if (tap.view === 'community') {
+        box.appendChild(el('b', null, 'In this community build'));
+        box.appendChild(document.createTextNode(tap.build + ' · rank ' + tap.rank + (c.max ? ' (max rank)' : '')));
       } else {
         box.appendChild(el('b', null, 'In your build'));
         box.appendChild(document.createTextNode(tap.build + (c.max ? ' · max rank' : '')));
@@ -991,8 +1006,98 @@
     }
 
     /* ---------- render: builds ---------- */
+    /* warframe-community-builds.json: top-rated builds by other players, fetched after the main data.
+       The page works without it (the Community builds button stays greyed out). */
+    const CM = { data: null };
+    async function loadCommunity() {
+      try {
+        const res = await fetch('warframe-community-builds.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        CM.data = await res.json();
+      } catch (e) { console.warn('Could not load warframe-community-builds.json:', e); CM.data = null; }
+      renderBuilds();
+    }
+    /* The stat keys of every mod on the Owned (or Missing) list, to tell which mods of a community build you have. */
+    function listKeys(view) {
+      const out = new Set();
+      S.data.mods[view].forEach((g) => g.items.forEach((it) => (statKeys(g.id, parseChip(it).name) || []).forEach((k) => out.add(k))));
+      return out;
+    }
+    function communityCard(b, cm, have) {
+      const c = el('div', 'wfcard build comm');
+      const cat = cm.cats.find((x) => x[0] === b.cat);
+      c.appendChild(el('span', 'pill', cat ? cat[1] : b.cat));
+      c.appendChild(el('h2', null, b.item));
+      c.appendChild(el('p', 'meta', b.title));
+      c.appendChild(el('p', 'meta', ['by ' + b.by, cm.source + ' score ' + b.score.toLocaleString('en-US'), b.formas + ' forma', 'rank ' + b.rank, 'updated ' + b.updated].join(' · ')));
+      if (b.frames && b.frames.length) {
+        const fr = el('p', 'frames'); fr.appendChild(el('b', null, b.frames.length > 1 ? 'Frames' : 'Frame'));
+        b.frames.forEach((f) => fr.appendChild(el('span', 'fchip', f)));
+        c.appendChild(fr);
+        if (b.frameNote) c.appendChild(el('p', 'muted framenote', b.frameNote));
+      }
+      c.appendChild(el('p', 'label', 'Mods'));
+      const r = el('div', 'modrow');
+      let own = 0, miss = 0;
+      b.mods.forEach((m) => {
+        const name = m[0], rank = m[1], keys = statKeys('community', name);
+        const state = have && keys ? (keys.some((k) => have.own.has(k)) ? 'own' : keys.some((k) => have.miss.has(k)) ? 'miss' : null) : null;
+        if (state === 'own') own++; else if (state === 'miss') miss++;
+        const top = keys ? MS.data.mods[keys[0]].m : null;
+        const isMax = typeof top === 'number' && top > 0 && rank === top;
+        const ch = el(keys ? 'button' : 'span', 'chip' + (isMax ? ' max' : '') + (state === 'miss' ? ' miss' : '') + (keys ? ' tap' : ''));
+        if (keys) {
+          ch.type = 'button'; ch.dataset.mod = name; ch.setAttribute('aria-haspopup', 'dialog');
+          ch.addEventListener('click', () => openMod({ keys, view: 'community', miss: missFor('community', name), build: b.item + ' by ' + b.by + ' (' + cm.source + ')', rank },
+            { name, count: null, rank: null, max: isMax, note: '', tags: [] }));
+        }
+        if (state === 'miss') ch.title = 'On your Missing list';
+        ch.appendChild(document.createTextNode(name));
+        ch.appendChild(el('span', 'n', 'r' + rank));
+        r.appendChild(ch);
+      });
+      c.appendChild(r);
+      if (have) c.appendChild(el('p', 'muted', 'On your lists: ' + own + ' owned, ' + miss + ' missing, ' + (b.mods.length - own - miss) + ' on neither.'));
+      if (b.arcanes && b.arcanes.length) {
+        c.appendChild(el('p', 'label', 'Arcanes'));
+        const ar = el('div', 'modrow');
+        b.arcanes.forEach((a) => { const ch = el('span', 'chip'); ch.appendChild(document.createTextNode(a[0])); ch.appendChild(el('span', 'n', 'r' + a[1])); ar.appendChild(ch); });
+        c.appendChild(ar);
+      }
+      const a = el('a', 'mv-link', 'Open on ' + cm.source); a.href = 'https://overframe.gg/build/' + String(b.id).replace(/\D/g, '') + '/'; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      c.appendChild(a);
+      return c;
+    }
+    function renderCommunity(p, cm) {
+      if (ui.bcat !== 'all' && !cm.cats.some((x) => x[0] === ui.bcat)) ui.bcat = 'all';
+      const pills = el('div', 'pills'); pills.setAttribute('role', 'group'); pills.setAttribute('aria-label', 'Category');
+      [['all', 'All']].concat(cm.cats).forEach(([id, label]) => {
+        const n = id === 'all' ? cm.builds.length : cm.builds.filter((b) => b.cat === id).length;
+        if (!n) return;
+        const b = el('button', null, label + ' ' + n); b.type = 'button'; b.dataset.cat = id;
+        b.setAttribute('aria-pressed', ui.bcat === id ? 'true' : 'false');
+        b.addEventListener('click', () => { ui.bcat = id; saveUi(); renderBuilds(); });
+        pills.appendChild(b);
+      });
+      p.appendChild(pills);
+      p.appendChild(el('p', 'legend', 'The highest-rated builds on ' + cm.source + ' in each category, one per item, read ' + cm.built + '. They are other players\' builds and they change, so use the link for the latest.' + (MS.data ? ' Tap a mod to see its stats at the rank used. A dashed mod is on your Missing list.' : '')));
+      const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
+      cm.builds.filter((b) => ui.bcat === 'all' || b.cat === ui.bcat).forEach((b) => p.appendChild(communityCard(b, cm, have)));
+    }
     function renderBuilds() {
       const p = $('p-builds'); p.textContent = '';
+      const cm = CM.data, community = ui.builds === 'community' && !!cm;
+      const tools = el('div', 'tools');
+      const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Which builds');
+      [['mine', 'My builds'], ['community', 'Community builds']].forEach(([id, label]) => {
+        const b = el('button', null, label); b.type = 'button'; b.id = 'bv-' + id;
+        b.setAttribute('aria-pressed', (id === 'community') === community ? 'true' : 'false');
+        if (id === 'community' && !cm) { b.disabled = true; b.title = 'The community builds have not loaded'; }
+        b.addEventListener('click', () => { ui.builds = id; saveUi(); renderBuilds(); });
+        seg.appendChild(b);
+      });
+      tools.appendChild(seg); p.appendChild(tools);
+      if (community) { renderCommunity(p, cm); return; }
       S.data.builds.forEach((b) => {
         const c = el('div', 'wfcard build');
         c.appendChild(el('span', 'pill', b.status));
@@ -1143,7 +1248,7 @@
       indexGoals(S.data.farm.tasks);
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
       renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initModDialog();
-      loadModStats();
+      loadModStats(); loadCommunity();
       await startSync();
     }
     boot();

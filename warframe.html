@@ -61,6 +61,8 @@
     .tokrow input { width: 100%; box-sizing: border-box; min-width: 0; }
     .tokrow .btn-sm { min-width: 0; padding-left: 0.3rem; padding-right: 0.3rem; }
     .tokrow [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .tokdesc { white-space: pre-line; overflow-wrap: anywhere; }
+    .glance .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tokhead { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.1rem; min-height: 44px; }
     .tokhead h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; }
     .tokhead [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
@@ -71,8 +73,15 @@
     .toklist .when { color: var(--text-dim); font-size: 0.9rem; text-align: right; min-width: 0; overflow-wrap: anywhere; }
     /* Add build form (a dialog with a mod dropdown per slot) and the cards for the builds you add */
     dialog.bdlg { width: min(94vw, 34rem); }
+    #wf-tokdlg .field select, #wf-tokdlg .field input, #wf-tokdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
+    #wf-tokdlg .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+    #wf-tokdlg .slotgrid input { min-height: 44px; }
+    /* The Edit button stays at the top right even when the title is long (the title wraps instead) */
+    .cardhead.tokcardhead { flex-wrap: nowrap; align-items: flex-start; }
+    .tokcardhead h2 { min-width: 0; overflow-wrap: anywhere; }
+    .tokcardhead .btn-sm { flex: none; }
     .bdlg .field select, .bdlg .field input[type="text"], .bdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
-    .bdlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
+    #wf-tokdlg textarea, .bdlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
       border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
     .slotgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.8rem; }
     .slotgrid .field { margin: 0.45rem 0; min-width: 0; }
@@ -349,6 +358,38 @@
     </form>
   </dialog>
 
+  <dialog class="wfdlg" id="wf-tokdlg" aria-labelledby="wf-tokdlg-title">
+    <form id="wf-tokform" novalidate>
+      <h2 id="wf-tokdlg-title">Edit this card</h2>
+      <p class="muted">Change the resource, the description and the quantity. The total you have is kept in the history, so it still adds up.</p>
+      <label class="field"><span>Resource</span>
+        <select id="wf-tok-res"></select>
+      </label>
+      <label class="field" id="wf-tok-other-wrap" hidden><span>Name of the resource</span>
+        <input type="text" id="wf-tok-other" maxlength="40" autocomplete="off" placeholder="Type the name">
+      </label>
+      <div class="slotgrid">
+        <label class="field"><span>Quantity you have</span>
+          <input type="number" id="wf-tok-have" min="0" max="100000000" step="1" inputmode="numeric" required>
+        </label>
+        <label class="field"><span>Quantity goal</span>
+          <input type="number" id="wf-tok-goal" min="1" max="100000000" step="1" inputmode="numeric" required>
+        </label>
+      </div>
+      <label class="field"><span>Description</span>
+        <textarea id="wf-tok-note" maxlength="300" rows="4"></textarea>
+        <small>Leave it empty to show the automatic lines (what is left, the shop picks and the refresh).</small>
+      </label>
+      <p class="formerr" id="wf-tok-err" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm" id="wf-tok-reset" hidden>Back to the defaults</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="wf-tok-cancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="wf-tok-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="wfdlg bdlg" id="wf-bdlg" aria-labelledby="wf-bdlg-title">
     <form id="wf-buildform" novalidate>
       <h2 id="wf-bdlg-title">Add a build</h2>
@@ -457,6 +498,8 @@
     const S = { data: null, done: {}, tokens: 0, tokVal: '', custom: {}, owner: false, sync: null, index: {} };
     const TOKLOG = 'tokenlog';   // custom.tokenlog = { e: { <key>: { n: amount, at: ms } } }, the Mother Tokens history (see CLAUDE.md)
     const TOK_KEY_RE = /^t[0-9]{10,14}[a-z0-9]{0,8}$/;
+    const TOKCARD = 'tokencard'; // custom.tokencard = { name?, note?, target? }, what the card's Edit button changed (see CLAUDE.md)
+    const TOK_DEFAULT_NAME = 'Mother Tokens', TOK_MAX = 100000000;
     const openGroups = {};
     const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
     const CUSTOM_GROUP = 'Added by you';
@@ -485,7 +528,27 @@
       return n;
     }
     function tokens() { return S.tokens; }
-    function tokensLeft() { return Math.max(0, S.data.farm.target - S.tokens); }
+    /* The Mother Tokens card, with whatever the Edit button changed laid over the defaults:
+       name = the resource (title), note = the description, target = the quantity goal. A missing or bad value falls back to the default. */
+    function tokCard() {
+      const v = S.custom[TOKCARD], out = { name: '', note: '', target: null };
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        out.name = typeof v.name === 'string' ? cleanText(v.name, 40) : '';   // only text counts: a number or object falls back to the default
+        out.note = (typeof v.note === 'string' ? v.note : '').replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 300);
+        const t = Number(v.target);
+        if (Number.isInteger(t) && t >= 1 && t <= TOK_MAX) out.target = t;
+      }
+      return out;
+    }
+    const tokName = () => tokCard().name || TOK_DEFAULT_NAME;
+    const tokTarget = () => tokCard().target || S.data.farm.target;
+    function tokensLeft() { return Math.max(0, tokTarget() - S.tokens); }
+    /* The two description lines the card shows until a description of your own is saved. */
+    function tokAutoNote() {
+      const f = S.data.farm, left = tokensLeft(), d = daysUntil(f.shopRefresh);
+      return (left > 0 ? left + ' to go.' : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').\n'
+        + (d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.');
+    }
     let flashTimer = null;
     function flash(msg) {
       const f = $('wf-flash'); if (!f) return;
@@ -503,7 +566,7 @@
     function renderGlance() {
       const g = $('wf-glance'); g.textContent = '';
       const cells = [
-        ['Tokens', tokens() + ' / ' + S.data.farm.target, tokensLeft() > 0 ? tokensLeft() + ' to go' : 'Enough for the picks'],
+        [tokCard().name || 'Tokens', tokens() + ' / ' + tokTarget(), tokensLeft() > 0 ? tokensLeft() + ' to go' : 'Enough for the picks'],
         ['Burston Prime', isDone('bp30') ? 'Rank 30' : 'Needs rank 30', isDone('rebuild') ? 'Build redone' : 'Rebuild waits'],
         ['Mods', S.data.meta.types + ' types', S.data.meta.cards.toLocaleString('en-US') + ' cards'],
       ];
@@ -565,25 +628,32 @@
       const f = S.data.farm, p = $('p-goals');
       const hadFocus = !!(document.activeElement && document.activeElement.id === 'tok-in');   // a re-render must not drop what is being typed
       p.textContent = '';
-      const card = el('div', 'wfcard');
-      card.appendChild(el('h2', null, 'Mother Tokens'));
+      const card = el('div', 'wfcard'), tc = tokCard(), target = tokTarget();
+      // Title (the resource) with the Edit button at the top right.
+      const top = el('div', 'cardhead tokcardhead');
+      top.appendChild(el('h2', null, tokName()));
+      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.id = 'tok-edit';
+      ed.setAttribute('aria-label', 'Edit ' + tokName() + ': the resource, the description and the quantity');
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = openTokenDialog;
+      top.appendChild(ed);
+      card.appendChild(top);
       const big = el('p', 'big'); big.appendChild(document.createTextNode(String(tokens())));
-      big.appendChild(el('small', null, ' of ' + f.target));
+      big.appendChild(el('small', null, ' of ' + target));
       card.appendChild(big);
       const bar = el('div', 'bar'); const fill = document.createElement('i');
-      fill.style.width = Math.min(100, tokens() / f.target * 100) + '%';
+      fill.style.width = Math.min(100, tokens() / target * 100) + '%';
       bar.appendChild(fill); card.appendChild(bar);
-      const left = tokensLeft();
-      card.appendChild(el('p', 'muted', (left > 0 ? left + ' to go.' : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').'));
-      const d = daysUntil(f.shopRefresh);
-      card.appendChild(el('p', 'muted', d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.'));
+      // The description: your own text if you saved one, otherwise the two automatic lines.
+      const desc = el('p', 'muted tokdesc', tc.note || tokAutoNote()); desc.id = 'tok-desc';
+      card.appendChild(desc);
 
       // The typing box and the Add button.
       const row = el('div', 'tokrow');
       const inp = document.createElement('input');
       inp.type = 'number'; inp.id = 'tok-in'; inp.step = '1';
-      inp.placeholder = 'Tokens, - to spend'; inp.value = S.tokVal;
-      inp.setAttribute('aria-label', 'Mother Tokens to add. A minus takes tokens off.');
+      inp.placeholder = (tc.name ? 'Amount' : 'Tokens') + ', - to spend'; inp.value = S.tokVal;
+      inp.setAttribute('aria-label', tokName() + ' to add. A minus takes some off.');
       inp.oninput = () => { S.tokVal = inp.value; };
       inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addTyped(); } };
       const go = el('button', 'btn-sm primary', 'Add'); go.type = 'button'; go.id = 'tok-add';
@@ -662,7 +732,7 @@
       const fixes = (S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object') ? S.data.farm.customFixes : {};
       const out = [];
       Object.keys(S.custom).forEach((id) => {
-        if (!ID_RE.test(id) || id === TOKLOG) return;   // the token history shares this map but is not a goal
+        if (!ID_RE.test(id) || id === TOKLOG || id === TOKCARD) return;   // the token history and the token card's settings share this map but are not goals
         const v = S.custom[id];
         if (!v || typeof v !== 'object' || v.kind === 'build') return;   // builds you add share this map but are not goals
         const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
@@ -822,6 +892,95 @@
       }
       S.tokVal = '';
       changeTokens(n);
+    }
+    /* ---------- edit the Mother Tokens card ---------- */
+    /* The Edit button changes the resource (title), the description and the quantity (have and goal).
+       Everything is saved in the existing Firestore fields, so the published rule needs no change: the card's
+       settings in custom.tokencard, the total in `runs`, and a changed total is also one entry in the history
+       (custom.tokenlog), written in the same update so the history still adds up to the total. */
+    function buildTokenResourceSelect() {
+      const sel = $('wf-tok-res'); sel.textContent = '';
+      sel.appendChild(new Option(TOK_DEFAULT_NAME + ' (default)', ''));
+      (S.data.resources || []).forEach((g) => {
+        const og = document.createElement('optgroup'); og.label = g.group;
+        g.items.filter((n) => n !== 'Mother Token').forEach((n) => og.appendChild(new Option(n, n)));
+        if (og.children.length) sel.appendChild(og);
+      });
+      sel.appendChild(new Option('Other (type the name)', '__other'));
+    }
+    function syncTokenOther() { $('wf-tok-other-wrap').hidden = $('wf-tok-res').value !== '__other'; }
+    function openTokenDialog() {
+      if (!S.owner || !S.sync) return needOwner();
+      const tc = tokCard(), sel = $('wf-tok-res');
+      const known = tc.name && Array.from(sel.options).some((o) => o.value === tc.name && o.value !== '__other');
+      sel.value = !tc.name ? '' : (known ? tc.name : '__other');
+      $('wf-tok-other').value = tc.name && !known ? tc.name : '';
+      $('wf-tok-have').value = String(S.tokens);
+      $('wf-tok-goal').value = String(tokTarget());
+      const note = $('wf-tok-note'); note.value = tc.note; note.placeholder = tokAutoNote();
+      $('wf-tok-err').textContent = '';
+      $('wf-tok-reset').hidden = !(tc.name || tc.note || tc.target);
+      syncTokenOther();
+      const dlg = $('wf-tokdlg');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeTokenDialog() {
+      const dlg = $('wf-tokdlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    /* Saves the settings (and the total, if it changed). Settings equal to the defaults are left out, and
+       if nothing is left the whole custom.tokencard field is deleted. reset = true goes back to all defaults. */
+    async function saveTokenCard(ev, reset) {
+      if (ev) ev.preventDefault();
+      const err = (m) => { $('wf-tok-err').textContent = m; };
+      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save this.');
+      const prevTokens = S.tokens, was = S.custom[TOKCARD], hadKey = Object.prototype.hasOwnProperty.call(S.custom, TOKCARD);
+      let name = '', note = '', target = null, have = prevTokens;
+      if (!reset) {
+        const pick = $('wf-tok-res').value;
+        name = cleanText(pick === '__other' ? $('wf-tok-other').value : pick, 40);
+        if (pick === '__other' && !name) return err('Type the name of the resource.');
+        if (name === TOK_DEFAULT_NAME) name = '';
+        note = $('wf-tok-note').value.replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        if (note.length > 300) return err('That description is too long (300 characters at most).');
+        if (note === tokAutoNote().trim()) note = '';
+        const goal = Number($('wf-tok-goal').value), haveRaw = $('wf-tok-have').value.trim();
+        have = Number(haveRaw);
+        if (!haveRaw || !Number.isInteger(have) || have < 0 || have > TOK_MAX) return err('Quantity you have must be a whole number from 0 to 100,000,000.');
+        if (!Number.isInteger(goal) || goal < 1 || goal > TOK_MAX) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
+        target = goal === S.data.farm.target ? null : goal;
+      }
+      const val = {};
+      if (name) val.name = name;
+      if (note) val.note = note;
+      if (target) val.target = target;
+      const empty = !Object.keys(val).length;
+      if (empty && !hadKey && !(have - prevTokens)) { closeTokenDialog(); return; }   // nothing to save
+      const fields = { ['custom.' + TOKCARD]: empty ? S.sync.del() : val };
+      const delta = have - prevTokens;
+      let key = null, at = 0;
+      if (delta) {
+        at = Date.now(); key = 't' + at + Math.random().toString(36).slice(2, 6).replace(/[^a-z0-9]/g, 'x');
+        fields.runs = have; fields['custom.' + TOKLOG + '.e.' + key] = { n: delta, at };
+      }
+      if (empty) delete S.custom[TOKCARD]; else S.custom[TOKCARD] = val;
+      if (delta) { S.tokens = have; logPut(key, { n: delta, at }); }
+      renderLive(); closeTokenDialog();
+      try {
+        await S.sync.write(fields, { done: S.done, runs: S.tokens, custom: S.custom });
+        flash(reset ? 'Back to the defaults.' : 'Saved.');
+      } catch (e) {
+        if (hadKey) S.custom[TOKCARD] = was; else delete S.custom[TOKCARD];
+        if (delta) { S.tokens = prevTokens; logPut(key, null); }
+        renderLive(); writeFailed(e);
+      }
+    }
+    function initTokenDialog() {
+      buildTokenResourceSelect();
+      $('wf-tok-res').addEventListener('change', syncTokenOther);
+      $('wf-tok-cancel').addEventListener('click', closeTokenDialog);
+      $('wf-tokform').addEventListener('submit', (ev) => saveTokenCard(ev, false));
+      $('wf-tok-reset').addEventListener('click', (ev) => saveTokenCard(ev, true));
     }
     function writeFailed(e) {
       console.error('Write failed:', e);
@@ -1778,7 +1937,7 @@
       S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
       indexGoals(S.data.farm.tasks);
       $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
-      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initBuildDialog(); initModDialog();
+      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initBuildDialog(); initTokenDialog(); initModDialog();
       loadModStats(); loadCommunity();
       await startSync();
     }

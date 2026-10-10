@@ -8,13 +8,16 @@ tools/mod-usage.json holds one record per build that has been read, and who made
       "builds": { "overframe:553": { "by": "mmosimca", "cat": "primary-weapons", "mods": [696, 710, ...] },
                   "ingame:banshee-config-c": { "by": "cb8eats", "cat": "warframes", "mods": ["Pressure Point", ...] } } }
 
+A build may also carry "frames": ["Zephyr", ...], the Warframes the build is made for or leans on (its own
+frame for a frame build; otherwise the ones the author names, because a frame's abilities sometimes decide
+which mods a build wants). Base names only: "Mesa", not "Mesa Prime"; "Excalibur Umbra" stays separate.
 A build key is "<source>:<id>", so the same build can never be counted twice. A mod in a build is
 either a number (looked up in `names`) or a plain name. The popularity of a mod is how many DIFFERENT
 players use it (the `by` field, ignoring case), not how many builds: one player can post dozens of
 near-identical builds, and they count once. The number of builds is kept too, for reference.
 
     python3 tools/mod_usage.py add --source ingame --id banshee-config-c --by cb8eats \
-        --cat warframes --mods "Rolling Guard, Primed Flow, ..."     # tally a build you just read
+        --cat warframes --frames "Banshee" --mods "Rolling Guard, Primed Flow, ..."   # tally a build you just read
     python3 tools/mod_usage.py report                                 # totals, top mods, top authors
 
 tools/build-mod-stats.py imports counts() from here and writes the numbers into warframe-mod-stats.json.
@@ -107,9 +110,20 @@ def cmd_add(args):
             mods.append(canon)
     if not mods:
         sys.exit('No mods given.')
-    data['builds'][key] = {'by': args.by.strip(), 'cat': args.cat, 'mods': mods}
+    rec = {'by': args.by.strip(), 'cat': args.cat}
+    frames = []
+    for f in re.split(r'\s*,\s*', (args.frames or '').strip()):
+        f = re.sub(r'\s+', ' ', f).strip()
+        if f and f not in frames:
+            frames.append(f)
+    if frames:
+        rec['frames'] = frames
+    rec['mods'] = mods
+    data['builds'][key] = rec
     save(data, args.file)
-    print('Tallied %s by %s: %d mods.' % (key, args.by, len(mods)))
+    print('Tallied %s by %s: %d mods%s.' % (key, args.by, len(mods), ', frames ' + ', '.join(frames) if frames else ''))
+    if not frames and args.cat != 'warframes':
+        print('No frames given. If the author names a Warframe for this build, add --frames (and --replace).')
     if new:
         print('Names not seen before (check the spelling): ' + ', '.join(new))
     print('Now run: python3 tools/build-mod-stats.py --items <Mods.json>')
@@ -124,6 +138,9 @@ def cmd_report(args):
     print('Builds per category: ' + ', '.join('%s %d' % kv for kv in sorted(by_cat.items())))
     who = collections.Counter(b['by'].strip().lower() for b in data['builds'].values())
     print('Most builds by one player: ' + ', '.join('%s %d' % kv for kv in who.most_common(5)))
+    fr = collections.Counter(f for b in data['builds'].values() for f in b.get('frames', []))
+    named = sum(1 for b in data['builds'].values() if b.get('frames'))
+    print('%d builds name at least one frame. Named most: ' % named + ', '.join('%s %d' % kv for kv in fr.most_common(8)))
     ranked = sorted(per.values(), key=lambda e: (-e['players'], -e['builds'], e['name']))
     print('%d of %d mods reach the bar. Top %d:' % (sum(1 for e in ranked if e['players'] >= need), len(ranked), args.top))
     for e in ranked[:args.top]:
@@ -139,6 +156,7 @@ if __name__ == '__main__':
     a.add_argument('--id', required=True, help='the build id at that source (any short unique text)')
     a.add_argument('--by', required=True, help="the player who made the build")
     a.add_argument('--cat', required=True, choices=CATEGORIES)
+    a.add_argument('--frames', default='', help='comma-separated Warframes the build is for (base names), if any')
     a.add_argument('--mods', required=True, help='comma-separated mod names')
     a.add_argument('--items', help='warframe-items Mods.json, to catch misspelt names')
     a.add_argument('--replace', action='store_true')

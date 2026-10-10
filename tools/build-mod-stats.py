@@ -10,7 +10,8 @@ data/json/Mods.json, or https://github.com/WFCD/warframe-items). The script read
 mod name on the Mods tab (owned and missing groups) and the mods in the saved builds,
 finds each one in that database, and writes a compact file with the stats at every rank.
 
-It also reads the community tally (tools/mod-usage.json, see tools/mod_usage.py) and writes how many
+It also reads warframe-community-builds.json (the community builds on the Builds tab, whose mod chips use
+group id `community`) and the community tally (tools/mod-usage.json, see tools/mod_usage.py) and writes how many
 different players use each mod into the mod's `u` field, so the Mods tab can offer "Most used by the
 Community". Run this again after tallying more builds.
 
@@ -38,6 +39,7 @@ ap.add_argument('--items', required=True, help='path to warframe-items Mods.json
 ap.add_argument('--data', default='warframe-data.json')
 ap.add_argument('--out', default='warframe-mod-stats.json')
 ap.add_argument('--usage', default=mod_usage.DEFAULT_PATH, help='the community tally')
+ap.add_argument('--community', default='warframe-community-builds.json', help='the community builds shown on the Builds tab')
 args = ap.parse_args()
 
 mods = json.load(open(args.items, encoding='utf-8'))
@@ -206,6 +208,7 @@ def record(m):
 
 
 index, partial, unmatched, total = {}, {}, [], 0
+listed = set()   # names of mods on the Owned, Missing and saved-build lists (not the community builds)
 
 
 def add(group_id, name):
@@ -215,6 +218,8 @@ def add(group_id, name):
     for db_name, forced in expand(name):
         m = pick(db_name, group_id, forced)
         if m:
+            if group_id != 'community':
+                listed.add(m['name'].lower())
             k = record(m)
             if k not in keys:
                 keys.append(k)
@@ -235,6 +240,10 @@ for view in ('owned', 'missing'):
 for b in data.get('builds', []):
     for md in b.get('mods', []):
         add('builds', md[0])
+if os.path.exists(args.community):          # the community builds on the Builds tab; their chips use group id "community"
+    for b in json.load(open(args.community, encoding='utf-8'))['builds']:
+        for md in b['mods']:
+            add('community', md[0])
 
 need = mod_usage.min_players(players_total)
 out = {'built': datetime.date.today().isoformat(),
@@ -257,10 +266,9 @@ for c in calls:
     print('  ' + c)
 
 # --- the community tally against the lists on the page ---
-on_page = {rec['n'].lower() for rec in store.values()}
 popular = sorted((e for e in per_mod.values() if e['players'] >= need), key=lambda e: (-e['players'], e['name']))
-shown = [e for e in popular if e['name'].lower() in on_page]
-elsewhere = [e for e in popular if e['name'].lower() not in on_page]
+shown = [e for e in popular if e['name'].lower() in listed]
+elsewhere = [e for e in popular if e['name'].lower() not in listed]
 db_names = set(by_name)
 print('COMMUNITY: %d builds by %d players; "most used" needs %d players; %d mods reach it, %d of them on the page lists.'
       % (builds_total, players_total, need, len(popular), len(shown)))

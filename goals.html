@@ -174,6 +174,17 @@
     #g-dlg .field.listtoggle input[type="checkbox"] { width: 24px; height: 24px; }
     .formerr { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.4rem 0 0; }
     .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
+    .chipwrap { display: inline-flex; align-items: center; max-width: 100%; }
+    .chipwrap > .chip { min-width: 0; flex: 0 1 auto; }
+    .modtick { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; background: none; border: 0; cursor: pointer; }
+    .modtick .box { width: 24px; height: 24px; border: 2px solid var(--text-faint); border-radius: 7px; position: relative; }
+    .modtick.done .box { background: var(--accent); border-color: var(--accent); }
+    .modtick.done .box::after { content: ""; position: absolute; left: 6px; top: 1px; width: 6px; height: 12px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+    .modtick[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .modtick:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: -6px; border-radius: 10px; }
+    .copyrow { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin: -0.6rem 0 1rem; }
+    .copyrow small { color: var(--text-faint); font-size: 0.8rem; }
+    #g-copytext { width: 100%; min-height: 40vh; font: 0.8rem/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--text); background: var(--bg-alt); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; }
     .headbtns { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
     .btn-sm[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-bright); }
     .seedhint { font-size: 0.86rem; color: var(--text-dim); margin: 0.3rem 0 0; }
@@ -345,6 +356,10 @@
     </div>
 
     <p class="syncline" id="g-sync">connecting…</p>
+    <div class="copyrow">
+      <button type="button" class="btn-sm" id="g-copy">Copy my list</button>
+      <small>Everything you have ticked, goals and mods, as text you can paste to Claude.</small>
+    </div>
 
     <div class="pills" id="g-games" role="group" aria-label="Games"></div>
 
@@ -464,6 +479,17 @@
         <button type="submit" class="btn-sm primary" id="g-save">Save goal</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="wfdlg" id="g-copydlg" aria-labelledby="g-copydlg-title">
+    <h2 id="g-copydlg-title">Your list</h2>
+    <p class="muted">Your browser would not copy it by itself. Select all, copy, and paste it to Claude.</p>
+    <textarea id="g-copytext" readonly aria-label="Your list as text"></textarea>
+    <div class="dlgbtns">
+      <button type="button" class="btn-sm" id="g-copyselect">Select all</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn-sm primary" id="g-copyclose">Close</button>
+    </div>
   </dialog>
 
   <dialog class="wfdlg" id="g-gamedlg" aria-labelledby="g-gamedlg-title">
@@ -1863,21 +1889,58 @@
     }
 
     /* ---------- render: mods ---------- */
-    /* A goal (or a part of one) can stand for a mod, and ticking it means CB owns that mod:
-       `mod: "Narrow Minded"` names the mod, and `ownsMods: true` on a goal says every goal or part
-       inside it is named exactly like its mod (the Primed, Archon, Umbral and Necramech collections).
-       The Mods tab then shows a ticked mod under Owned and takes it off Missing. Untick the goal and it goes back. */
-    function tickedMods() {
-      const out = new Set(), edits = editsOf(S.custom);
+    /* A mod counts as owned when CB ticks it, in either of two places:
+       1) a goal (or a part of one) that stands for the mod: `mod: "Narrow Minded"` names the mod, and `ownsMods: true` on a goal
+          says every goal or part inside it is named exactly like its mod (the Primed, Archon, Umbral and Necramech collections);
+       2) the tick on a mod of the Missing list on the Mods tab, saved as done.<modTickId(name)>.
+       The Mods tab then shows a ticked mod under Owned and takes it off Missing. Untick it and it goes back. */
+    function modTickId(name) {
+      const n = String(name).replace(/\s+/g, ' ').trim().toLowerCase();
+      let h = 5381;
+      for (let i = 0; i < n.length; i++) h = ((h * 33) ^ n.charCodeAt(i)) >>> 0;
+      return 'm-' + n.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 28).replace(/-+$/, '') + '-' + h.toString(36).slice(0, 6);
+    }
+    /* { goal, chip }: Maps from the lowercase mod name to its display name, for the mods owned through a ticked goal and through a tick on the Mods tab. */
+    function tickedModSources() {
+      const goal = new Map(), chip = new Map(), edits = editsOf(S.custom);
       const walk = (list, inherit) => (list || []).forEach((t) => {
         if (edits[t.id] && edits[t.id].hidden) return;   // a goal you removed no longer makes its mod owned
         const all = inherit || t.ownsMods === true;
         if (hasParts(t)) return walk(t.parts, all);
         const name = typeof t.mod === 'string' ? t.mod : (all ? t.text : '');
-        if (name && isDone(t.id)) out.add(name.replace(/\s+/g, ' ').trim().toLowerCase());
+        if (name && isDone(t.id)) goal.set(name.replace(/\s+/g, ' ').trim().toLowerCase(), name.replace(/\s+/g, ' ').trim());
       });
       walk(S.data.farm.tasks, false);
-      return out;
+      S.data.mods.missing.forEach((g) => g.items.forEach((it) => {
+        const n = parseChip(it).name;
+        if (S.done[modTickId(n)] === true) chip.set(n.toLowerCase(), n);
+      }));
+      return { goal, chip };
+    }
+    function tickedMods() {
+      const s = tickedModSources();
+      return new Set(Array.from(s.goal.keys()).concat(Array.from(s.chip.keys())));
+    }
+    /* The tick on a mod of the Missing list (Mods tab). Saved like any other tick, as done.<id>; no rule change. */
+    async function toggleMod(name) {
+      if (!S.owner || !S.sync) return needOwner();
+      const id = modTickId(name), prev = S.done[id] === true, next = !prev;
+      S.done[id] = next; renderLive();
+      try {
+        await S.sync.write({ ['done.' + id]: next }, { done: S.done, runs: S.tokens });
+        flash(next ? name + ' is marked as owned. It is under Owned now.' : name + ' is back on Missing.');
+      } catch (e) {
+        S.done[id] = prev; renderLive(); writeFailed(e);
+      }
+    }
+    function modTickEl(name, on) {
+      const b = el('button', 'modtick' + (on ? ' done' : '')); b.type = 'button'; b.dataset.mod = name;
+      b.setAttribute('role', 'checkbox'); b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.setAttribute('aria-label', 'I own ' + name);
+      if (!S.owner) b.setAttribute('aria-disabled', 'true');
+      b.appendChild(el('span', 'box'));
+      b.onclick = () => toggleMod(name);
+      return b;
     }
     const gidOf = (g, name) => (g.from && g.from[name]) || g.id;   // the group a chip's stats are filed under
     /* The Owned or Missing groups with the ticked goals applied: ticked mods leave Missing and appear in a first Owned group. */
@@ -1893,7 +1956,7 @@
         if (ticked.has(n) && !have.has(n)) { const c = parseChip(it); add.push(c.name); from[c.name] = g.id; have.add(n); }
       }));
       if (!add.length) return base;
-      return [{ id: 'ticked', name: 'Owned because you ticked the goal', note: 'These were on your Missing list. You ticked their goal on the Game goals page, so they count as owned. Untick the goal to put one back.', items: add, from }].concat(base);
+      return [{ id: 'ticked', name: 'Owned because you ticked it', note: 'These were on your Missing list. You ticked the mod here, or ticked its goal on the Goals tab, so they count as owned. Untick it (or its goal) to put one back.', items: add, from, chips: tickedModSources().chip }].concat(base);
     }
     function renderMods() {
       const q = $('wf-q').value.trim().toLowerCase();
@@ -1922,7 +1985,17 @@
         sm.appendChild(el('span', 'gcount', hits.length !== chips.length ? hits.length + ' of ' + chips.length : String(chips.length)));
         d.appendChild(sm);
         if (g.note) d.appendChild(el('p', 'gnote', g.note));
-        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c, null, tapFor(gidOf(g, c.name), c.name)))); d.appendChild(wrap);
+        const wrap = el('div', 'chips');
+        hits.forEach((c) => {
+          const chip = chipEl(c, null, tapFor(gidOf(g, c.name), c.name));
+          // Missing mods get a tick (ticked = owned); on the Owned view only the ones you ticked here can be unticked.
+          const tickable = ui.view === 'missing' || (g.id === 'ticked' && g.chips && g.chips.has(c.name.toLowerCase()));
+          if (!tickable) { wrap.appendChild(chip); return; }
+          const w = el('span', 'chipwrap');
+          w.appendChild(modTickEl(c.name, ui.view !== 'missing'));
+          w.appendChild(chip); wrap.appendChild(w);
+        });
+        d.appendChild(wrap);
         box.appendChild(d);
       });
       const platOn = ui.view === 'missing' && ui.modFilter === 'plat';
@@ -1942,7 +2015,7 @@
         lg.appendChild(el('span', 'dot'));
         lg.appendChild(document.createTextNode('Has a max-rank copy (judged from the drain number, so approximate). ×N is copies owned. r7/10 is the best rank seen. Scanned ' + S.data.meta.scannedLabel + '.' + TAP_HINT()));
       } else {
-        lg.textContent = 'Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.' + TAP_HINT();
+        lg.textContent = 'Tick a mod you own and it moves to Owned. Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.' + TAP_HINT();
       }
       if (commOn) lg.appendChild(el('span', 'commline', communityLine(us)));
     }
@@ -2945,6 +3018,65 @@
     }
 
 
+    /* ---------- Copy my list: everything ticked, as text ---------- */
+    /* One text that says what CB has ticked in every game and on the Mods tab. A ticked goal means he owns it or has done it.
+       The Copy my list button copies it, and window.cb8Export() returns it, so Claude can read the same text from the open page
+       in the built-in browser. Goal ids are in brackets so a line can be matched to warframe-data.json / goals-data.json. */
+    function exportText() {
+      const L = [];
+      const when = new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      L.push('CB8eats goals export, ' + when + '. A ticked goal means I own it or I have done it. Goal ids are in brackets.');
+      const leaves = (t) => (hasParts(t) ? t.parts.flatMap(leaves) : [t]);
+      const goals = (tasks, done) => {
+        tasks.forEach((t) => {
+          const ls = leaves(t), have = ls.filter((x) => done(x.id)), open = ls.filter((x) => !done(x.id));
+          if (!hasParts(t)) { L.push('- [' + (have.length ? 'x' : ' ') + '] ' + t.text + ' (' + t.id + ')'); return; }
+          L.push('- [' + (!open.length ? 'x' : have.length ? '~' : ' ') + '] ' + t.text + ': ' + have.length + ' of ' + ls.length + ' (' + t.id + ')');
+          if (have.length) L.push('    have: ' + have.map((x) => x.text).join(', '));
+          if (open.length) L.push('    open: ' + (open.length <= 15 ? open.map((x) => x.text).join(', ') : open.length + ' more'));
+        });
+      };
+      gameList().forEach((game) => {
+        L.push('', '== ' + game.name + ' ==');
+        if (game.kind === 'warframe') {
+          if (!S.data) { L.push('(the Warframe data did not load)'); return; }
+          L.push(tokName() + ': ' + S.tokens + ' of ' + tokTarget());
+          const b = wfBuild();
+          goals(b.tree, (id) => isDoneIn(S.done, S.index, id));
+          const src = tickedModSources(), names = (m) => Array.from(m.values()).sort((a, c) => a.localeCompare(c));
+          L.push('Mods I ticked as owned on the Mods tab (' + src.chip.size + '): ' + (src.chip.size ? names(src.chip).join(', ') : 'none'));
+          const viaGoal = new Map(src.goal); src.chip.forEach((v, k) => viaGoal.delete(k));
+          S.data.mods.owned.forEach((g) => g.items.forEach((it) => viaGoal.delete(parseChip(it).name.toLowerCase())));   // already on the scanned Owned list
+          L.push('Mods from my Missing list that count as owned because their goal is ticked (' + viaGoal.size + '): ' + (viaGoal.size ? names(viaGoal).join(', ') : 'none'));
+          L.push('The scanned Owned list is in warframe-data.json (scanned ' + S.data.meta.scannedLabel + ').');
+          if (b.removed.length) L.push('Goals I removed: ' + b.removed.map((r) => r.label).join('; '));
+        } else {
+          const d = genData(game.id), dn = docFor(game.id).done;
+          goals(d.tasks, (id) => isDoneIn(dn, d.index, id));
+          if (!d.tasks.length) L.push('(no goals yet)');
+          if (d.removed.length) L.push('Goals I removed: ' + d.removed.map((r) => r.label).join('; '));
+        }
+      });
+      return L.join('\n');
+    }
+    window.cb8Export = exportText;
+    async function copyList() {
+      const text = exportText();
+      try {
+        await navigator.clipboard.writeText(text);
+        flash('Copied your list. Paste it to Claude in the chat.');
+        return;
+      } catch (e) { /* no clipboard permission here: show the text to copy by hand */ }
+      $('g-copytext').value = text;
+      openDlg('g-copydlg');
+      $('g-copytext').focus(); $('g-copytext').select();
+    }
+    function initCopy() {
+      $('g-copy').addEventListener('click', copyList);
+      $('g-copyselect').addEventListener('click', () => { $('g-copytext').focus(); $('g-copytext').select(); });
+      $('g-copyclose').addEventListener('click', () => closeDlg('g-copydlg'));
+    }
+
     /* ---------- Firebase sync (optional layer) ---------- */
     const isMap = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
     async function startSync() {
@@ -3074,7 +3206,7 @@
         console.error('Could not load warframe-data.json:', e);
         S.data = null;
       }
-      initGenDialog(); initTabs();
+      initGenDialog(); initTabs(); initCopy();
       if (S.data) { initModTools(); initBuildDialog(); initModDialog(); initStatsDialog(); loadModStats(); loadCommunity(); }
       renderLive();
       await startSync();

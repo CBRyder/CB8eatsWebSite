@@ -548,7 +548,7 @@ you tap open (`#wf-about`).
     letters and digits). **Every Add or Undo is one `updateDoc` that writes `runs` and the entry
     together** (Undo writes `deleteField()` for that key), so the total and the history cannot disagree,
     and the whole history counts once towards the rule's limit of 200 entries in `custom`.
-    `customTasks()` skips the id `tokenlog`, `tokenLog()` reads and cleans it (bad keys, zero or
+    `addedGoals()` skips the id `tokenlog`, `tokenLog()` reads and cleans it (bad keys, zero or
     non-integer amounts are ignored). The first history shown is "Before the history started": the
     total minus everything in the log, so the list always adds up to the total (168 when this shipped,
     because that was typed before the history existed). Do not add a separate `tokens` or `history`
@@ -569,7 +569,7 @@ you tap open (`#wf-about`).
     - **Storage, still no rule change:** the settings are one field inside the `custom` map,
       `custom.tokencard = { name?, note?, target? }` (a key equal to its default is left out; with nothing left the whole
       field is deleted). `tokCard()` reads and cleans it (only text counts for name and note, a goal must be a whole
-      number in range, anything bad falls back to the default) and `customTasks()` skips the id `tokencard`. If the
+      number in range, anything bad falls back to the default) and `addedGoals()` skips the id `tokencard`. If the
       quantity you have changed, the same single `updateDoc` also writes `runs` and one history entry
       (`custom.tokenlog.e.<key> = { n: new - old, at }`), so the history still adds up to the total; if only the goal or
       text changed, nothing else is written. Optimistic, with a full rollback and the usual "server refused" message.
@@ -599,7 +599,7 @@ you tap open (`#wf-about`).
     arcane2, arcane2Rank, mods: [10 names, '' for an empty slot], ranks: [10 ranks, null when not known], notes, at }`
     (`arcane2` is the second Warframe or Arch-Gun arcane; builds saved before it existed just have `arcane`; builds
     saved before ranks and config existed have none of the new keys and load as "Rank ?"). `cleanBuild()` is the one
-    place that reads a saved build. It shares the `custom` map with the added goals, so `customTasks()` skips anything with
+    place that reads a saved build. It shares the `custom` map with the added goals, so `addedGoals()` skips anything with
     `kind === 'build'` and the goal list never shows them; `userBuilds()` reads the other way. The rule's
     `custom.size() <= 200` limit is shared. Mods are saved by **name**, not by `m123` key (the keys change every
     time the generator runs); an edit keeps a saved mod the list no longer has, labelled "(not in the list now)".
@@ -714,7 +714,7 @@ you tap open (`#wf-about`).
     r10, Fast Deflection r5, Transient Fortitude r8, Archon Continuity r10, Adaptation r6, Blind Rage r5; the
     Exilus slot is locked; capacity 1 of 74 left).
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
-  theme: {...}, custom: {goalId: {name, qty, plat, at}, tokenlog: {e: {key: {n, at}}} (the token history), tokencard: {name?, note?, target?} (the Mother Tokens card's own title, description and goal), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  theme: {...}, custom: {goalId: {text, group, note?, parts?, list?, tags?, at} (older resource goals: {name, qty, plat, at}), tokenlog: {e: {key: {n, at}}} (the token history), tokencard: {name?, note?, target?} (the Mother Tokens card's own title, description and goal), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace
@@ -739,14 +739,20 @@ writes. `custom` was added after the first version of this rule, so if the owner
 published the original three-field rule, adding goals fails with permission-denied
 (the page says "The server refused that write") until the rule above is republished.
 
-- **Added goals (the "+ Add goal" button, owner only, now on the Game goals page):** opens a form with a resource
-  dropdown (built from `resources` in `warframe-data.json`, grouped; plus an "Other"
-  option for anything missing), a quantity goal and a row of **tag buttons** (see the
-  tag list below). Each goal is stored
-  as `custom.<id>` where `<id>` is generated (`c` + time + random, letters and digits
-  only, because it becomes a dotted Firestore field path). They render under the
-  "Added by you" group, can be ticked off like any goal (`done.<id>`), and the owner can
-  edit or delete them (delete removes both `custom.<id>` and `done.<id>`).
+- **Added goals (the "+ Add goal" button, owner only, on the Game goals page) use the SAME form as every other game
+  (changed 2026-10-13; CB: "I want all the games to follow the same structure ... use the same ones and change the text").**
+  The form is `#g-dlg` (see "Add goal form and the List toggle" in the Game goals section): Goal, the List toggle, Group,
+  Tags, Note and Steps. Only the text changes per game: the title ("Add a goal to Warframe"), the Goal placeholder, and Tags
+  (Warframe's, because the filters are) only show for Warframe. **The old resource dropdown, "Other" name and Quantity boxes
+  are gone**; a resource goal is just typed, like "Farm 60 Nitain Extract". An added goal is stored as
+  `warframe/progress.custom.<id>` = `{ text, group, note?, parts?, list?, tags, at }` (id `g` + time + random, letters and
+  digits only, because it becomes a dotted Firestore field path). The default group is "Added by you" (`CUSTOM_GROUP`);
+  the Group dropdown offers the columns in `farm.groupOrder`, Added by you, and any other group in use (`wfGroups()`),
+  plus "New group...". Goals can be ticked (`done.<id>`), edited and deleted by the owner (delete removes `custom.<id>`
+  and `done.<id>` and the ticks of its own steps). **Goals saved before this change** (`{ name, qty, tags, plat, at }`, ids
+  starting `c`) are still read (`addedGoals()` marks them `legacy`; shown as "Name × qty", under Added by you, and never
+  dropped for a repeated text); editing one opens the form with that text and saves it in the new shape (name and qty are
+  replaced by the text).
   - **Reading them as Claude:** `warframe/progress` is public-read, so
     `https://firestore.googleapis.com/v1/projects/tarborolifebackend/databases/(default)/documents/warframe/progress`
     returns them. The Claude Code Remote sandbox cannot reach `firestore.googleapis.com`
@@ -755,11 +761,11 @@ published the original three-field rule, adding goals fails with permission-deni
   - **Correcting them as Claude:** Claude cannot write to Firestore (that needs the
     owner's email/password sign-in, which Claude must not type). Instead,
     `farm.customFixes` in `warframe-data.json` overrides what is stored:
-    `{ "<id>": { "name": "Nitain Extract", "qty": 60, "plat": true } }`, or
-    `{ "<id>": { "hidden": true } }` to hide a goal. Only the keys present are
-    overridden. The owner can still edit or delete the goal in the page; if a fix exists
-    for it, the page warns that the fix still wins until Claude removes it. A fix may
-    also set `"tags": ["plat", "foundry"]` (unknown ids are dropped) instead of `plat`.
+    `{ "<id>": { "name": "Nitain Extract", "qty": 60, "plat": true } }` (for the older
+    resource goals only), or `{ "<id>": { "hidden": true } }` to hide any added goal. Only
+    the keys present are overridden. A fix may also set `"tags": ["plat", "foundry"]`
+    (unknown ids are dropped) instead of `plat`. A goal saved in the new shape is simply
+    edited in the page, so `name` and `qty` fixes do not apply to it.
   - **Tags (added 2026-10-09):** the tags live in one list, `TAGS` in `goals.html`
     (`{ id, label, tone, explain }`; today `plat` = Buy with plat and `foundry` =
     Foundry). That list drives everything: the filter buttons above the goals, the
@@ -767,9 +773,9 @@ published the original three-field rule, adding goals fails with permission-deni
     form. **To add a tag, add one line to `TAGS`** (`tone` is `accent`, `accent2` or
     `bright`, which picks the colour) and put its id in a goal's `tags` in
     `warframe-data.json`. A tag button is lit in its own tag colour when on and greyed
-    when off (`aria-pressed`). A custom goal saves `custom.<id>.tags` (array of ids)
-    and still also writes the old `plat` flag, so a cached older page keeps reading it
-    right; goals saved before tags existed (only `plat`) are read as `tags: ['plat']`.
+    when off (`aria-pressed`). An added Warframe goal saves `custom.<id>.tags` (array of ids,
+    no `plat` flag any more); older goals that have only `plat` are read as `tags: ['plat']`.
+    A goal put inside a list has no tags (the filters read only the goals on the main list).
     No Firestore rule change is needed, because `custom` is a map and its inner fields
     are not constrained.
 
@@ -812,9 +818,30 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
   `gameGoals/<slug>` = `{ name, at, done: {}, custom: {} }` (slug = the name in lowercase letters,
   digits and `-`, at most 30; a repeated slug is refused; a two-tap Remove game deletes the doc,
   and seeded games have no remove button). A goal CB adds is `custom.<id>` =
-  `{ text, group, note?, parts?: [{ id, text }], at }` (id `g` + time + random; text 80, note 200, group 30,
+  `{ text, group, note?, parts?: [{ id, text }], list?, at }` (id `g` + time + random; text 80, note 200, group 30,
   steps one per line, at most 30 of 60 characters). Added goals have an Edit button (rename, move group, change steps,
   two-tap Delete that also clears the ticks); seeded goals do not, change those in the JSON.
+- **Add goal form and the List toggle (2026-10-13).** CB: "group is like a column and a list is a dropdownable column
+  that has more checkboxes in it", and "all the games follow the same structure ... use the same ones". One form for every
+  game, Warframe included (`#g-dlg`; `openGenDialog`, `saveGenGoal`, `removeGenGoal`). `storeOf(game)` is the small adapter that
+  says where a game's added goals live (`warframe/progress` through `S.sync`, or `gameGoals/<id>` through `GS.sync`: where
+  `custom` and `done` are, how to write, delete a field, remove ids, read its tree and groups); the storage itself did not change.
+  Fields: **Goal**, a **List** toggle (off to start with), a **Pick the list** dropdown that shows when the toggle is on
+  (its default text is "Which list"; one `<optgroup>` per group, each option a list with its path, like "Own every
+  Warframe › Necramechs"; a list is any goal that has `parts`, seeded or added, at any depth; the goal being edited and
+  everything inside it is left out so a list cannot go inside itself), **Group** (hidden while List is on), **Tags**
+  (Warframe only, hidden while List is on, saved as `[]`), **Note** and **Steps**. Saving with the toggle on and no list
+  picked says "Pick which list."; a game with no lists yet says so under the dropdown.
+  - **Storage, no rule change:** a goal in a list is saved as usual plus `list: "<the list goal's id>"` (and `group` = the
+    list's top-level group, so it lands there if the list is ever removed). `addedGoals()` reads the saved goals and
+    `graftListed(tasks, listed)` puts each one inside its list as one more part, on a copy (the seeded goal objects are never
+    changed); the grafted goal has `listed: true`, and a goal with steps of its own keeps them in `ownParts` (use `ownSteps(t)`
+    when editing, because `parts` then also holds the goals put inside it). A listed goal is an ordinary tick (`done.<id>`),
+    counts towards the list's `done / total`, has its own Edit button inside the list (`CTX.row`), and is not counted in the
+    page's "N goals" line or the Warframe filters (those read the top-level goals). A goal with steps can be put in a list too
+    (a list in a list). **A goal whose list is gone** (a seed list removed from the JSON, or an added list deleted) is not
+    lost: it shows under its group like any goal, and its edit form opens with the toggle off. Deleting an added list does not
+    delete the goals that were put inside it. `wfTree()` is the Warframe version of `genData(game).tasks`.
 - **Rule (published by the owner in the Firebase console, Firestore -> Rules, and confirmed working
   on 2026-10-13: the page says "synced live" and an ARC Raiders tick survives a refresh, so the
   read and write halves both work; the block below is the reference copy, it lives in the console,
@@ -852,8 +879,9 @@ match /gameGoals/{gameId} {
   visitor cannot write (a `.task` with `aria-disabled` needs `dispatchEvent('click')`, not a forced
   click, because the pinned sign-in button can sit on top of it), owner ticks Warframe and ARC Raiders,
   first tick of a new game falls back to `setDoc`, add / edit / delete a goal and a game, rule not
-  published, no sideways scroll with a long game name and a long unbroken word. Write them again
-  rather than trusting this list.
+  published, no sideways scroll with a long game name and a long unbroken word. The List toggle was checked on ARC Raiders
+  and Warframe (default text, grouped options, save with and without a list, counts, ticking, edit, steps inside a list,
+  orphans, a game with no lists, 390px). Write them again rather than trusting this list.
 
 ## Dev hub (`dev.html`) and the dev pages
 

@@ -440,17 +440,20 @@
   <dialog class="wfdlg" id="g-dlg" aria-labelledby="g-dlg-title">
     <form id="g-goalform" novalidate>
       <h2 id="g-dlg-title">Add a goal</h2>
-      <p class="muted" id="g-dlg-blurb">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks. Or turn on List to put it inside a list that is already a dropdown.</p>
-      <label class="field"><span>Goal</span>
+      <p class="muted" id="g-dlg-blurb">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks. Or turn on List to put it in a list (a dropdown of ticks): a new one, or one that is already there.</p>
+      <label class="field"><span id="g-text-label">Goal</span>
         <input type="text" id="g-text" maxlength="80" autocomplete="off" placeholder="For example Unlock the next weapon">
       </label>
       <p class="seedhint" id="g-seedhint" hidden></p>
       <label class="field listtoggle" id="g-list-toggle"><input type="checkbox" id="g-list-on"><span>List</span>
-        <small>Turn on to put this goal inside a list instead of in a group.</small>
+        <small>Turn on to put this goal in a list instead of straight in a group.</small>
       </label>
-      <label class="field" id="g-list-wrap" hidden><span>Pick the list</span>
+      <label class="field" id="g-list-wrap" hidden><span>List</span>
         <select id="g-list"></select>
         <small id="g-list-hint"></small>
+      </label>
+      <label class="field" id="g-list-new-wrap" hidden><span>Name of the new list</span>
+        <input type="text" id="g-list-new" maxlength="80" autocomplete="off" placeholder="For example Primed mods">
       </label>
       <label class="field" id="g-group-wrap"><span>Group</span>
         <select id="g-group"></select>
@@ -463,10 +466,10 @@
         <div class="tagpick" id="g-tags"></div>
         <small>A lit tag shows on the goal and works with the filters above the list.</small>
       </div>
-      <label class="field"><span>Note (optional)</span>
+      <label class="field" id="g-note-wrap"><span>Note (optional)</span>
         <textarea id="g-note" maxlength="200" rows="2" placeholder="Anything worth remembering"></textarea>
       </label>
-      <label class="field" id="g-parts-wrap"><span>Steps (optional)</span>
+      <label class="field" id="g-parts-wrap"><span id="g-parts-label">Steps (optional)</span>
         <textarea id="g-parts" maxlength="2000" rows="4" placeholder="One step per line"></textarea>
         <small>Each line becomes its own tick inside the goal.</small>
       </label>
@@ -926,10 +929,16 @@
       tree.forEach((t) => walk(t, [], t.group));
       return out;
     }
-    /* The List toggle and its Which list dropdown in the Add goal form. */
+    /* The List toggle and its dropdown in the Add goal form. Adding a goal: the dropdown starts on "New list" (this goal becomes the
+       first tick of a list you name), and the lists that exist follow it. Editing a goal: "Which list" and the lists that exist
+       (a goal that is already saved can only move into a list that is there). */
+    const NEW_LIST = '__newlist';
+    let listCount = 0;
     function setListUi(choices, picked) {
       const sel = $('g-list'); sel.textContent = '';
-      const ph = new Option('Which list', ''); ph.disabled = true; sel.appendChild(ph);
+      listCount = choices.length;
+      if (!genEditing) sel.appendChild(new Option('New list', NEW_LIST));
+      else { const ph = new Option('Which list', ''); ph.disabled = true; sel.appendChild(ph); }
       const byGroup = new Map();
       choices.forEach((c) => { if (!byGroup.has(c.group)) byGroup.set(c.group, []); byGroup.get(c.group).push(c); });
       byGroup.forEach((items, grp) => {
@@ -939,16 +948,23 @@
       });
       const ok = !!picked && choices.some((c) => c.id === picked);
       $('g-list-on').checked = ok;
-      sel.value = ok ? picked : '';
-      $('g-list-hint').textContent = choices.length ? 'The goal becomes one more tick inside that list.' : 'There are no lists in this game yet. A goal with steps is a list.';
+      sel.value = genEditing ? (ok ? picked : '') : NEW_LIST;
+      $('g-list-new').value = '';
       syncListUi();
     }
     function syncListUi() {
-      const on = $('g-list-on').checked;
+      const on = $('g-list-on').checked, fresh = on && $('g-list').value === NEW_LIST;   // fresh: this goal starts a new list
       $('g-list-wrap').hidden = !on;
-      $('g-group-wrap').hidden = on;
+      $('g-list-new-wrap').hidden = !fresh;
+      $('g-group-wrap').hidden = on && !fresh;       // a new list sits in a group, a goal put in an existing list follows that list
+      $('g-note-wrap').hidden = fresh;
+      $('g-text-label').textContent = fresh ? 'First goal in the list' : 'Goal';
+      $('g-parts-label').textContent = fresh ? 'More goals in the list (optional)' : 'Steps (optional)';
+      $('g-parts').placeholder = fresh ? 'One goal per line' : 'One step per line';
+      $('g-list-hint').textContent = fresh ? 'A new list opens as a dropdown of ticks. This goal is its first tick.'
+        : (listCount ? 'The goal becomes one more tick inside that list.' : 'There are no lists in this game yet. A goal with steps is a list.');
       syncGroupNew();
-      $('g-tags-wrap').hidden = on || !$('g-tags-wrap').dataset.wf;   // tags are Warframe's, and the filters read only the goals on the main list
+      $('g-tags-wrap').hidden = (on && !fresh) || !$('g-tags-wrap').dataset.wf;   // tags are Warframe's, and the filters read only the goals on the main list
     }
     function buildTagButtons() {
       const box = $('g-tags'); box.textContent = '';
@@ -1149,7 +1165,7 @@
       meta.appendChild(el('span', 'chev'));
       sm.appendChild(meta);
       d.appendChild(sm);
-      const own = (x) => x.listed || (x.seed && editOn());   // rows that carry an Edit button
+      const own = (x) => editOn() && (x.listed || x.seed);   // rows that carry an Edit button
       const flat = t.parts.every((x) => !hasParts(x) && !x.note && !own(x));
       const list = el('div', 'parts' + (flat ? ' flat' : ''));
       t.parts.forEach((x) => list.appendChild(own(x) && CTX.row ? CTX.row(x) : goalEl(x)));
@@ -1483,10 +1499,10 @@
       foot.appendChild(drop);
       p.appendChild(foot);
     }
-    /* A goal you added always has an Edit button. A goal that comes from a data file gets one while Edit goals is on. */
+    /* Edit buttons (on goals you added and on goals from a data file) show only while Edit goals is on. */
     const editOn = () => editMode && S.owner;
     function genRowEl(t) {
-      if (!(t.custom || (t.seed && editOn()))) return goalEl(t);
+      if (!(editOn() && (t.custom || t.seed))) return goalEl(t);
       const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + t.text);
       if (!S.owner) ed.setAttribute('aria-disabled', 'true');
       ed.onclick = () => openGenDialog(t);
@@ -1525,7 +1541,7 @@
     }
     const isSeedGoal = () => !!(genEditing && genEditing.seed);
     function resetGenDelete() { clearTimeout(genDelTimer); $('g-del').textContent = isSeedGoal() ? 'Remove' : 'Delete'; $('g-del').dataset.armed = ''; }
-    function syncGroupNew() { $('g-group-new-wrap').hidden = $('g-list-on').checked || $('g-group').value !== '__new'; }
+    function syncGroupNew() { $('g-group-new-wrap').hidden = ($('g-list-on').checked && $('g-list').value !== NEW_LIST) || $('g-group').value !== '__new'; }
     function openGenDialog(t) {
       const game = curGame(); if (!game) return;
       const st = storeOf(game);
@@ -1583,8 +1599,14 @@
       if ($('g-text').value.trim().replace(/\s+/g, ' ').length > 80) return err('That goal is too long (80 characters at most).');
       if (isSeedGoal()) return saveSeedEdit(st, text, err);
       if (!d.custom[genEditing ? genEditing.id : ''] && Object.keys(d.custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.');
+      const isNew = !genEditing && $('g-list-on').checked && $('g-list').value === NEW_LIST;   // this goal starts a new list
+      const listName = isNew ? cleanText($('g-list-new').value, 80) : '';
+      if (isNew) {
+        if (!listName) return err('Type the name of the new list.');
+        if ($('g-list-new').value.trim().replace(/\s+/g, ' ').length > 80) return err('That list name is too long (80 characters at most).');
+      }
       let group, list = '';
-      if ($('g-list-on').checked) {
+      if ($('g-list-on').checked && !isNew) {
         list = $('g-list').value;
         if (!list) return err('Pick which list.');
         const pick = listChoices(st.tree(), genEditing && genEditing.id).find((c) => c.id === list);
@@ -1595,13 +1617,15 @@
         if (group === '__new') group = cleanText($('g-group-new').value, 30);
         if (!group) return err('Type the name of the group.');
       }
-      const note = cleanText($('g-note').value, 200);
-      const lines = $('g-parts').value.split(/\r?\n/).map((x) => cleanText(x, 60)).filter(Boolean);
-      if (lines.length > 30) return err('Thirty steps at most.');
+      const note = isNew ? '' : cleanText($('g-note').value, 200);
+      const more = $('g-parts').value.split(/\r?\n/).map((x) => cleanText(x, 60)).filter(Boolean);
+      const lines = isNew ? [text].concat(more) : more;   // a new list starts with this goal, then the extra goals
+      if (lines.length > 30) return err(isNew ? 'Thirty goals in a list at most.' : 'Thirty steps at most.');
       const lower = lines.map((x) => x.toLowerCase());
-      if (new Set(lower).size !== lower.length) return err('Each step needs its own name.');
+      if (new Set(lower).size !== lower.length) return err(isNew ? 'Each goal in the list needs its own name.' : 'Each step needs its own name.');
       const others = namesExcept(st.tree(), genEditing && genEditing.id);
-      if (others.has(text.toLowerCase()) || lower.includes(text.toLowerCase()) || lower.some((x) => others.has(x))) return err('That name is already used by another goal or step.');
+      if (isNew && (others.has(listName.toLowerCase()) || lower.includes(listName.toLowerCase()))) return err('That name is already used by another goal or step.');
+      if (isNew ? lower.some((x) => others.has(x)) : (others.has(text.toLowerCase()) || lower.includes(text.toLowerCase()) || lower.some((x) => others.has(x)))) return err('That name is already used by another goal or step.');
       const id = genEditing ? genEditing.id : newId('g');
       const was = d.custom[id], oldParts = ownSteps(genEditing);
       const byText = new Map(oldParts.map((x) => [x.text.toLowerCase(), x.id]));
@@ -1612,7 +1636,7 @@
         used.add(pid);
         return { id: pid, text: x };
       });
-      const val = { text, group, at: (was && Number(was.at)) || Date.now() };
+      const val = { text: isNew ? listName : text, group, at: (was && Number(was.at)) || Date.now() };
       if (list) val.list = list;
       if (st.wf) val.tags = list ? [] : pickedTags();
       if (note) val.note = note;
@@ -1624,7 +1648,7 @@
       d.custom[id] = val; renderLive(); closeDlg('g-dlg');
       try {
         await st.write(fields);
-        flash(genEditing ? 'Goal updated.' : 'Goal added.');
+        flash(genEditing ? 'Goal updated.' : (isNew ? 'List added.' : 'Goal added.'));
       } catch (e) {
         if (was) d.custom[id] = was; else delete d.custom[id];
         gone.forEach((pid) => { if (goneDone[pid] !== undefined) d.done[pid] = goneDone[pid]; });
@@ -1722,6 +1746,7 @@
       buildTagButtons();
       $('g-group').addEventListener('change', syncGroupNew);
       $('g-list-on').addEventListener('change', syncListUi);
+      $('g-list').addEventListener('change', syncListUi);
       $('g-cancel').addEventListener('click', () => closeDlg('g-dlg'));
       $('g-goalform').addEventListener('submit', saveGenGoal);
       $('g-reset').addEventListener('click', resetSeedGoal);

@@ -853,16 +853,19 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
   digits and `-`, at most 30; a repeated slug is refused; a two-tap Remove game deletes the doc;
   a seeded game can be renamed and removed too, see "Edit and remove what Claude seeds" below). A goal CB adds is `custom.<id>` =
   `{ text, group, note?, parts?: [{ id, text }], list?, at }` (id `g` + time + random; text 80, note 200, group 30,
-  steps one per line, at most 30 of 60 characters). Added goals have an Edit button (rename, move group, change steps,
-  two-tap Delete that also clears the ticks). Seeded goals get theirs while **Edit goals** is on, see the next bullet
-  (changing the JSON still works too).
+  steps one per line, at most 30 of 60 characters). **Every Edit button (on goals you added and on goals from a data file)
+  shows only while the Edit goals toggle at the top is on** (CB, 2026-10-13: "the edit button on my added goals I only want
+  to show when I click the edit goals button at the top"); with it on you can rename, move group, change steps and two-tap
+  Delete (which also clears the ticks). See the next bullet (changing the JSON still works too).
 - **Edit and remove what Claude seeds (2026-10-13).** CB: "Make it backwards compatible so every thing u add I can edit or
   even remove". Anything Claude puts in `warframe-data.json` `farm.tasks` or `goals-data.json` (goals, the steps inside a
   list, and whole games) can be edited and removed on the page, with no Firestore rule change and no change to the data
   files, ids or saved ticks. The mods list and the Mods tab chips are NOT part of this (they are rescanned data).
   - **Edit goals** toggle (`#g-editmode`, beside + Add goal, owner only, not remembered across reloads): while it is on, every
-    goal from a data file, and every step of a seeded list, gets an Edit button (`genRowEl` / `goalEl` / `editOn()`); goals
-    you added always have theirs. The seeded list's compact grid (`.parts.flat`) is not used while it is on.
+    goal from a data file, every step of a seeded list, and every goal you added (including the ones inside a list), gets an
+    Edit button (`genRowEl` / `goalEl` / `editOn()`); with it off, none of them has one and a goal you added is a plain row
+    like any other (no `.taskrow` wrapper, so a test that looks for added goals by `.taskrow` must turn Edit goals on or look
+    for the "Added by you" group's rows). The seeded list's compact grid (`.parts.flat`) is not used while it is on.
   - **Storage:** one entry per changed goal in the same `custom` map, keyed by the goal's own id:
     `custom.<goal id> = { kind: 'edit', text?, note?, group?, tags?, hidden? }`. Only keys that differ from the data file
     are saved (`note: ''` means "no note", `tags: []` means "no tags"); nothing differing = the entry is deleted. `editsOf(custom)`
@@ -902,12 +905,20 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
   game, Warframe included (`#g-dlg`; `openGenDialog`, `saveGenGoal`, `removeGenGoal`). `storeOf(game)` is the small adapter that
   says where a game's added goals live (`warframe/progress` through `S.sync`, or `gameGoals/<id>` through `GS.sync`: where
   `custom` and `done` are, how to write, delete a field, remove ids, read its tree and groups); the storage itself did not change.
-  Fields: **Goal**, a **List** toggle (off to start with), a **Pick the list** dropdown that shows when the toggle is on
-  (its default text is "Which list"; one `<optgroup>` per group, each option a list with its path, like "Own every
+  Fields: **Goal**, a **List** toggle (off to start with), a **List** dropdown that shows when the toggle is on
+  (one `<optgroup>` per group, each option a list with its path, like "Own every
   Warframe › Necramechs"; a list is any goal that has `parts`, seeded or added, at any depth; the goal being edited and
-  everything inside it is left out so a list cannot go inside itself), **Group** (hidden while List is on), **Tags**
-  (Warframe only, hidden while List is on, saved as `[]`), **Note** and **Steps**. Saving with the toggle on and no list
-  picked says "Pick which list."; a game with no lists yet says so under the dropdown.
+  everything inside it is left out so a list cannot go inside itself), **Group**, **Tags**
+  (Warframe only), **Note** and **Steps**. **Adding a goal: the dropdown starts on "New list" (CB, 2026-10-13: "by default
+  it asks for a new list instead of which list ... specifically when adding goals")**, then the lists that exist. Picking a
+  list that exists hides Group and Tags (the goal follows that list's group, tags saved as `[]`); "New list" shows **Name of
+  the new list** and keeps Group and Tags (the new list is a goal of its own), relabels Goal as "First goal in the list",
+  hides Note and relabels Steps as "More goals in the list". Saving makes ONE entry, `custom.<newId> = { text: <list name>,
+  group, tags?, at, parts: [first goal, ...more goals] }` (no `list`, no `note`; the goals are plain ticks `done.<partId>`,
+  exactly like a list made with Steps), refuses an empty name and any name already used by another goal, step, the list or its
+  own goals, and flashes "List added." **Editing a saved goal: no "New list" option** (a saved goal can only move into a list
+  that exists; the placeholder is "Which list" and saving with the toggle on and nothing picked says "Pick which list."). A
+  game with no lists yet offers only "New list".
   - **Storage, no rule change:** a goal in a list is saved as usual plus `list: "<the list goal's id>"` (and `group` = the
     list's top-level group, so it lands there if the list is ever removed). `addedGoals()` reads the saved goals and
     `graftListed(tasks, listed)` puts each one inside its list as one more part, on a copy (the seeded goal objects are never
@@ -918,6 +929,10 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
     (a list in a list). **A goal whose list is gone** (a seed list removed from the JSON, or an added list deleted) is not
     lost: it shows under its group like any goal, and its edit form opens with the toggle off. Deleting an added list does not
     delete the goals that were put inside it. `wfTree()` is the Warframe version of `genData(game).tasks`.
+  - **Tests (a `newlisttest.js` style suite, 49 checks, plus `listtest.js`):** New list default and its fields, refused names,
+    the saved entry, ticking inside it, adding into it afterwards, editing it (no New list option), a refused write rolling the
+    list back, Warframe group / tags / new group, Edit buttons hidden until Edit goals is on (plain goal, list, goal in a list,
+    another game, signed out), 360/390/430 layouts. Write them again rather than trusting this list.
 - **Rule (published by the owner in the Firebase console, Firestore -> Rules, and confirmed working
   on 2026-10-13: the page says "synced live" and an ARC Raiders tick survives a refresh, so the
   read and write halves both work; the block below is the reference copy, it lives in the console,

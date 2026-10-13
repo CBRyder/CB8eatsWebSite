@@ -21,9 +21,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // The Dev hub has its own hostname, with or without the www. Visiting
 // dev.cb8eats.com (the bare address, nothing after the slash) shows the same
 // page that lives at /dev: three cards for the Tarboro Life tracker, the COA
-// tracker and Warframe. Every other path on that hostname (css, js, the tracker
-// pages, warframe-data.json) falls through to the normal static assets, so the
-// pages' relative links keep working. The hostnames themselves are attached to
+// tracker and Game goals (which holds Warframe). Every other path on that hostname
+// (css, js, the tracker pages, warframe-data.json) falls through to the normal
+// static assets, so the pages' relative links keep working. The hostnames themselves are attached to
 // this Worker in the Cloudflare dashboard (Domains & Routes), not here.
 const DEV_HOSTS = new Set(['dev.cb8eats.com', 'www.dev.cb8eats.com']);
 const DEV_ORIGIN = 'https://www.dev.cb8eats.com';
@@ -39,9 +39,14 @@ const DEV_PAGES = new Map([
   ['/dev', '/'], ['/dev.html', '/'],
   ['/tracker', '/tracker'], ['/tracker.html', '/tracker'],
   ['/coa-tracker', '/coa-tracker'], ['/coa-tracker.html', '/coa-tracker'],
-  ['/warframe', '/warframe'], ['/warframe.html', '/warframe'],
   ['/goals', '/goals'], ['/goals.html', '/goals'],
 ]);
+// The Warframe page no longer exists: its goals, mods and builds are tabs of the Game
+// goals page. These addresses send old links and bookmarks there on EVERY hostname (the
+// fragment, such as #mods, is kept by the browser and the Game goals page reads it).
+// 302, not 301, so browsers never cache it. Both paths are also in wrangler.jsonc's
+// assets.run_worker_first, so the Worker answers them first.
+const RETIRED_PAGES = new Map([['/warframe', '/goals'], ['/warframe.html', '/goals']]);
 const DEV_DATA = new Set(['/resource-inventory.json', '/coa-inventory.json', '/warframe-data.json', '/warframe-mod-stats.json', '/warframe-community-builds.json', '/goals-data.json']);
 
 // Decode %xx, collapse repeated slashes, drop a trailing slash and lowercase,
@@ -69,8 +74,13 @@ export default {
       return env.ASSETS.fetch(new Request(pageUrl, request));
     }
 
+    const path = normalizePath(url.pathname);
+    if (path !== null && isRead && RETIRED_PAGES.has(path)) {
+      const to = (onDevHost ? '' : DEV_ORIGIN) + RETIRED_PAGES.get(path) + url.search;
+      return Response.redirect(new URL(to, url).toString(), 302);
+    }
+
     if (!onDevHost) {
-      const path = normalizePath(url.pathname);
       if (path !== null && DEV_PAGES.has(path)) {
         // 302 (not 301) so browsers never cache it: where the dev pages live may change.
         return Response.redirect(DEV_ORIGIN + DEV_PAGES.get(path) + url.search, 302);

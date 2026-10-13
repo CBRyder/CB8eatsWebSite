@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The community mod tally behind the "Most used by the Community" filter on warframe.html.
+"""The community mod tally behind the "Most used by the Community" filter on the Game goals page (goals.html, Warframe, Mods tab).
 
 tools/mod-usage.json holds one record per build that has been read, and who made it:
 

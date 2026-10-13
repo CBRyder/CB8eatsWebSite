@@ -338,20 +338,36 @@ after the very first run). If you ever need an "ensure doc exists" write again, 
 dotted field path or check existence first — never `set(..., { merge: true })` with a
 whole nested object as the value for an existing map field.
 
-## Warframe page (`warframe.html`)
+## Warframe (a game on the Game goals page; there is no `warframe.html` any more)
 
-A phone-first page for CB's Warframe account, built in the same JSON-driven +
-Firebase style as the trackers. Three tabs: **Mods**
-(Owned / Missing lists, search, and a "Buy with plat" filter on Missing), **Builds**,
-and **Theme**. **The Goals tab (Mother Token farm counter and the checklist of grind goals,
-with "Buy with plat" and "Foundry" filters) moved to the Game goals page on 2026-10-13**
-(see "Game goals page" below). The data, the Firestore doc and every goal id are unchanged;
-only the screen moved, so ticks carried over. Wherever this section says "the Goals tab",
-it now means the Warframe game on `goals.html#warframe`. The page keeps reading `farm.tasks`
-and the ticks (`S.done`) because the Mods tab marks mods owned from ticked goals and the
-glance strip shows the tokens and Burston Prime. It shows a link to `goals.html#warframe`
-under the heading, and an old `warframe.html#goals` link or bookmark redirects there
-(a stored `ui.tab` of `goals` falls back to Mods).
+**On 2026-10-13 the Warframe page was removed and everything on it moved onto the Game goals page
+(`goals.html`).** CB: the Mods, Builds and Theme tabs "should already be on the goals", and "the theme only
+needs to be on the dev page". Picking **Warframe** on the Game goals page shows three tabs, **Goals** (the
+Mother Tokens card and the grind-goal checklist, with "Buy with plat" and "Foundry" filters), **Mods**
+(Owned / Missing lists, search, "Buy with plat" and "Most used by the Community" filters) and **Builds**
+(My builds / Community builds, Add build, Stats screens). There is **no Theme tab**: the theme editor is on the
+Dev hub only (`dev.html`); `goals.html` still loads `js/theme.js` and follows the saved colors. The data
+(`warframe-data.json`, `warframe-mod-stats.json`, `warframe-community-builds.json`), the Firestore doc
+`warframe/progress`, the element ids (`t-mods`, `p-mods`, `wf-groups`, `p-builds`, `wf-moddlg`, ...) and every goal id are
+unchanged; only the screen moved, so ticks, builds and the token history carried over. **Wherever the rest of this
+section says "the Warframe page", "the Mods tab" or `warframe.html`, it means the Warframe game on `goals.html`**
+(the Goals tab is `#g-panel`, the Mods tab `#p-mods`, the Builds tab `#p-builds`, all inside the one module script
+of `goals.html`; the tab row and the glance strip are in `#wf-app`, which is hidden for every other game). It was
+merged from the two old pages by deleting the helpers both had (`cleanGoals`, `tokCard`, `flash`, `setSync`,
+`startSync`, `boot` ...), so there is one `S`, one `ui`, one `renderLive()` and one Firestore listener on
+`warframe/progress` (plus the `gameGoals` one). The glance strip shows the tokens, Burston Prime and the mod count
+under the tabs, and the long "source" note of `warframe-data.json` is inside a small "Warframe data updated ..." line
+you tap open (`#wf-about`).
+- **Address and old links:** `#warframe` is the Goals tab, `#warframe/mods` and `#warframe/builds` the others (the tab
+  you last used is also remembered, see "Game goals page"). An old Warframe link still lands right: `/warframe` and
+  `/warframe.html` 302 to `/goals` on every hostname (`RETIRED_PAGES` in `worker.js`, tested on workerd), and the browser
+  keeps the fragment, so `/warframe#mods` becomes `/goals#mods`, which `goals.html` reads as Warframe, Mods tab
+  (`#goals`, `#mods` and `#builds` alone mean the Warframe tabs). Because of that, a game CB adds can not be named
+  Goals, Mods or Builds (the Add game form refuses it).
+- **Tests this change was checked with:** every older suite was pointed at `goals.html#warframe/mods` (the Mods,
+  Builds, Stats, goal, token and tick suites: about 700 checks), plus a new suite for the page itself (tabs, legacy
+  links, reserved names, visitor and owner flows, the gameGoals rule missing). The fake Firebase needs a `collection()`
+  and a collection `onSnapshot` now. Write them again rather than trusting this list.
 
 - **Content is data:** `warframe-data.json` (fetched with `cache: 'no-store'`). Shape:
   `{ updated, updatedLabel, source, caveat, meta, farm{..., customFixes{}}, mods{owned[],
@@ -563,7 +579,7 @@ under the heading, and an old `warframe.html#goals` link or bookmark redirects t
   the My builds / Community builds switch, a **+ Add build** button (`#bv-add`, owner only, greyed until
   `warframe-mod-stats.json` has loaded) opens a form (`#wf-bdlg`): build name, what it is for (Warframe,
   Primary, Secondary, Melee, Archwing, Arch-Gun, Arch-Melee, Companion, Necramech; `BUILD_CATS` in
-  `warframe.html`), an optional item name, **10 mod dropdowns** (`wf-b-m0`..`wf-b-m9`), an **Aura** dropdown
+  `goals.html`), an optional item name, **10 mod dropdowns** (`wf-b-m0`..`wf-b-m9`), an **Aura** dropdown
   (a **Stance** one for melee), an **Exilus** dropdown (only mods flagged `ex` or `ut`; shown for a Warframe and
   for Primary, Secondary and Melee weapons, the ones that take an Exilus adapter, hidden for the rest) and the
   **arcane dropdowns** (`arcaneSlots` in `BUILD_CATS`; "adapter" in CB's first message was read as the arcane
@@ -744,7 +760,7 @@ published the original three-field rule, adding goals fails with permission-deni
     overridden. The owner can still edit or delete the goal in the page; if a fix exists
     for it, the page warns that the fix still wins until Claude removes it. A fix may
     also set `"tags": ["plat", "foundry"]` (unknown ids are dropped) instead of `plat`.
-  - **Tags (added 2026-10-09):** the tags live in one list, `TAGS` in `warframe.html`
+  - **Tags (added 2026-10-09):** the tags live in one list, `TAGS` in `goals.html`
     (`{ id, label, tone, explain }`; today `plat` = Buy with plat and `foundry` =
     Foundry). That list drives everything: the filter buttons above the goals, the
     chip on a goal, the sentence under a filter, and the tag buttons in the Add goal
@@ -757,28 +773,32 @@ published the original three-field rule, adding goals fails with permission-deni
     No Firestore rule change is needed, because `custom` is a map and its inner fields
     are not constrained.
 
-- **Theme:** the Theme tab is the shared editor from `js/theme.js` (see the Dev hub
-  section) — the same four colors drive the hub and both trackers too.
-- **Address:** reached from the third card on the Dev hub (`warframe.html` -> `/warframe`).
-  The old `warframe.cb8eats.com` / `www.warframe.cb8eats.com` hostnames were replaced by
+- **Theme:** the shared editor from `js/theme.js` is mounted on the Dev hub only (see the Dev hub section).
+  `goals.html` has no editor; it follows the saved colors like every other page (the same four colors drive the hub,
+  both trackers and this page).
+- **Address:** `/goals`, reached from the Game goals card on the Dev hub. `/warframe` and `/warframe.html` redirect there
+  (see the top of this section). The old `warframe.cb8eats.com` / `www.warframe.cb8eats.com` hostnames were replaced by
   the dev hostnames below, and the Worker no longer rewrites them (if they are still
   attached in the dashboard, they just show the home page).
 
 ## Game goals page (`goals.html` + `goals-data.json`)
 
 Added 2026-10-13. CB: "turn that into a just goals for multiple games like whatever and
-expandable". One dev page, served at `/goals` (dev hostnames only, fourth card on the Dev hub,
-id `hub-goals`), with a pill picker of games. **Warframe's Goals tab lives here now.** CB chose
+expandable". One dev page, served at `/goals` (dev hostnames only, a card on the Dev hub,
+id `hub-goals`), with a pill picker of games. **Warframe lives here now, with its Goals, Mods and Builds tabs (the
+Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
 "replace Warframe's Goals tab" and "both ways" to add games and goals.
 
 - **Games.** The list is the `games` seeds in `goals-data.json` plus every `gameGoals/<id>` doc
   that has a `name`. `#<gameId>` in the address picks a game; the last one opened and the goal
-  filter are kept in localStorage `cb8eats-goals-ui-v1` (the goal filter falls back to the old
-  `cb8eats-warframe-ui-v1`).
+  filter are kept in localStorage `cb8eats-goals-ui-v1`, together with the Warframe tab and the Mods and Builds
+  choices (`tab`, `view`, `modFilter`, `community`, `builds`, `bcat`, `btab`). The old Warframe page's entry
+  `cb8eats-warframe-ui-v1` is still read first, so those choices carried over (its `tab` is ignored); the
+  new entry is read on top of it.
 - **Warframe** is the seed with `source: "warframe-data.json"`: goals come from
   `warframe-data.json` `farm.tasks`, ticks, the Mother Tokens card and added goals
   stay in `warframe/progress` exactly as described in the Warframe section (same ids, same
-  `custom` map). The code for it was moved from `warframe.html` unchanged apart from reading the
+  `custom` map). The code for it was moved from the old Warframe page unchanged apart from reading the
   active game through a small `CTX = { isDone, toggle }` that the shared row builders (`taskEl`,
   `goalEl`, `progress`, `goalDone`) use. Do not "tidy" Warframe onto the generic path: that would
   need a migration of `done` and the token fields.
@@ -835,11 +855,10 @@ match /gameGoals/{gameId} {
 
 ## Dev hub (`dev.html`) and the dev pages
 
-The Tarboro Life tracker, the COA tracker, Warframe and Game goals are owner/dev tools, not public
-content. They live together under one hub page with four cards (`dev.html`; ids
-`hub-tarboro`, `hub-coa`, `hub-warframe`, `hub-goals`; four columns on wide screens, two on
-tablets, one on phones). **Five dev pages:** `dev.html`,
-`tracker.html`, `coa-tracker.html`, `warframe.html`, `goals.html`.
+The Tarboro Life tracker, the COA tracker and Game goals (which holds Warframe) are owner/dev tools, not public
+content. They live together under one hub page with three cards (`dev.html`; ids
+`hub-tarboro`, `hub-coa`, `hub-goals`; three columns on wide screens, one below 860px). **Four dev pages:** `dev.html`,
+`tracker.html`, `coa-tracker.html`, `goals.html`.
 
 - **Address:** `www.dev.cb8eats.com` (and `dev.cb8eats.com`) shows the hub at its bare
   root, and `/dev` works on every hostname. `worker.js` checks
@@ -856,8 +875,8 @@ tablets, one on phones). **Five dev pages:** `dev.html`,
   Settings -> Authorized domains and the web API key's website restrictions in Google
   Cloud.
 - **The lock: Cloudflare Access on the dev hostname, and dev pages only exist there.**
-  `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/warframe`, `/goals` (and their `.html`
-  forms) and the data files `resource-inventory.json`, `coa-inventory.json`,
+  `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/goals` (and their `.html`
+  forms; `/warframe` and `/warframe.html` are retired and redirect to `/goals` on every hostname) and the data files `resource-inventory.json`, `coa-inventory.json`,
   `warframe-data.json`, `warframe-mod-stats.json`, `warframe-community-builds.json`, `goals-data.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
   `workers.dev` address) the pages 302 to `https://www.dev.cb8eats.com/...` and the data
   files 404, so nothing dev-related can be read from the public hostname. Variants like
@@ -916,21 +935,20 @@ tablets, one on phones). **Five dev pages:** `dev.html`,
   variable (`--bg`, `--bg-alt`, `--card`, `--card-hover`, `--border`, `--border-soft`,
   `--accent`, `--accent-dim`, `--accent-bright`, `--accent-2`, `--glow`, `--wash-a/b`,
   `--on-accent`, `--on-grad`). Stored per device in localStorage
-  `cb8eats-warframe-theme-v1` (same key the Warframe page always used, so earlier saved
+  `cb8eats-warframe-theme-v1` (same key the old Warframe page used, so earlier saved
   colors carried over) and, for the owner, in Firestore `warframe/progress.theme`. A
   device with no local theme follows the saved one, read through the public REST address
   `https://firestore.googleapis.com/v1/projects/tarborolifebackend/databases/(default)/documents/warframe/progress`
   (deliberately no API key, to avoid referrer restrictions); pages that already have a
   Firestore listener call `WFTheme.setRemote(theme)` from their `onSnapshot`. A `storage`
   listener makes open tabs follow a change live. `WFTheme.mountEditor(box, {canSave,
-  save, onError})` builds the editor card; the hub and the Warframe Theme tab both use
-  it, and the owner's edits save after a short delay (`updateDoc` with `setDoc` only as
+  save, onError})` builds the editor card; only the hub uses it (CB: the theme only needs to be on the dev page), and the owner's edits save after a short delay (`updateDoc` with `setDoc` only as
   the `not-found` fallback; writes only the `theme` field, so `hasOnly` in the
   `warframe/progress` rule is unchanged).
 - **Shared look:** `css/dev-base.css` (page background wash, header, nav pill, buttons,
-  slim header at <=420px; load it after `css/cb8-auth.css`) is loaded by all five dev pages;
-  `css/dev-widgets.css` (cards, inputs, toast, theme editor) only by the hub,
-  Warframe and Game goals, because the trackers define colliding class names. The trackers' `.res-inv`
+  slim header at <=420px; load it after `css/cb8-auth.css`) is loaded by all four dev pages;
+  `css/dev-widgets.css` (cards, inputs, toast, theme editor) only by the hub
+  and Game goals, because the trackers define colliding class names. The trackers' `.res-inv`
   panel maps its own `--ri-*` variables onto the theme (`--ri-bg: var(--bg-alt)`,
   `--ri-accent: var(--accent)`, ...) so it follows the colors, but the status colors
   (crit/warn/good/verified/planned) stay fixed on purpose because they carry meaning.
@@ -943,12 +961,12 @@ tablets, one on phones). **Five dev pages:** `dev.html`,
   Tarboro Life tracker keeps its `TL` tab icon (`favicon-tarboro.svg`) and the COA tracker
   its `COA` one (`favicon-coa.svg`); each also has a matching 180x180 home-screen PNG
   (`tl-apple-touch-icon.png`, `coa-apple-touch-icon.png`, rendered from those SVGs) and a
-  home-screen title of `TL` / `COA`. Warframe and the whole public site keep the "CB"
+  home-screen title of `TL` / `COA`. Game goals and the whole public site keep the "CB"
   `favicon.svg` (no touch icon). The DEV letters are drawn as paths, so no font is needed.
   iOS caches the icon from when a shortcut was added, so changing it means removing and
-  re-adding the shortcut. The hub's cards are titled `TL`, `COA` and `Warframe`, but the
+  re-adding the shortcut. The hub's cards are titled `TL`, `COA` and `Game goals`, but the
   menu tabs in the dev pages' headers stay words ("Dev hub", "Tarboro tracker",
-  "COA tracker", "Warframe"), because CB wants that.
+  "COA tracker", "Game goals"), because CB wants that.
 - **Phone width:** long unbroken words in `.res-desc`/`.res-note` used to push the
   trackers wider than the screen; they now wrap (`overflow-wrap: anywhere`).
 

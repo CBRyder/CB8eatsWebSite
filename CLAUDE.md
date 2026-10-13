@@ -815,8 +815,10 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
   `{ text, group, note?, parts?: [{ id, text }], at }` (id `g` + time + random; text 80, note 200, group 30,
   steps one per line, at most 30 of 60 characters). Added goals have an Edit button (rename, move group, change steps,
   two-tap Delete that also clears the ticks); seeded goals do not, change those in the JSON.
-- **Rule needed (new, the owner must publish it in the Firebase console, Firestore -> Rules; add
-  this block alongside the others, do not replace them).** Games are created and ticked with
+- **Rule (published by the owner in the Firebase console, Firestore -> Rules, and confirmed working
+  on 2026-10-13: the page says "synced live" and an ARC Raiders tick survives a refresh, so the
+  read and write halves both work; the block below is the reference copy, it lives in the console,
+  not in this repo; if it is ever replaced, add it back alongside the others, do not replace them).** Games are created and ticked with
   `setDoc` (only when the doc does not exist yet) and `updateDoc` with dotted paths, so the page needs no rule change when
   a game is added later, because the rule is a wildcard on the doc id:
 
@@ -836,7 +838,7 @@ match /gameGoals/{gameId} {
 ```
 
   `hasOnly` must list every top-level field the page writes, the same gotcha as everywhere else.
-  **Until the rule is published**, Warframe keeps working (its doc has its own rule), but reading
+  **If the rule is ever missing again** (not the case now), Warframe keeps working (its doc has its own rule), but reading
   `gameGoals` is denied, so the sync line says the other games cannot sync, the panel warns, a tick
   rolls back with a toast naming `gameGoals`, and Add game / Add goal cannot save. Reading is
   public (`https://firestore.googleapis.com/v1/projects/tarborolifebackend/databases/(default)/documents/gameGoals`,

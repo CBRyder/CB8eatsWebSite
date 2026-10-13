@@ -167,6 +167,11 @@
       background: color-mix(in srgb, var(--tag, var(--accent-2)) 14%, transparent); }
     .tagbtn[aria-pressed="false"] { border-color: var(--border); color: var(--text-faint); background: transparent; opacity: 0.8; }
     .tagbtn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    /* The List toggle in the Add goal form: off = the goal sits in a group (a column); on = a dropdown, Which list. */
+    .field.listtoggle { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.2rem 0.75rem; min-height: 48px; cursor: pointer; }
+    .field.listtoggle > span { flex: 1 1 auto; min-width: 0; }
+    .field.listtoggle > small { flex-basis: 100%; }
+    #g-dlg .field.listtoggle input[type="checkbox"] { width: 24px; height: 24px; }
     .formerr { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.4rem 0 0; }
     .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
     .dlgbtns .spacer { flex: 1 1 auto; }
@@ -372,34 +377,6 @@
 
   <p class="toast" id="wf-flash" role="status" aria-live="polite" hidden></p>
 
-  <dialog class="wfdlg" id="wf-dlg" aria-labelledby="wf-dlg-title">
-    <form id="wf-goalform" novalidate>
-      <h2 id="wf-dlg-title">Add a goal</h2>
-      <p class="muted">Pick the resource, say how many you want, and switch on any tags that fit.</p>
-      <label class="field"><span>Resource</span>
-        <select id="wf-res" required></select>
-      </label>
-      <label class="field" id="wf-other-wrap" hidden><span>Name of the resource</span>
-        <input type="text" id="wf-other" maxlength="60" autocomplete="off" placeholder="Type the name">
-      </label>
-      <label class="field"><span>Quantity goal</span>
-        <input type="number" id="wf-qty" min="1" max="100000000" step="1" inputmode="numeric" placeholder="For example 500" required>
-      </label>
-      <div class="field" role="group" aria-labelledby="wf-tags-label">
-        <span id="wf-tags-label">Tags</span>
-        <div class="tagpick" id="wf-tags"></div>
-        <small>A lit tag shows on the goal and works with the filters above the list.</small>
-      </div>
-      <p class="formerr" id="wf-adderr" role="alert"></p>
-      <div class="dlgbtns">
-        <button type="button" class="btn-sm danger" id="wf-del" hidden>Delete</button>
-        <span class="spacer"></span>
-        <button type="button" class="btn-sm" id="wf-cancel">Cancel</button>
-        <button type="submit" class="btn-sm primary" id="wf-save">Save goal</button>
-      </div>
-    </form>
-  </dialog>
-
   <dialog class="wfdlg" id="wf-tokdlg" aria-labelledby="wf-tokdlg-title">
     <form id="wf-tokform" novalidate>
       <h2 id="wf-tokdlg-title">Edit this card</h2>
@@ -435,16 +412,28 @@
   <dialog class="wfdlg" id="g-dlg" aria-labelledby="g-dlg-title">
     <form id="g-goalform" novalidate>
       <h2 id="g-dlg-title">Add a goal</h2>
-      <p class="muted">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks.</p>
+      <p class="muted">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks. Or turn on List to put it inside a list that is already a dropdown.</p>
       <label class="field"><span>Goal</span>
         <input type="text" id="g-text" maxlength="80" autocomplete="off" placeholder="For example Unlock the next weapon">
       </label>
-      <label class="field"><span>Group</span>
+      <label class="field listtoggle"><input type="checkbox" id="g-list-on"><span>List</span>
+        <small>Turn on to put this goal inside a list instead of in a group.</small>
+      </label>
+      <label class="field" id="g-list-wrap" hidden><span>Pick the list</span>
+        <select id="g-list"></select>
+        <small id="g-list-hint"></small>
+      </label>
+      <label class="field" id="g-group-wrap"><span>Group</span>
         <select id="g-group"></select>
       </label>
       <label class="field" id="g-group-new-wrap" hidden><span>Name of the new group</span>
         <input type="text" id="g-group-new" maxlength="30" autocomplete="off" placeholder="For example Later">
       </label>
+      <div class="field" id="g-tags-wrap" role="group" aria-labelledby="g-tags-label" hidden>
+        <span id="g-tags-label">Tags</span>
+        <div class="tagpick" id="g-tags"></div>
+        <small>A lit tag shows on the goal and works with the filters above the list.</small>
+      </div>
       <label class="field"><span>Note (optional)</span>
         <textarea id="g-note" maxlength="200" rows="2" placeholder="Anything worth remembering"></textarea>
       </label>
@@ -715,9 +704,170 @@
       return p.total > 0 && p.done === p.total;
     }
 
+    /* ---------- goals you add: one form and one set of rows for every game ---------- */
+    /* Where a game keeps the goals added to it and how they are saved. Warframe's live in warframe/progress, every
+       other game's in gameGoals/<id>; the form, the rows and the lists work the same on both. */
+    function storeOf(game) {
+      if (game.kind === 'warframe') {
+        return {
+          doc: 'warframe/progress', wf: true,
+          ready: () => !!(S.owner && S.sync), nope: () => needOwner(),
+          custom: () => S.custom, done: () => S.done,
+          write: (fields) => S.sync.write(fields, { done: S.done, runs: S.tokens, custom: S.custom }),
+          del: () => S.sync.del(), remove: (ids) => S.sync.remove(ids),
+          tree: () => wfTree(), groups: () => wfGroups(wfTree()),
+        };
+      }
+      const g = game.id;
+      return {
+        doc: 'gameGoals', wf: false,
+        ready: () => !!(S.owner && GS.sync), nope: () => needOwner(GS.sync),
+        custom: () => docFor(g).custom, done: () => docFor(g).done,
+        write: (fields) => { const d = docFor(g); return GS.sync.write(g, fields, { done: d.done, custom: d.custom }); },
+        del: () => GS.sync.del(), remove: (ids) => GS.sync.remove(g, ids),
+        tree: () => genData(g).tasks, groups: () => genData(g).groups,
+      };
+    }
+    /* The goals saved in one game's `custom` map, as goal objects. Every game saves { text, group, note?, parts?: [{ id, text }],
+       list?, at } (Warframe also tags: [...]). Warframe's older resource goals, { name, qty, tags, at }, are still read, and
+       farm.customFixes in warframe-data.json can still correct or hide them. `list` is the id of the list the goal sits in. */
+    function addedGoals(custom, wf) {
+      const fixes = wf && S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object' ? S.data.farm.customFixes : {};
+      const out = [];
+      Object.keys(custom).forEach((id) => {
+        const v = custom[id];
+        if (!ID_RE.test(id) || !v || typeof v !== 'object' || Array.isArray(v)) return;
+        if (wf && (id === TOKLOG || id === TOKCARD)) return;   // the token history and the token card's settings share this map but are not goals
+        if (v.kind === 'build') return;                        // builds you add share this map but are not goals
+        const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
+        if (fx && fx.hidden) return;
+        const t = { id, note: '', custom: true, at: Number(v.at) || 0 };
+        const text = cleanText(v.text, 80);
+        if (text) {
+          t.text = text; t.group = cleanText(v.group, 30) || (wf ? CUSTOM_GROUP : GEN_GROUP); t.note = cleanText(v.note, 200);
+          if (Array.isArray(v.parts)) {
+            const parts = v.parts.slice(0, 30).filter((x) => x && ID_RE.test(String(x.id)) && cleanText(x.text, 60)).map((x) => ({ id: String(x.id), text: cleanText(x.text, 60) }));
+            if (parts.length) t.parts = parts;
+          }
+        } else if (wf) {   // an older resource goal
+          const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
+          const qty = Math.floor(Number(fx && fx.qty != null ? fx.qty : v.qty));
+          if (!name || !Number.isFinite(qty) || qty < 1) return;
+          t.text = name + ' × ' + qty.toLocaleString('en-US'); t.group = CUSTOM_GROUP; t.legacy = true;
+        } else return;
+        if (wf) t.tags = customTags(v, fx);
+        const lst = ID_RE.test(String(v.list || '')) ? String(v.list) : '';
+        if (lst) t.list = lst;
+        out.push(t);
+      });
+      out.sort((a, b) => (a.at - b.at) || (a.id < b.id ? -1 : 1));
+      return out;
+    }
+    /* A goal you added can sit inside a list (a goal that opens as a dropdown). graftListed() puts each of those goals
+       inside its list as one more part, on a copy (the page's own goal objects are never changed). A goal whose list is
+       gone, or that would go inside itself, is returned in `orphans` and stays where its group puts it. Grafted goals
+       carry `listed: true`; a goal with steps of its own keeps them in `ownParts`, because `parts` then also holds the
+       goals that were put inside it. */
+    function graftListed(tasks, listed) {
+      const lists = new Set();
+      (function mark(l) { l.forEach((t) => { if (hasParts(t)) { lists.add(t.id); mark(t.parts); } }); })(tasks);
+      const kids = new Map();
+      let pending = listed.slice(), moved = true;
+      while (moved && pending.length) {   // a listed goal can itself be a list, so go on until nothing more fits
+        moved = false;
+        pending = pending.filter((c) => {
+          if (c.list === c.id || !lists.has(c.list)) return true;
+          if (!kids.has(c.list)) kids.set(c.list, []);
+          kids.get(c.list).push(Object.assign({}, c, { listed: true }));
+          if (hasParts(c)) lists.add(c.id);
+          moved = true;
+          return false;
+        });
+      }
+      const build = (t) => {
+        const sub = (t.parts || []).map(build), add = (kids.get(t.id) || []).map(build);
+        if (!add.length && sub.every((x, i) => x === t.parts[i])) return t;
+        const c = Object.assign({}, t, { parts: sub.concat(add) });
+        if (t.custom && t.parts) c.ownParts = t.parts;
+        return c;
+      };
+      return { tree: tasks.map(build), orphans: pending };
+    }
+    /* The steps a goal you added has of its own (not the goals that were put inside it). */
+    const ownSteps = (t) => (t && (t.ownParts || t.parts)) || [];
+    /* Warframe's goals as they are drawn: the ones in warframe-data.json, then the ones you added, with each added goal
+       that sits in a list put inside that list. */
+    function wfTree() {
+      const seed = S.data.farm.tasks, ids = new Set(), names = new Set();
+      (function seen(l) { l.forEach((t) => { ids.add(t.id); names.add(t.text.replace(/\s+/g, ' ').trim().toLowerCase()); if (t.parts) seen(t.parts); }); })(seed);
+      const added = addedGoals(S.custom, true);
+      // The older resource goals keep showing even when two have the same text (the same resource added twice).
+      const clean = (list) => [].concat(...list.map((c) => (c.legacy ? [c] : cleanGoals([c], ids, names))));
+      const g = graftListed(seed.concat(clean(added.filter((t) => !t.list))), clean(added.filter((t) => t.list)));
+      return g.tree.concat(g.orphans);
+    }
+    /* The groups (columns) of the Warframe goals: the ones in the data file, Added by you, then any other name in use. */
+    function wfGroups(tree) {
+      const out = (S.data.farm.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]);
+      tree.forEach((t) => { if (!out.includes(t.group)) out.push(t.group); });
+      return out;
+    }
+    /* Every list a goal can be put in: a goal that has parts, at any depth, labelled with its path and filed under its
+       group. The goal being edited (and everything inside it) is left out, so a list can never go inside itself. */
+    function listChoices(tree, exceptId) {
+      const out = [];
+      const walk = (t, path, group) => {
+        if (!hasParts(t) || t.id === exceptId) return;
+        const here = path.concat(t.text);
+        out.push({ id: t.id, label: here.join(' › '), group });
+        t.parts.forEach((x) => walk(x, here, group));
+      };
+      tree.forEach((t) => walk(t, [], t.group));
+      return out;
+    }
+    /* The List toggle and its Which list dropdown in the Add goal form. */
+    function setListUi(choices, picked) {
+      const sel = $('g-list'); sel.textContent = '';
+      const ph = new Option('Which list', ''); ph.disabled = true; sel.appendChild(ph);
+      const byGroup = new Map();
+      choices.forEach((c) => { if (!byGroup.has(c.group)) byGroup.set(c.group, []); byGroup.get(c.group).push(c); });
+      byGroup.forEach((items, grp) => {
+        const og = document.createElement('optgroup'); og.label = grp;
+        items.forEach((c) => og.appendChild(new Option(c.label, c.id)));
+        sel.appendChild(og);
+      });
+      const ok = !!picked && choices.some((c) => c.id === picked);
+      $('g-list-on').checked = ok;
+      sel.value = ok ? picked : '';
+      $('g-list-hint').textContent = choices.length ? 'The goal becomes one more tick inside that list.' : 'There are no lists in this game yet. A goal with steps is a list.';
+      syncListUi();
+    }
+    function syncListUi() {
+      const on = $('g-list-on').checked;
+      $('g-list-wrap').hidden = !on;
+      $('g-group-wrap').hidden = on;
+      syncGroupNew();
+      $('g-tags-wrap').hidden = on || !$('g-tags-wrap').dataset.wf;   // tags are Warframe's, and the filters read only the goals on the main list
+    }
+    function buildTagButtons() {
+      const box = $('g-tags'); box.textContent = '';
+      TAGS.forEach((tg) => {
+        const b = el('button', 'tagbtn tag-' + tg.id + ' tone-' + (tg.tone || 'accent2'), tg.label);
+        b.type = 'button'; b.dataset.tag = tg.id; b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
+        box.appendChild(b);
+      });
+    }
+    function setTagButtons(tags) {
+      $('g-tags').querySelectorAll('.tagbtn').forEach((b) => b.setAttribute('aria-pressed', (tags || []).includes(b.dataset.tag) ? 'true' : 'false'));
+    }
+    function pickedTags() {
+      return Array.from($('g-tags').querySelectorAll('.tagbtn')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tag);
+    }
+
     function renderWarframe() {
       const f = S.data.farm, p = $('g-panel');
-      CTX = { isDone: (id) => isDoneIn(S.done, S.index, id), toggle: toggleTask };
+      CTX = { isDone: (id) => isDoneIn(S.done, S.index, id), toggle: toggleTask, row: genRowEl };
       const hadFocus = !!(document.activeElement && document.activeElement.id === 'tok-in');   // a re-render must not drop what is being typed
       p.textContent = '';
       const card = el('div', 'wfcard'), tc = tokCard(), target = tokTarget();
@@ -789,9 +939,9 @@
       const wrap = el('div', 'wfcard');
       const head = el('div', 'cardhead');
       head.appendChild(el('h2', null, 'Grind goals'));
-      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button';
+      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button'; add.id = 'g-add';
       if (!S.owner) add.setAttribute('aria-disabled', 'true');
-      add.onclick = () => openGoalDialog(null);
+      add.onclick = () => openGenDialog(null);
       head.appendChild(add);
       wrap.appendChild(head);
       const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Filter goals');
@@ -802,44 +952,18 @@
         seg.appendChild(b);
       });
       wrap.appendChild(seg);
-      const everything = f.tasks.concat(customTasks());
+      const everything = wfTree();
       const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
       const open = visible.filter((t) => !goalDone(t)).length;
       wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + ((TAGS.find((x) => x.id === ui.goalFilter) || {}).explain ? ' ' + TAGS.find((x) => x.id === ui.goalFilter).explain : '')));
-      (f.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]).forEach((grp) => {
+      wfGroups(everything).forEach((grp) => {
         const items = visible.filter((t) => t.group === grp);
         if (!items.length) return;
         wrap.appendChild(el('p', 'group-label', grp));
-        items.forEach((t) => wrap.appendChild(t.custom ? customRowEl(t) : goalEl(t)));
+        items.forEach((t) => wrap.appendChild(genRowEl(t)));
       });
       if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
       p.appendChild(wrap);
-    }
-
-    /* Goals the owner added with the Add button. They live in Firestore
-       (warframe/progress.custom, keyed by a generated id). Corrections made
-       by hand in warframe-data.json (farm.customFixes[id]) win over what is
-       stored, so a mistyped entry can be fixed without the owner's sign-in. */
-    function customTasks() {
-      const fixes = (S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object') ? S.data.farm.customFixes : {};
-      const out = [];
-      Object.keys(S.custom).forEach((id) => {
-        if (!ID_RE.test(id) || id === TOKLOG || id === TOKCARD) return;   // the token history and the token card's settings share this map but are not goals
-        const v = S.custom[id];
-        if (!v || typeof v !== 'object' || v.kind === 'build') return;   // builds you add share this map but are not goals
-        const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
-        if (fx && fx.hidden) return;
-        const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
-        const qty = Math.floor(Number(fx && fx.qty != null ? fx.qty : v.qty));
-        if (!name || !Number.isFinite(qty) || qty < 1) return;
-        const tags = customTags(v, fx);
-        out.push({
-          id, group: CUSTOM_GROUP, text: name + ' × ' + qty.toLocaleString('en-US'), note: '',
-          tags, custom: { name, qty, tags, plat: tags.includes('plat'), fixed: !!fx }, at: Number(v.at) || 0,
-        });
-      });
-      out.sort((a, b) => a.at - b.at);
-      return out;
     }
 
     /* Tags of an added goal: the saved tags list, or for goals saved before tags existed the old
@@ -850,17 +974,6 @@
       if (fx && Array.isArray(fx.tags)) tags = known(fx.tags);
       else if (fx && fx.plat != null) tags = fx.plat ? Array.from(new Set(tags.concat('plat'))) : tags.filter((x) => x !== 'plat');
       return TAGS.map((x) => x.id).filter((id) => tags.includes(id));
-    }
-
-    function customRowEl(t) {
-      const row = el('div', 'taskrow');
-      row.appendChild(taskEl(t));
-      const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button';
-      ed.setAttribute('aria-label', 'Edit ' + t.custom.name);
-      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
-      ed.onclick = () => openGoalDialog(t);
-      row.appendChild(ed);
-      return row;
     }
 
     function goalText(t) {
@@ -901,9 +1014,9 @@
       meta.appendChild(el('span', 'chev'));
       sm.appendChild(meta);
       d.appendChild(sm);
-      const flat = t.parts.every((x) => !hasParts(x) && !x.note);
+      const flat = t.parts.every((x) => !hasParts(x) && !x.note && !x.listed);
       const list = el('div', 'parts' + (flat ? ' flat' : ''));
-      t.parts.forEach((x) => list.appendChild(goalEl(x)));
+      t.parts.forEach((x) => list.appendChild(x.listed && CTX.row ? CTX.row(x) : goalEl(x)));
       d.appendChild(list);
       return d;
     }
@@ -1095,109 +1208,6 @@
       if (wf && S.data) { renderGlance(); renderBuilds(); renderMods(); }
     }
 
-    /* ---------- add / edit a goal ---------- */
-    let editing = null, delTimer = null;
-    function buildResourceSelect() {
-      const sel = $('wf-res'); sel.textContent = '';
-      const ph = new Option('Choose a resource…', ''); ph.disabled = true; sel.appendChild(ph);
-      (S.data.resources || []).forEach((g) => {
-        const og = document.createElement('optgroup'); og.label = g.group;
-        g.items.forEach((n) => og.appendChild(new Option(n, n)));
-        sel.appendChild(og);
-      });
-      sel.appendChild(new Option('Other (type a name)…', '__other'));
-    }
-    function buildTagButtons() {
-      const box = $('wf-tags'); box.textContent = '';
-      TAGS.forEach((tg) => {
-        const b = el('button', 'tagbtn tag-' + tg.id + ' tone-' + (tg.tone || 'accent2'), tg.label);
-        b.type = 'button'; b.dataset.tag = tg.id; b.setAttribute('aria-pressed', 'false');
-        b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
-        box.appendChild(b);
-      });
-    }
-    function setTagButtons(tags) {
-      $('wf-tags').querySelectorAll('.tagbtn').forEach((b) => b.setAttribute('aria-pressed', (tags || []).includes(b.dataset.tag) ? 'true' : 'false'));
-    }
-    function pickedTags() {
-      return Array.from($('wf-tags').querySelectorAll('.tagbtn')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tag);
-    }
-    function syncOther() { $('wf-other-wrap').hidden = $('wf-res').value !== '__other'; }
-    function resetDelete() { clearTimeout(delTimer); $('wf-del').textContent = 'Delete'; $('wf-del').dataset.armed = ''; }
-    function openGoalDialog(t) {
-      if (!S.owner || !S.sync) return needOwner();
-      editing = t || null;
-      $('wf-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal';
-      $('wf-save').textContent = t ? 'Save changes' : 'Save goal';
-      $('wf-del').hidden = !t; resetDelete();
-      $('wf-adderr').textContent = '';
-      const sel = $('wf-res');
-      if (t) {
-        const known = Array.from(sel.options).some((o) => o.value === t.custom.name && o.value !== '__other');
-        sel.value = known ? t.custom.name : '__other';
-        $('wf-other').value = known ? '' : t.custom.name;
-        $('wf-qty').value = String(t.custom.qty);
-        setTagButtons(t.custom.tags);
-      } else {
-        sel.selectedIndex = 0; $('wf-other').value = ''; $('wf-qty').value = ''; setTagButtons([]);
-      }
-      syncOther();
-      const dlg = $('wf-dlg');
-      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
-    }
-    function closeGoalDialog() {
-      const dlg = $('wf-dlg');
-      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
-    }
-    function newGoalId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
-    async function saveGoal(ev) {
-      ev.preventDefault();
-      const err = (m) => { $('wf-adderr').textContent = m; };
-      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save goals.');
-      const pick = $('wf-res').value;
-      const name = (pick === '__other' ? $('wf-other').value : pick).replace(/\s+/g, ' ').trim();
-      const qty = Number($('wf-qty').value);
-      if (!name) return err(pick === '__other' ? 'Type the name of the resource.' : 'Pick a resource from the list.');
-      if (name.length > 60) return err('That name is too long (60 characters at most).');
-      if (!Number.isInteger(qty) || qty < 1 || qty > 100000000) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
-      const id = editing ? editing.id : newGoalId();
-      const was = S.custom[id];
-      const tags = pickedTags();
-      /* plat is still saved beside tags so an older copy of the page (a cached phone tab) reads it right. */
-      const val = { name, qty, tags, plat: tags.includes('plat'), at: (was && Number(was.at)) || Date.now() };
-      const overridden = !!(editing && editing.custom.fixed);
-      S.custom[id] = val; renderLive(); closeGoalDialog();
-      try {
-        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
-        flash(overridden ? 'Saved. A correction in the site data still overrides this goal, so ask Claude to clear it.' : (editing ? 'Goal updated.' : 'Goal added.'));
-      } catch (e) {
-        if (was) S.custom[id] = was; else delete S.custom[id];
-        renderLive(); writeFailed(e);
-      }
-    }
-    async function removeGoal() {
-      if (!editing || !S.owner || !S.sync) return;
-      const id = editing.id, was = S.custom[id], wasDone = S.done[id];
-      delete S.custom[id]; delete S.done[id]; renderLive(); closeGoalDialog();
-      try { await S.sync.remove(id); flash('Goal deleted.'); }
-      catch (e) {
-        if (was) S.custom[id] = was;
-        if (wasDone !== undefined) S.done[id] = wasDone;
-        renderLive(); writeFailed(e);
-      }
-    }
-    function initGoalDialog() {
-      buildResourceSelect(); buildTagButtons();
-      $('wf-res').addEventListener('change', syncOther);
-      $('wf-cancel').addEventListener('click', closeGoalDialog);
-      $('wf-goalform').addEventListener('submit', saveGoal);
-      $('wf-del').addEventListener('click', () => {
-        if ($('wf-del').dataset.armed) { resetDelete(); removeGoal(); return; }
-        $('wf-del').dataset.armed = '1'; $('wf-del').textContent = 'Tap again to delete';
-        delTimer = setTimeout(resetDelete, 4000);
-      });
-    }
-
     /* ---------- the games ---------- */
     /* Every game on the picker: the ones in goals-data.json, then the ones added with the Add game button
        (a gameGoals doc with a name). Warframe is always first and is the only one with extras (the Mother Tokens
@@ -1275,26 +1285,17 @@
       return map;
     }
     /* The goals of one game: the ones in goals-data.json, then the ones added with the Add goal button (saved as
-       custom.<id> = { text, group, note?, parts?: [{ id, text }], at }). A repeated id or name is dropped (cleanGoals). */
+       custom.<id> = { text, group, note?, parts?: [{ id, text }], list?, at }; see addedGoals and graftListed). A repeated
+       id or name is dropped (cleanGoals). */
     function genData(g) {
       const game = gameList().find((x) => x.id === g);
       const seedTasks = game && game.seed && Array.isArray(game.seed.tasks) ? game.seed.tasks : [];
-      const custom = (GS.docs[g] && GS.docs[g].custom) || {};
-      const added = [];
-      Object.keys(custom).forEach((id) => {
-        const v = custom[id];
-        if (!ID_RE.test(id) || !v || typeof v !== 'object' || Array.isArray(v)) return;
-        const text = cleanText(v.text, 80);
-        if (!text) return;
-        const t = { id, group: cleanText(v.group, 30) || GEN_GROUP, text, note: cleanText(v.note, 200), custom: true, at: Number(v.at) || 0 };
-        if (Array.isArray(v.parts)) {
-          const parts = v.parts.slice(0, 30).filter((x) => x && ID_RE.test(String(x.id)) && cleanText(x.text, 60)).map((x) => ({ id: String(x.id), text: cleanText(x.text, 60) }));
-          if (parts.length) t.parts = parts;
-        }
-        added.push(t);
-      });
-      added.sort((a, b) => (a.at - b.at) || (a.id < b.id ? -1 : 1));
-      const tasks = cleanGoals(seedTasks.concat(added), new Set(), new Set());
+      const added = addedGoals((GS.docs[g] && GS.docs[g].custom) || {}, false);
+      const ids = new Set(), names = new Set();
+      const base = cleanGoals(seedTasks.concat(added.filter((t) => !t.list)), ids, names);
+      const listed = [].concat(...added.filter((t) => t.list).map((c) => cleanGoals([c], ids, names)));
+      const grafted = graftListed(base, listed);
+      const tasks = grafted.tree.concat(grafted.orphans);
       const groups = ((game && game.seed && game.seed.groupOrder) || []).slice();
       tasks.forEach((t) => { if (!groups.includes(t.group)) groups.push(t.group); });
       return { tasks, groups, index: indexInto(tasks, {}) };
@@ -1303,7 +1304,7 @@
     function renderGeneric(game) {
       const p = $('g-panel'); p.textContent = '';
       const g = game.id, d = genData(g);
-      CTX = { isDone: (id) => isDoneIn(docFor(g).done, d.index, id), toggle: (id) => toggleGeneric(g, id) };
+      CTX = { isDone: (id) => isDoneIn(docFor(g).done, d.index, id), toggle: (id) => toggleGeneric(g, id), row: genRowEl };
       const wrap = el('div', 'wfcard');
       const head = el('div', 'cardhead');
       head.appendChild(el('h2', null, game.name + ' goals'));
@@ -1374,54 +1375,72 @@
       if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
     }
     function resetGenDelete() { clearTimeout(genDelTimer); $('g-del').textContent = 'Delete'; $('g-del').dataset.armed = ''; }
-    function syncGroupNew() { $('g-group-new-wrap').hidden = $('g-group').value !== '__new'; }
+    function syncGroupNew() { $('g-group-new-wrap').hidden = $('g-list-on').checked || $('g-group').value !== '__new'; }
     function openGenDialog(t) {
-      if (!S.owner || !GS.sync) return needOwner(GS.sync);
       const game = curGame(); if (!game) return;
+      const st = storeOf(game);
+      if (!st.ready()) return st.nope();
       genEditing = t || null;
       $('g-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal to ' + game.name;
       $('g-save').textContent = t ? 'Save changes' : 'Save goal';
       $('g-del').hidden = !t; resetGenDelete();
       $('g-err').textContent = '';
-      const groups = genData(game.id).groups, sel = $('g-group'); sel.textContent = '';
+      const groups = st.groups(), sel = $('g-group'); sel.textContent = '';
       (groups.length ? groups : [GEN_GROUP]).forEach((n) => sel.appendChild(new Option(n, n)));
       sel.appendChild(new Option('New group…', '__new'));
+      $('g-text').placeholder = st.wf ? 'For example Farm Nitain Extract' : 'For example Unlock the next weapon';
       $('g-text').value = t ? t.text : '';
       $('g-note').value = t ? (t.note || '') : '';
-      $('g-parts').value = t && t.parts ? t.parts.map((x) => x.text).join('\n') : '';
+      $('g-parts').value = ownSteps(t).map((x) => x.text).join('\n');
       $('g-group-new').value = '';
-      sel.value = t && groups.includes(t.group) ? t.group : (groups[0] || GEN_GROUP);
-      syncGroupNew();
+      sel.value = t && groups.includes(t.group) ? t.group : (st.wf ? CUSTOM_GROUP : (groups[0] || GEN_GROUP));
+      $('g-tags-wrap').dataset.wf = st.wf ? '1' : '';
+      setTagButtons(t ? t.tags : []);
+      setListUi(listChoices(st.tree(), t ? t.id : ''), t && t.list);
       openDlg('g-dlg');
     }
     /* Every name in the list (goals and their steps) except one goal and its steps, lowercased. */
     function namesExcept(tasks, exceptId) {
       const out = new Set();
-      const walk = (list) => list.forEach((t) => { out.add(t.text.replace(/\s+/g, ' ').trim().toLowerCase()); if (t.parts) walk(t.parts); });
-      walk(tasks.filter((t) => t.id !== exceptId));
+      const walk = (list) => list.forEach((t) => {
+        if (t.id === exceptId) { (t.parts || []).filter((x) => x.listed).forEach((x) => walk([x])); return; }   // its own steps are being edited; the goals put inside it stay
+        out.add(t.text.replace(/\s+/g, ' ').trim().toLowerCase());
+        if (t.parts) walk(t.parts);
+      });
+      walk(tasks);
       return out;
     }
     async function saveGenGoal(ev) {
       ev.preventDefault();
       const err = (m) => { $('g-err').textContent = m; };
-      if (!S.owner || !GS.sync) return err('Sign in as the owner (top right) to save goals.');
       const game = curGame(); if (!game) return;
-      const g = game.id, d = docFor(g);
+      const st = storeOf(game);
+      if (!st.ready()) return err('Sign in as the owner (top right) to save goals.');
+      const d = { custom: st.custom(), done: st.done() };
       const text = cleanText($('g-text').value, 80);
       if (!text) return err('Type the goal.');
       if ($('g-text').value.trim().replace(/\s+/g, ' ').length > 80) return err('That goal is too long (80 characters at most).');
-      let group = $('g-group').value;
-      if (group === '__new') group = cleanText($('g-group-new').value, 30);
-      if (!group) return err('Type the name of the group.');
+      let group, list = '';
+      if ($('g-list-on').checked) {
+        list = $('g-list').value;
+        if (!list) return err('Pick which list.');
+        const pick = listChoices(st.tree(), genEditing && genEditing.id).find((c) => c.id === list);
+        if (!pick) return err('That list is not there any more. Pick another.');
+        group = pick.group;   // a goal in a list follows the list's group, so it lands there if the list is ever removed
+      } else {
+        group = $('g-group').value;
+        if (group === '__new') group = cleanText($('g-group-new').value, 30);
+        if (!group) return err('Type the name of the group.');
+      }
       const note = cleanText($('g-note').value, 200);
       const lines = $('g-parts').value.split(/\r?\n/).map((x) => cleanText(x, 60)).filter(Boolean);
       if (lines.length > 30) return err('Thirty steps at most.');
       const lower = lines.map((x) => x.toLowerCase());
       if (new Set(lower).size !== lower.length) return err('Each step needs its own name.');
-      const others = namesExcept(genData(g).tasks, genEditing && genEditing.id);
+      const others = namesExcept(st.tree(), genEditing && genEditing.id);
       if (others.has(text.toLowerCase()) || lower.includes(text.toLowerCase()) || lower.some((x) => others.has(x))) return err('That name is already used by another goal or step.');
       const id = genEditing ? genEditing.id : newId('g');
-      const was = d.custom[id], oldParts = (genEditing && genEditing.parts) || [];
+      const was = d.custom[id], oldParts = ownSteps(genEditing);
       const byText = new Map(oldParts.map((x) => [x.text.toLowerCase(), x.id]));
       const used = new Set();
       const parts = lines.map((x, i) => {
@@ -1431,38 +1450,43 @@
         return { id: pid, text: x };
       });
       const val = { text, group, at: (was && Number(was.at)) || Date.now() };
+      if (list) val.list = list;
+      if (st.wf) val.tags = list ? [] : pickedTags();
       if (note) val.note = note;
       if (parts.length) val.parts = parts;
       const gone = oldParts.filter((x) => !used.has(x.id)).map((x) => x.id);
       const goneDone = {}; gone.forEach((pid) => { goneDone[pid] = d.done[pid]; });
       const fields = { ['custom.' + id]: val };
-      gone.forEach((pid) => { fields['done.' + pid] = GS.sync.del(); delete d.done[pid]; });
+      gone.forEach((pid) => { fields['done.' + pid] = st.del(); delete d.done[pid]; });
       d.custom[id] = val; renderLive(); closeDlg('g-dlg');
       try {
-        await GS.sync.write(g, fields, { done: d.done, custom: d.custom });
+        await st.write(fields);
         flash(genEditing ? 'Goal updated.' : 'Goal added.');
       } catch (e) {
         if (was) d.custom[id] = was; else delete d.custom[id];
         gone.forEach((pid) => { if (goneDone[pid] !== undefined) d.done[pid] = goneDone[pid]; });
-        renderLive(); writeFailed(e, 'gameGoals');
+        renderLive(); writeFailed(e, st.doc);
       }
     }
     async function removeGenGoal() {
-      if (!genEditing || !S.owner || !GS.sync) return;
-      const game = curGame(); if (!game) return;
-      const g = game.id, d = docFor(g), id = genEditing.id;
-      const ids = [id].concat((genEditing.parts || []).map((x) => x.id));
+      const game = curGame(); if (!game || !genEditing) return;
+      const st = storeOf(game);
+      if (!st.ready()) return;
+      const d = { custom: st.custom(), done: st.done() }, id = genEditing.id;
+      const ids = [id].concat(ownSteps(genEditing).map((x) => x.id));
       const wasCustom = d.custom[id], wasDone = {}; ids.forEach((x) => { wasDone[x] = d.done[x]; });
       delete d.custom[id]; ids.forEach((x) => { delete d.done[x]; }); renderLive(); closeDlg('g-dlg');
-      try { await GS.sync.remove(g, ids); flash('Goal deleted.'); }
+      try { await st.remove(ids); flash('Goal deleted.'); }
       catch (e) {
         if (wasCustom) d.custom[id] = wasCustom;
         ids.forEach((x) => { if (wasDone[x] !== undefined) d.done[x] = wasDone[x]; });
-        renderLive(); writeFailed(e, 'gameGoals');
+        renderLive(); writeFailed(e, st.doc);
       }
     }
     function initGenDialog() {
+      buildTagButtons();
       $('g-group').addEventListener('change', syncGroupNew);
+      $('g-list-on').addEventListener('change', syncListUi);
       $('g-cancel').addEventListener('click', () => closeDlg('g-dlg'));
       $('g-goalform').addEventListener('submit', saveGenGoal);
       $('g-del').addEventListener('click', () => {
@@ -2674,8 +2698,10 @@
           catch (e) { if (e && e.code === 'not-found') await fs.setDoc(ref, full); else throw e; }
         },
         del() { return fs.deleteField(); },
-        async remove(id) {
-          try { await fs.updateDoc(ref, { ['custom.' + id]: fs.deleteField(), ['done.' + id]: fs.deleteField() }); }
+        async remove(ids) {
+          const f = {};
+          [].concat(ids).forEach((id) => { f['custom.' + id] = fs.deleteField(); f['done.' + id] = fs.deleteField(); });
+          try { await fs.updateDoc(ref, f); }
           catch (e) { if (!(e && e.code === 'not-found')) throw e; }
         },
       };
@@ -2769,7 +2795,7 @@
         S.data = await loadJson('warframe-data.json');
         S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
         indexGoals(S.data.farm.tasks);
-        initGoalDialog(); initTokenDialog();
+        initTokenDialog();
         $('wf-about-sum').textContent = 'Warframe data updated ' + S.data.updatedLabel;
         $('wf-lede').textContent = S.data.source;
       } catch (e) {

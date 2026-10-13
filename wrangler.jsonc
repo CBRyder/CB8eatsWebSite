@@ -22,8 +22,8 @@
       "/dev", "/dev.html",
       "/tracker", "/tracker.html",
       "/coa-tracker", "/coa-tracker.html",
-      "/warframe", "/warframe.html",
       "/goals", "/goals.html",
+      "/warframe", "/warframe.html",   // retired: worker.js redirects them to /goals
       "/resource-inventory.json", "/coa-inventory.json", "/warframe-data.json", "/warframe-mod-stats.json", "/warframe-community-builds.json", "/goals-data.json"
     ]
   },

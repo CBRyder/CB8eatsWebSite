@@ -20,9 +20,9 @@
 
   <style>
     /* ===== Game goals page (page-specific styles only) =====
-       The shared look (colors, header, buttons, cards, theme) comes from css/dev-base.css,
-       css/dev-widgets.css and js/theme.js, the same files the Dev hub and Warframe use. The goal rows,
-       the Mother Tokens card and the dialogs are the ones that used to be on the Warframe page. */
+       The shared look (colors, header, buttons, cards, theme editor) comes from css/dev-base.css,
+       css/dev-widgets.css and js/theme.js, the same files the Dev hub uses. The goal rows, the Mother Tokens
+       card, the mod lists, the builds and the dialogs are the ones that used to be on the Warframe page. */
     :root {
       --max-width: 920px;
     }
@@ -31,6 +31,28 @@
     .wf h1 { margin-bottom: 0.6rem; }
     .wf .lede { margin-bottom: 1.4rem; }
     .wf-top { margin-bottom: 1.6rem; }
+    /* At-a-glance strip */
+    .glance {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.6rem;
+    }
+    .glance .cell { padding: 0.8rem 0.9rem; min-width: 0; }
+    .glance .cell + .cell { border-left: 1px solid var(--border); }
+    .glance .lbl { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; }
+    .glance .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.05rem, 4.4vw, 1.5rem); color: var(--accent-bright); font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 0.2rem; }
+    .glance .sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.1rem; }
+    /* Section tabs */
+    .goalslink { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0; color: var(--text-dim); }
+    a.btn-sm { display: inline-flex; align-items: center; text-decoration: none; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.4rem; }
+    .tab { font: inherit; font-size: 0.92rem; font-weight: 600; min-height: 44px; padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
+      color: var(--text-dim); background: transparent; border: 1px solid var(--border); }
+    .tab:hover { color: var(--text); background: var(--card); }
+    .tab[aria-selected="true"] { color: var(--on-grad); border-color: transparent; background: linear-gradient(120deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px var(--glow); }
     .big { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; margin: 0.2rem 0 0.6rem; color: var(--text); font-variant-numeric: tabular-nums; }
     .big small { font-size: 0.95rem; color: var(--text-dim); font-family: var(--font-body); font-weight: 500; }
     .bar { height: 10px; border-radius: 6px; background: var(--bg-alt); overflow: hidden; border: 1px solid var(--border); }
@@ -51,6 +73,8 @@
     .toklist .amt { font-weight: 700; color: var(--accent-bright); flex: none; }
     .toklist .amt.neg { color: var(--text-dim); }
     .toklist .when { color: var(--text-dim); font-size: 0.9rem; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+    /* Add build form (a dialog with a mod dropdown per slot) and the cards for the builds you add */
+    dialog.bdlg { width: min(94vw, 34rem); }
     #wf-tokdlg .field select, #wf-tokdlg .field input, #wf-tokdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
     #wf-tokdlg .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
     #wf-tokdlg .slotgrid input { min-height: 44px; }
@@ -58,11 +82,32 @@
     .cardhead.tokcardhead { flex-wrap: nowrap; align-items: flex-start; }
     .tokcardhead h2 { min-width: 0; overflow-wrap: anywhere; }
     .tokcardhead .btn-sm { flex: none; }
+    .bdlg .field select, .bdlg .field input[type="text"], .bdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
     #wf-tokdlg textarea, .bdlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
       border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
     .slotgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.8rem; }
     .slotgrid .field { margin: 0.45rem 0; min-width: 0; }
+    /* One slot: the label and a small rank dropdown share the top line, the mod dropdown fills the line below. */
+    .slotgrid .field.pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.5rem; row-gap: 0.3rem; align-items: center; }
+    .slotgrid .field.pick > span { grid-column: 1; grid-row: 1; }
+    .slotgrid .field.pick > select { grid-column: 1 / -1; grid-row: 2; }
+    .bdlg .field.pick > select.rk { grid-column: 2; grid-row: 1; width: 8.4rem; min-height: 34px; padding-top: 0.1rem; padding-bottom: 0.1rem; font-size: 0.88rem; }
     @media (min-width: 540px) { .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+    .addrow { margin: 0.2rem 0 0.9rem; }
+    .build.mine .cardhead { align-items: flex-start; }
+    .build.mine .slotline { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.6rem 0 0; }
+    .build.mine .slotline b { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin-right: 0.2rem; }
+    .build.mine .notetext { white-space: pre-line; overflow-wrap: anywhere; }
+    .build.mine .chip.miss { border-style: dashed; color: var(--text-dim); }
+    .build.mine .pill + .pill { margin-left: 0.4rem; }
+    /* One card per Warframe or weapon, a tab for each config */
+    .cfgtabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.3rem; }
+    .cfgtabs button { font: inherit; font-size: 0.9rem; font-weight: 600; min-height: 40px; padding: 0.3rem 1rem; color: var(--text-dim); background: transparent;
+      border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+    .cfgtabs button[aria-selected="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); border-color: transparent; }
+    .cfgtabs button.cfgadd { border-style: dashed; }
+    .cfgtabs button[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .cfgtabs button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
     .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
     .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
@@ -126,14 +171,118 @@
     .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
     .dlgbtns .spacer { flex: 1 1 auto; }
     .btn-sm.danger { border-color: #ff8a8a; color: #ff8a8a; }
+    /* Mods */
+    .tools { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 0.8rem; }
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
     .seg button { font: inherit; font-weight: 600; font-size: 0.92rem; min-height: 44px; padding: 0.4rem 1.2rem; color: var(--text-dim); background: transparent; border: 0; cursor: pointer; }
     .seg button[aria-pressed="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+    .tools input[type="search"] { flex: 1 1 12rem; min-width: 0; }
+    .legend { font-size: 0.82rem; color: var(--text-faint); margin: 0 0 0.3rem; max-width: 70ch; }
+    .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); margin-right: 0.3rem; }
+    .count { font-size: 0.85rem; color: var(--text-dim); margin: 0 0 0.8rem; }
+    details.grp { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); margin-bottom: 0.6rem; }
+    details.grp > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.8rem 1rem; min-height: 48px; cursor: pointer; font-weight: 600; }
+    details.grp > summary::-webkit-details-marker { display: none; }
+    details.grp > summary::after { content: "+"; color: var(--accent-bright); font-size: 1.2rem; margin-left: auto; padding-left: 0.6rem; }
+    details.grp[open] > summary::after { content: "–"; }
     .gcount { font-size: 0.82rem; color: var(--text-dim); font-variant-numeric: tabular-nums; font-weight: 500; }
+    .gnote { font-size: 0.85rem; color: var(--text-dim); margin: 0 1rem 0.5rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.2rem 1rem 1rem; }
+    .chip { display: inline-flex; align-items: baseline; gap: 0.4rem; padding: 0.25rem 0.7rem; font-size: 0.9rem; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--bg-alt); max-width: 100%; overflow-wrap: anywhere; }
+    .chip.max::before { content: ""; align-self: center; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 6px var(--accent-2); }
+    .chip .n { color: var(--text-dim); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+    .chip .nt { color: var(--text-faint); font-size: 0.78rem; }
+    .empty { color: var(--text-dim); }
+    /* Tappable mod chips and the View mod screen */
+    .chip.tap { font: inherit; font-size: 0.9rem; color: var(--text); cursor: pointer; min-height: 40px; align-items: center; text-align: left; }
+    .chip.tap:hover { border-color: var(--accent); }
+    .chip.tap:focus-visible, .mv-pick button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    dialog.mvdlg { width: min(94vw, 34rem); }
+    .mv-head { display: flex; gap: 0.9rem; align-items: flex-start; }
+    .mv-img { flex: none; width: 88px; height: 88px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); background: var(--bg-alt); }
+    .mv-img[hidden] { display: none; }
+    .mv-title { flex: 1 1 auto; min-width: 0; }
+    .mv-title h2 { overflow-wrap: anywhere; }
+    .mv-sub { margin: 0; font-size: 0.88rem; color: var(--text-dim); }
+    .mv-x { flex: none; min-width: 44px; }
+    .mv-pick { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0 0.2rem; }
+    .mv-pick[hidden] { display: none; }
+    .mv-pick button { font: inherit; font-size: 0.85rem; min-height: 40px; padding: 0.2rem 0.8rem; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: var(--text-dim); }
+    .mv-pick button[aria-pressed="true"] { color: var(--on-grad); border-color: transparent; background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+    .mv-tiles { margin-top: 0.9rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mv-rank { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0.2rem; }
+    .mv-rank .btn-sm { flex: none; min-width: 48px; }
+    .mv-rank input[type="range"] { flex: 1 1 auto; min-width: 0; min-height: 44px; accent-color: var(--accent); }
+    .mv-rankread { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin: 0.9rem 0 0.1rem; }
+    .mv-lines { margin: 0.2rem 0 0; padding-left: 1.1rem; font-size: 0.98rem; }
+    .mv-lines li { margin-bottom: 0.35rem; overflow-wrap: anywhere; }
+    .mv-desc { margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-dim); }
+    .mv-all { margin-top: 0.7rem; }
+    .mv-all summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; color: var(--accent-bright); font-weight: 600; font-size: 0.9rem; }
+    .mv-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .mv-table th, .mv-table td { text-align: left; vertical-align: top; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+    .mv-table th { color: var(--text-dim); font-weight: 600; white-space: nowrap; }
+    .mv-table tr.cur th, .mv-table tr.cur td { color: var(--accent-bright); }
+    .mv-box { margin: 0.9rem 0 0; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-alt); font-size: 0.92rem; overflow-wrap: anywhere; }
+    .mv-box b { display: block; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 0.2rem; }
+    .mv-box .tag { margin-left: 0.4rem; }
+    .mv-box .fine { display: block; margin: 0.4rem 0 0; }
+    .chip .n.uc { color: var(--accent-bright); }
+    .legend .commline { display: block; margin-top: 0.4rem; }
     .pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.8rem; }
     .pills button { font: inherit; font-size: 0.88rem; font-weight: 600; min-height: 40px; padding: 0.3rem 0.9rem; color: var(--text-dim); background: transparent; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
     .pills button[aria-pressed="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); border-color: transparent; }
     .pills button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    .modrow .chip.miss { border-style: dashed; color: var(--text-dim); }
+    .build.comm .meta { margin-bottom: 0.3rem; }
+    .build.comm .frames { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.5rem 0 0; }
+    .build.comm .frames b { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; margin-right: 0.2rem; }
+    .fchip { padding: 0.15rem 0.7rem; font-size: 0.88rem; font-weight: 600; color: var(--text); border: 1px solid var(--accent-2); border-radius: 999px; background: var(--card); }
+    .framenote { margin-top: 0.3rem; overflow-wrap: anywhere; }
+    .mv-link { display: inline-block; margin-top: 0.7rem; min-height: 40px; line-height: 40px; color: var(--accent-bright); }
+    /* Build stats screen */
+    .cardbtns { display: flex; gap: 0.5rem; align-items: center; flex: none; }
+    .cardbtns .stbtn { order: -1; }
+    .st-row { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .st-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.8rem; }
+    .st-name { font-weight: 600; }
+    .st-total { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; text-align: right; }
+    .st-calc { font-size: 0.85rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+    .st-who, .st-game { font-size: 0.8rem; color: var(--text-faint); overflow-wrap: anywhere; }
+    .st-list { margin: 0.2rem 0 0; padding-left: 1.1rem; font-size: 0.95rem; }
+    .st-list li { margin-bottom: 0.5rem; overflow-wrap: anywhere; }
+    .st-list .st-who { display: block; }
+    .st-stack { margin: 0.4rem 0 0.2rem; }
+    .st-stack summary { font-size: 0.85rem; line-height: 1.3; padding: 0.3rem 0; }
+    .st-stack .mv-table thead th { white-space: normal; color: var(--accent-bright); font-size: 0.78rem; letter-spacing: 0.04em; }
+    .st-stack .mv-table th { overflow-wrap: normal; word-break: normal; }
+    .st-stack .mv-table tbody th { white-space: nowrap; }
+    .mv-stacks .st-stack { margin-top: 0.8rem; }
+    .st-stack { overflow-x: auto; }
+    /* Builds */
+    .build h2 { margin-bottom: 0.1rem; }
+    .build .meta { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 0.8rem; }
+    .pill { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.15rem 0.6rem; border-radius: 999px;
+      color: var(--accent-bright); border: 1px solid var(--accent); margin-bottom: 0.6rem; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin: 0.8rem 0 0.4rem; }
+    .stat { border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; background: var(--bg-alt); min-width: 0; }
+    .stat .k { font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; }
+    .stat .v { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .fine { font-size: 0.8rem; color: var(--text-faint); margin: 0.2rem 0 1rem; }
+    .label { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1rem 0 0.4rem; }
+    .modrow { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .modrow .chip.out { opacity: 0.6; border-style: dashed; }
+    .blist { margin: 0.2rem 0 0; padding-left: 1.1rem; color: var(--text-dim); font-size: 0.92rem; }
+    .blist li { margin-bottom: 0.3rem; }
+    .kv { margin: 0.2rem 0 0; font-size: 0.95rem; }
+    .kv dt { color: var(--accent-bright); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-top: 0.8rem; }
+    .kv dd { margin: 0.15rem 0 0; color: var(--text); }
+    @media (max-width: 420px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .glance .cell { padding: 0.7rem 0.6rem; }
+    }
     @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
     /* Game picker and the pieces only this page has */
     .pills { margin-bottom: 1.2rem; }
@@ -147,6 +296,9 @@
     .gamefoot { margin: 0 0 1.4rem; }
     .gamefoot .btn-sm[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .muted.warn { color: #ff8a8a; }
+    .about { margin: 0.2rem 0 1rem; }
+    .about summary { cursor: pointer; color: var(--text-dim); font-size: 0.88rem; min-height: 32px; display: flex; align-items: center; }
+    .about summary:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
     .task .tt, .task .nt, .pills button { overflow-wrap: anywhere; }
   </style>
 
@@ -178,7 +330,44 @@
 
     <div class="pills" id="g-games" role="group" aria-label="Games"></div>
 
+    <div id="wf-app" hidden>
+      <div class="tabs" role="tablist" aria-label="Warframe sections">
+        <button class="tab" role="tab" id="t-goals" data-tab="goals" aria-selected="true" aria-controls="g-panel">Goals</button>
+        <button class="tab" role="tab" id="t-mods" data-tab="mods" aria-selected="false" aria-controls="p-mods">Mods</button>
+        <button class="tab" role="tab" id="t-builds" data-tab="builds" aria-selected="false" aria-controls="p-builds">Builds</button>
+      </div>
+      <div class="glance" id="wf-glance" aria-label="At a glance"></div>
+      <details class="about" id="wf-about">
+        <summary id="wf-about-sum">About this data</summary>
+        <p class="muted" id="wf-lede"></p>
+      </details>
+    </div>
+
     <div id="g-panel"></div>
+
+    <div id="p-mods" role="tabpanel" aria-labelledby="t-mods" hidden>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="Owned or missing">
+          <button type="button" id="v-owned" aria-pressed="true">Owned</button>
+          <button type="button" id="v-missing" aria-pressed="false">Missing</button>
+        </div>
+        <input type="search" id="wf-q" placeholder="Search mods" autocomplete="off" aria-label="Search mods">
+      </div>
+      <div class="tools" id="wf-modfilter">
+        <div class="seg" id="mf-plat-seg" role="group" aria-label="Filter missing mods" hidden>
+          <button type="button" id="mf-all" aria-pressed="true">All missing</button>
+          <button type="button" id="mf-plat" aria-pressed="false">Buy with plat</button>
+        </div>
+        <div class="seg" role="group" aria-label="Community filter">
+          <button type="button" id="mf-comm" aria-pressed="false" disabled>Most used by the Community</button>
+        </div>
+      </div>
+      <p class="legend" id="wf-legend"></p>
+      <p class="count" id="wf-count" aria-live="polite"></p>
+      <div id="wf-groups"></div>
+    </div>
+
+    <div id="p-builds" role="tabpanel" aria-labelledby="t-builds" hidden></div>
   </main>
 
   <p class="toast" id="wf-flash" role="status" aria-live="polite" hidden></p>
@@ -289,6 +478,65 @@
     </form>
   </dialog>
 
+  <dialog class="wfdlg bdlg" id="wf-bdlg" aria-labelledby="wf-bdlg-title">
+    <form id="wf-buildform" novalidate>
+      <h2 id="wf-bdlg-title">Add a build</h2>
+      <p class="muted">Name it, say what it is for and which one, then pick a mod and its rank for each slot. Leave a slot on none if it is empty. Rank ? means you do not know it.</p>
+      <label class="field"><span>Build name</span>
+        <input type="text" id="wf-bname" maxlength="60" autocomplete="off" placeholder="For example Zephyr tank">
+      </label>
+      <div class="slotgrid">
+        <label class="field"><span>What is it for?</span>
+          <select id="wf-bcat"></select>
+        </label>
+        <label class="field"><span>Which one</span>
+          <select id="wf-bitem" required></select>
+        </label>
+        <label class="field"><span>Config (optional)</span>
+          <select id="wf-bconfig"></select>
+        </label>
+      </div>
+      <label class="field" id="wf-bitem-other-wrap" hidden><span>Name of the item</span>
+        <input type="text" id="wf-bitem-other" maxlength="60" autocomplete="off" placeholder="Type the name">
+      </label>
+      <div id="wf-bslots"></div>
+      <label class="field"><span>Notes (optional)</span>
+        <textarea id="wf-bnotes" maxlength="500" rows="3" placeholder="What it does, what it still needs"></textarea>
+      </label>
+      <p class="formerr" id="wf-berr" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm danger" id="wf-bdel" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="wf-bcancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="wf-bsave">Save build</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wfdlg mvdlg" id="wf-moddlg" aria-labelledby="wf-mod-title">
+    <div class="mv-head">
+      <img class="mv-img" id="wf-mod-img" alt="" width="88" height="88" hidden referrerpolicy="no-referrer">
+      <div class="mv-title">
+        <h2 id="wf-mod-title"></h2>
+        <p class="mv-sub" id="wf-mod-sub"></p>
+      </div>
+      <button type="button" class="btn-sm mv-x" id="wf-mod-close" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="mv-pick" id="wf-mod-pick" role="group" aria-label="Which mod" hidden></div>
+    <div id="wf-mod-body"></div>
+  </dialog>
+
+  <dialog class="wfdlg mvdlg" id="wf-statsdlg" aria-labelledby="wf-stats-title">
+    <div class="mv-head">
+      <div class="mv-title">
+        <h2 id="wf-stats-title"></h2>
+        <p class="mv-sub" id="wf-stats-sub"></p>
+      </div>
+      <button type="button" class="btn-sm mv-x" id="wf-stats-close" aria-label="Close">&#10005;</button>
+    </div>
+    <div id="wf-stats-body"></div>
+  </dialog>
+
   <footer>
     <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
     &copy; 2026 CB8eats. All rights reserved.
@@ -296,8 +544,9 @@
 
   <script type="module">
     /* Page logic. One page of goals for every game.
-       Warframe's goals, its Mother Tokens card and the goals added there used to be the Goals tab of
-       warframe.html. They are the same data (warframe-data.json), the same Firestore doc (warframe/progress)
+       Warframe's goals, its Mother Tokens card and the goals added there used to be the Goals tab of the
+       Warframe page, and its mod lists and builds the Mods and Builds tabs; that page is gone and they are tabs of
+       Warframe here. They are the same data (warframe-data.json), the same Firestore doc (warframe/progress)
        and the same ids, so every saved tick carried over. Every other game is listed in goals-data.json and
        saved in Firestore doc gameGoals/<game id> (the ticks, and the goals and games added with the Add buttons).
        Everyone can read; only the owner can write. If Firebase can't load, the page still renders. */
@@ -312,7 +561,7 @@
       appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
     };
     const UI_KEY = 'cb8eats-goals-ui-v1';
-    const OLD_UI_KEY = 'cb8eats-warframe-ui-v1';   // where the Warframe page kept its goal filter
+    const OLD_UI_KEY = 'cb8eats-warframe-ui-v1';   // where the old Warframe page kept its choices (same key, still read)
     /* Warframe goal tags. A new tag is one line: the filters, the chip on a goal and the button in the
        Add goal form are all built from this list. tone is accent, accent2 or bright (see .tone-*). */
     const TAGS = [
@@ -338,18 +587,26 @@
     const WF = 'warframe';
     const GEN_GROUP = 'Goals';                   // the group a goal you add to another game starts in
 
-    const ui = { game: WF, goalFilter: 'all' };
+    const TABS = ['goals', 'mods', 'builds'];   // the Warframe tabs (the theme editor lives on the Dev hub only)
+    const ui = { game: WF, tab: 'goals', goalFilter: 'all', view: 'owned', modFilter: 'all', community: false, builds: 'mine', bcat: 'all', btab: {} };
+    /* One saved entry holds the choices of both pages. The old Warframe page's entry is read first (its mod and build choices
+       carry over), then this page's own entry on top of it. */
+    function readUi(p, own) {
+      if (!p || typeof p !== 'object') return;
+      if (own && typeof p.game === 'string' && GAME_ID_RE.test(p.game)) ui.game = p.game;
+      if (own && TABS.includes(p.tab)) ui.tab = p.tab;
+      if (GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
+      if (p.view === 'owned' || p.view === 'missing') ui.view = p.view;
+      if (p.modFilter === 'all' || p.modFilter === 'plat') ui.modFilter = p.modFilter;
+      if (p.community === true) ui.community = true;
+      if (p.builds === 'community') ui.builds = 'community';
+      if (typeof p.bcat === 'string' && /^[a-z-]{1,30}$/.test(p.bcat)) ui.bcat = p.bcat;
+      if (p.btab && typeof p.btab === 'object') Object.keys(p.btab).slice(0, 100).forEach((k) => { if (typeof p.btab[k] === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(p.btab[k])) ui.btab[k.slice(0, 80)] = p.btab[k]; });
+    }
     try {
-      let raw = localStorage.getItem(UI_KEY);
-      const old = localStorage.getItem(OLD_UI_KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (p && typeof p.game === 'string' && GAME_ID_RE.test(p.game)) ui.game = p.game;
-        if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
-      } else if (old) {
-        const p = JSON.parse(old);
-        if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
-      }
+      const raw = localStorage.getItem(UI_KEY), old = localStorage.getItem(OLD_UI_KEY);
+      if (old) readUi(JSON.parse(old), false);
+      if (raw) readUi(JSON.parse(raw), true);
     } catch (e) {}
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
 
@@ -825,7 +1082,18 @@
         ? 'The server refused that write. The ' + (doc || 'warframe/progress') + ' Firestore rule may not be published yet.'
         : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
     }
-    function renderLive() { renderGames(); renderPanel(); }
+    function renderLive() {
+      renderGames();
+      const game = curGame(), wf = !!game && game.kind === 'warframe';
+      $('wf-app').hidden = !wf;
+      if (!TABS.includes(ui.tab)) ui.tab = 'goals';
+      TABS.forEach((t) => {
+        $(t === 'goals' ? 'g-panel' : 'p-' + t).hidden = wf ? t !== ui.tab : t !== 'goals';
+        $('t-' + t).setAttribute('aria-selected', t === ui.tab ? 'true' : 'false');
+      });
+      renderPanel();
+      if (wf && S.data) { renderGlance(); renderBuilds(); renderMods(); }
+    }
 
     /* ---------- add / edit a goal ---------- */
     let editing = null, delTimer = null;
@@ -948,8 +1216,27 @@
     }
     function showGame(id) {
       ui.game = id; saveUi();
-      try { history.replaceState(null, '', '#' + id); } catch (e) {}
+      try { history.replaceState(null, '', hashFor()); } catch (e) {}
       renderLive();
+    }
+    /* The address says the game, and for Warframe the tab too: #warframe, #warframe/mods, #warframe/builds. */
+    function hashFor() { return '#' + ui.game + (ui.game === WF && ui.tab !== 'goals' ? '/' + ui.tab : ''); }
+    function showTab(name) {
+      if (!TABS.includes(name)) name = 'goals';
+      ui.tab = name; saveUi();
+      try { history.replaceState(null, '', hashFor()); } catch (e) {}
+      renderLive();
+    }
+    function initTabs() {
+      TABS.forEach((t) => $('t-' + t).addEventListener('click', () => showTab(t)));
+    }
+    function initModTools() {
+      $('v-owned').addEventListener('click', () => { ui.view = 'owned'; saveUi(); renderMods(); });
+      $('v-missing').addEventListener('click', () => { ui.view = 'missing'; saveUi(); renderMods(); });
+      $('mf-all').addEventListener('click', () => { ui.modFilter = 'all'; saveUi(); renderMods(); });
+      $('mf-plat').addEventListener('click', () => { ui.modFilter = 'plat'; saveUi(); renderMods(); });
+      $('mf-comm').addEventListener('click', () => { ui.community = !ui.community; saveUi(); renderMods(); });
+      $('wf-q').addEventListener('input', renderMods);
     }
     function renderGames() {
       const box = $('g-games'); box.textContent = '';
@@ -1204,6 +1491,7 @@
       if ($('g-gname').value.trim().replace(/\s+/g, ' ').length > 40) return err('That name is too long (40 characters at most).');
       const id = slugOf(name);
       if (!GAME_ID_RE.test(id)) return err('Use letters or numbers in the name.');
+      if (TABS.includes(id)) return err('That name is kept for the Warframe tabs. Use a different one.');   // #goals, #mods and #builds in the address mean those tabs
       if (gameList().some((x) => x.id === id || x.name.toLowerCase() === name.toLowerCase())) return err('That game is already on the list.');
       const prevGame = ui.game, at = Date.now();
       GS.docs[id] = { name, at, done: {}, custom: {} };
@@ -1232,6 +1520,1134 @@
         if (was) GS.docs[g] = was; ui.game = prevGame; saveUi(); renderLive(); writeFailed(e, 'gameGoals');
       });
     }
+
+    /* ---------- Warframe: the mod chips, the glance strip, the mods, the builds and the theme (these were the Warframe page) ---------- */
+    const openGroups = {};
+    function parseChip(s) {
+      let tags = [];
+      if (s && typeof s === 'object') { tags = s.tags || []; s = s.t; }
+      let rank = null, count = null, max = false, note = '', t = s;
+      t = t.replace(/\(r(\d+)\/(\d+)\)/, (m, a, b) => { rank = 'r' + a + '/' + b; return ''; });
+      t = t.replace(/\sx(\d+)\b/, (m, a) => { count = a; return ''; });
+      t = t.replace('*', () => { max = true; return ''; });
+      t = t.replace(/\(([^)]*)\)/, (m, a) => { note = a; return ''; });
+      return { name: t.replace(/\s+/g, ' ').trim(), rank, count, max, note, tags };
+    }
+    /* tap = { keys, view, miss, build } makes the chip a button that opens the View mod screen. */
+    function chipEl(c, extraCls, tap) {
+      const n = el(tap ? 'button' : 'span', 'chip' + (c.max ? ' max' : '') + (extraCls ? ' ' + extraCls : '') + (tap ? ' tap' : ''));
+      if (tap) { n.type = 'button'; n.dataset.mod = c.name; n.setAttribute('aria-haspopup', 'dialog'); n.addEventListener('click', () => openMod(tap, c)); }
+      n.appendChild(document.createTextNode(c.name));
+      if (c.count) n.appendChild(el('span', 'n', '×' + c.count));
+      if (c.rank) n.appendChild(el('span', 'n', c.rank));
+      if (c.used) { const u = el('span', 'n uc', c.used + (c.used === 1 ? ' player' : ' players')); u.title = 'Used by ' + c.used + ' different players'; n.appendChild(u); }
+      if (c.note) n.appendChild(el('span', 'nt', c.note));
+      return n;
+    }
+    /* ---------- render: glance + farm ---------- */
+    function renderGlance() {
+      const g = $('wf-glance'); g.textContent = '';
+      const cells = [
+        [tokCard().name || 'Tokens', tokens() + ' / ' + tokTarget(), tokensLeft() > 0 ? tokensLeft() + ' to go' : 'Enough for the picks'],
+        ['Burston Prime', isDone('bp30') ? 'Rank 30' : 'Needs rank 30', isDone('rebuild') ? 'Build redone' : 'Rebuild waits'],
+        ['Mods', S.data.meta.types + ' types', S.data.meta.cards.toLocaleString('en-US') + ' cards'],
+      ];
+      cells.forEach((c) => {
+        const d = el('div', 'cell');
+        d.appendChild(el('div', 'lbl', c[0]));
+        d.appendChild(el('div', 'val', c[1]));
+        d.appendChild(el('div', 'sub', c[2]));
+        g.appendChild(d);
+      });
+    }
+
+    function isDone(id) {
+      if (S.done[id] !== undefined) return !!S.done[id];
+      const t = S.index[id];
+      return !!(t && t.doneDefault);
+    }
+
+    /* ---------- render: mods ---------- */
+    /* A goal (or a part of one) can stand for a mod, and ticking it means CB owns that mod:
+       `mod: "Narrow Minded"` names the mod, and `ownsMods: true` on a goal says every goal or part
+       inside it is named exactly like its mod (the Primed, Archon, Umbral and Necramech collections).
+       The Mods tab then shows a ticked mod under Owned and takes it off Missing. Untick the goal and it goes back. */
+    function tickedMods() {
+      const out = new Set();
+      const walk = (list, inherit) => (list || []).forEach((t) => {
+        const all = inherit || t.ownsMods === true;
+        if (hasParts(t)) return walk(t.parts, all);
+        const name = typeof t.mod === 'string' ? t.mod : (all ? t.text : '');
+        if (name && isDone(t.id)) out.add(name.replace(/\s+/g, ' ').trim().toLowerCase());
+      });
+      walk(S.data.farm.tasks, false);
+      return out;
+    }
+    const gidOf = (g, name) => (g.from && g.from[name]) || g.id;   // the group a chip's stats are filed under
+    /* The Owned or Missing groups with the ticked goals applied: ticked mods leave Missing and appear in a first Owned group. */
+    function modGroups(view) {
+      const base = S.data.mods[view], ticked = tickedMods();
+      if (!ticked.size) return base;
+      const nm = (it) => parseChip(it).name.toLowerCase();
+      if (view === 'missing') return base.map((g) => ({ ...g, items: g.items.filter((it) => !ticked.has(nm(it))) })).filter((g) => g.items.length);
+      const have = new Set(); base.forEach((g) => g.items.forEach((it) => have.add(nm(it))));
+      const add = [], from = {};
+      S.data.mods.missing.forEach((g) => g.items.forEach((it) => {
+        const n = nm(it);
+        if (ticked.has(n) && !have.has(n)) { const c = parseChip(it); add.push(c.name); from[c.name] = g.id; have.add(n); }
+      }));
+      if (!add.length) return base;
+      return [{ id: 'ticked', name: 'Owned because you ticked the goal', note: 'These were on your Missing list. You ticked their goal on the Game goals page, so they count as owned. Untick the goal to put one back.', items: add, from }].concat(base);
+    }
+    function renderMods() {
+      const q = $('wf-q').value.trim().toLowerCase();
+      const groups = modGroups(ui.view);
+      const box = $('wf-groups'); box.textContent = '';
+      const us = MS.data && MS.data.usage;            // the community tally, from warframe-mod-stats.json
+      const commOn = !!(ui.community && us);
+      let shown = 0, total = 0;
+      groups.forEach((g) => {
+        const chips = g.items.map(parseChip); total += chips.length;
+        let pool = (ui.view === 'missing' && ui.modFilter === 'plat') ? chips.filter((c) => c.tags.includes('plat')) : chips;
+        if (commOn) {
+          pool.forEach((c) => { c.used = usedBy(gidOf(g, c.name), c.name); });
+          pool = pool.filter((c) => c.used >= us.min).sort((a, b) => b.used - a.used);   // most used first (ties keep list order)
+        }
+        const hits = q ? pool.filter((c) => (c.name + ' ' + c.note).toLowerCase().includes(q)) : pool;
+        if ((q || pool.length !== chips.length) && !hits.length) return;
+        shown += hits.length;
+        const d = document.createElement('details'); d.className = 'grp';
+        const key = ui.view + ':' + g.id;
+        const filtering = !!q || pool.length !== chips.length;
+        d.open = filtering ? true : !!openGroups[key];
+        d.addEventListener('toggle', () => { if (!filtering) openGroups[key] = d.open; });
+        const sm = document.createElement('summary');
+        sm.appendChild(el('span', null, g.name));
+        sm.appendChild(el('span', 'gcount', hits.length !== chips.length ? hits.length + ' of ' + chips.length : String(chips.length)));
+        d.appendChild(sm);
+        if (g.note) d.appendChild(el('p', 'gnote', g.note));
+        const wrap = el('div', 'chips'); hits.forEach((c) => wrap.appendChild(chipEl(c, null, tapFor(gidOf(g, c.name), c.name)))); d.appendChild(wrap);
+        box.appendChild(d);
+      });
+      const platOn = ui.view === 'missing' && ui.modFilter === 'plat';
+      $('wf-count').textContent = (q || platOn || commOn) ? shown + ' of ' + total + ' entries match' : total + ' entries in ' + groups.length + ' groups';
+      $('mf-plat-seg').hidden = ui.view !== 'missing';
+      $('mf-all').setAttribute('aria-pressed', ui.modFilter === 'all' ? 'true' : 'false');
+      $('mf-plat').setAttribute('aria-pressed', ui.modFilter === 'plat' ? 'true' : 'false');
+      const bc = $('mf-comm');
+      bc.disabled = !us;
+      bc.title = us ? '' : 'Loading the community numbers…';
+      bc.setAttribute('aria-pressed', commOn ? 'true' : 'false');
+      if (!shown) box.appendChild(el('p', 'empty', q ? 'No mods match "' + q + '".' : 'No mods match these filters.'));
+      $('v-owned').setAttribute('aria-pressed', ui.view === 'owned' ? 'true' : 'false');
+      $('v-missing').setAttribute('aria-pressed', ui.view === 'missing' ? 'true' : 'false');
+      const lg = $('wf-legend'); lg.textContent = '';
+      if (ui.view === 'owned') {
+        lg.appendChild(el('span', 'dot'));
+        lg.appendChild(document.createTextNode('Has a max-rank copy (judged from the drain number, so approximate). ×N is copies owned. r7/10 is the best rank seen. Scanned ' + S.data.meta.scannedLabel + '.' + TAP_HINT()));
+      } else {
+        lg.textContent = 'Sources come from a database current to about March 2025 and the wiki, so newer mods may be missing from this list. Buy with plat means the database marks the mod tradable, so players can sell it. Prices change, so check before trading.' + TAP_HINT();
+      }
+      if (commOn) lg.appendChild(el('span', 'commline', communityLine(us)));
+    }
+
+    /* ---------- View mod screen ---------- */
+    /* warframe-mod-stats.json is built by tools/build-mod-stats.py from the WFCD item database. It is
+       fetched after the main data; until it arrives (or if it fails) the chips are plain, untappable text. */
+    const MS = { data: null, byName: {} };
+    const IMG_BASE = 'https://cdn.jsdelivr.net/gh/WFCD/warframe-items@master/data/img/';
+    const mv = { keys: [], i: 0, rank: 0, chip: null, tap: null };
+    function statKeys(groupId, name) { return (MS.data && MS.data.index[groupId + '|' + name]) || null; }
+    function missFor(groupId, name) { return (MS.data && MS.data.partial && MS.data.partial[groupId + '|' + name]) || []; }
+    /* How many different players use a chip's mod in the community tally (a family chip: its most used member). */
+    function usedBy(groupId, name) {
+      const keys = statKeys(groupId, name);
+      return keys ? keys.reduce((a, k) => Math.max(a, (MS.data.mods[k].u || [0])[0]), 0) : 0;
+    }
+    function communityLine(us) {
+      return 'Most used by the Community: mods that at least ' + us.min + ' different players use, counted from ' + us.builds.toLocaleString('en-US') + ' builds by ' + us.players + ' players (' + us.label + '). One player with many builds counts once. The number on a mod is how many different players use it, and the most used come first.';
+    }
+    function tapFor(groupId, name) {
+      const keys = statKeys(groupId, name);
+      return keys ? { keys, view: ui.view, miss: missFor(groupId, name) } : null;
+    }
+    const TAP_HINT = () => (MS.data ? ' Tap a mod to see its stats.' : '');
+    async function loadModStats() {
+      try {
+        const res = await fetch('warframe-mod-stats.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        MS.data = await res.json();
+      } catch (e) { console.warn('Could not load warframe-mod-stats.json:', e); MS.data = null; MS.byName = {}; return; }
+      MS.byName = {};
+      Object.keys(MS.data.mods).forEach((k) => { const n = MS.data.mods[k].n.toLowerCase(); (MS.byName[n] = MS.byName[n] || []).push(k); });
+      renderMods(); renderBuilds();
+    }
+    const cap = (w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '');
+    function openMod(tap, chip) {
+      if (!MS.data) return;
+      mv.tap = tap; mv.keys = tap.keys; mv.chip = chip; mv.i = 0;
+      const pick = $('wf-mod-pick'); pick.textContent = '';
+      pick.hidden = mv.keys.length < 2;
+      mv.keys.forEach((k, i) => {
+        const b = el('button', null, MS.data.mods[k].n); b.type = 'button';
+        b.addEventListener('click', () => { mv.i = i; renderMod(); });
+        pick.appendChild(b);
+      });
+      renderMod();
+      const dlg = $('wf-moddlg');
+      if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', '');
+    }
+    function closeMod() {
+      const dlg = $('wf-moddlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function renderMod() {
+      const m = MS.data.mods[mv.keys[mv.i]];
+      const ranks = m.l && m.l.length ? m.l : null;
+      const maxRank = ranks ? ranks.length - 1 : 0;
+      mv.rank = typeof mv.tap.rank === 'number' ? Math.min(mv.tap.rank, maxRank) : maxRank;   // a community build opens at the rank it uses
+      $('wf-mod-title').textContent = m.n;
+      const showCompat = m.c && !(m.t || '').toLowerCase().includes(m.c.toLowerCase());
+      $('wf-mod-sub').textContent = [m.r, m.t, showCompat ? m.c : ''].filter(Boolean).join(' · ');
+      [...$('wf-mod-pick').children].forEach((b, i) => b.setAttribute('aria-pressed', i === mv.i ? 'true' : 'false'));
+      const img = $('wf-mod-img'); img.hidden = true; img.removeAttribute('src');
+      if (m.img) { img.onload = () => { img.hidden = false; }; img.onerror = () => { img.hidden = true; }; img.src = IMG_BASE + encodeURIComponent(m.img); }
+
+      const body = $('wf-mod-body'); body.textContent = '';
+      const neg = typeof m.d === 'number' && m.d < 0;           // auras and stances give capacity instead of using it
+      const hasD = typeof m.d === 'number';
+      const tiles = el('div', 'stats mv-tiles');
+      const tile = (k, v) => { const x = el('div', 'stat'); const kk = el('div', 'k', k), vv = el('div', 'v', v); x.appendChild(kk); x.appendChild(vv); tiles.appendChild(x); return { k: kk, v: vv }; };
+      tile('Polarity', cap(m.p) || '—');
+      tile('Max rank', String(ranks ? maxRank : (m.m != null ? m.m : '—')));
+      const tDrain = tile(neg ? 'Capacity gained' : 'Drain', '—');
+      const tMatch = tile('In a matching slot', '—');
+      body.appendChild(tiles);
+
+      const read = el('p', 'mv-rankread'); read.setAttribute('role', 'status');
+      const lines = el('ul', 'mv-lines');
+      let range = null, minus = null, plus = null;
+      if (maxRank > 0) {
+        const bar = el('div', 'mv-rank');
+        minus = el('button', 'btn-sm', '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'One rank lower');
+        plus = el('button', 'btn-sm', '+'); plus.type = 'button'; plus.setAttribute('aria-label', 'One rank higher');
+        range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = String(maxRank); range.step = '1'; range.value = String(maxRank);
+        range.id = 'wf-mod-rank'; range.setAttribute('aria-label', 'Mod rank');
+        bar.appendChild(minus); bar.appendChild(range); bar.appendChild(plus);
+        body.appendChild(read); body.appendChild(bar);
+      }
+      body.appendChild(el('p', 'label', 'Stats'));
+      body.appendChild(lines);
+      if (m.ds && ranks) body.appendChild(el('p', 'mv-desc', m.ds));
+      const stackWrap = el('div', 'mv-stacks'); body.appendChild(stackWrap);        // stack tables for the rank shown (see stackTables)
+
+      let rows = [];
+      if (ranks && maxRank > 0) {
+        const det = el('details', 'mv-all'); det.appendChild(el('summary', null, 'Every rank'));
+        const tbl = el('table', 'mv-table'); const tb = document.createElement('tbody');
+        ranks.forEach((ls, r) => {
+          const tr = document.createElement('tr');
+          tr.appendChild(el('th', null, 'Rank ' + r)); tr.appendChild(el('td', null, ls.join(' · ') || '—'));
+          tb.appendChild(tr); rows.push(tr);
+        });
+        tbl.appendChild(tb); det.appendChild(tbl); body.appendChild(det);
+      }
+
+      const paint = () => {
+        const r = mv.rank;
+        if (range) {
+          read.textContent = 'Rank ' + r + ' of ' + maxRank;
+          range.value = String(r); minus.disabled = r <= 0; plus.disabled = r >= maxRank;
+        }
+        if (hasD) {
+          const d = neg ? -m.d + r : m.d + r;
+          tDrain.v.textContent = neg ? '+' + d : String(d);
+          tMatch.v.textContent = neg ? '+' + d * 2 : String(Math.ceil(d / 2));
+        }
+        lines.textContent = '';
+        const ls = ranks ? ranks[r] : [];
+        if (ls.length) ls.forEach((t) => lines.appendChild(el('li', null, t)));
+        else lines.appendChild(el('li', null, m.ds || 'No stats listed for this mod.'));
+        rows.forEach((tr, i) => tr.classList.toggle('cur', i === r));
+        stackWrap.textContent = '';
+        stackTables(ls).forEach((tb) => stackWrap.appendChild(stackTableEl(tb, null, true)));
+      };
+      if (range) {
+        range.addEventListener('input', () => { mv.rank = Number(range.value); paint(); });
+        minus.addEventListener('click', () => { if (mv.rank > 0) { mv.rank--; paint(); } });
+        plus.addEventListener('click', () => { if (mv.rank < maxRank) { mv.rank++; paint(); } });
+      }
+      paint();
+
+      // what the list on this page says about it
+      const c = mv.chip, tap = mv.tap;
+      const box = el('div', 'mv-box');
+      if (tap.view === 'owned') {
+        box.appendChild(el('b', null, 'In your collection'));
+        const bits = [];
+        if (c.count) bits.push('×' + c.count + ' copies');
+        if (c.rank) bits.push('best rank seen ' + c.rank.replace(/^r(\d+)\/(\d+)$/, 'rank $1 of $2'));
+        if (c.max) bits.push('has a max-rank copy');
+        if (c.note) bits.push(c.note);
+        box.appendChild(document.createTextNode(bits.length ? bits.join(' · ') : 'You own this mod.'));
+      } else if (tap.view === 'missing') {
+        box.appendChild(el('b', null, 'Not in your collection yet'));
+        box.appendChild(document.createTextNode(c.note ? 'Where to get it: ' + c.note : 'No source written down for this one yet.'));
+        (c.tags || []).filter((t) => TAG_LABEL[t]).forEach((t) => box.appendChild(el('span', tagClass(t), TAG_LABEL[t])));
+      } else if (tap.view === 'community') {
+        box.appendChild(el('b', null, 'In this community build'));
+        box.appendChild(document.createTextNode(tap.build + ' · rank ' + tap.rank + (c.max ? ' (max rank)' : '')));
+      } else {
+        box.appendChild(el('b', null, 'In your build'));
+        box.appendChild(document.createTextNode(tap.build + (typeof tap.rank === 'number' ? ' · rank ' + tap.rank + (c.max ? ' (max rank)' : '') : c.max ? ' · max rank' : '')));
+      }
+      body.appendChild(box);
+      const us = MS.data.usage;
+      if (us) {
+        const ub = el('div', 'mv-box'); ub.appendChild(el('b', null, 'Community use'));
+        const u = m.u, pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+        ub.appendChild(document.createTextNode(u
+          ? pl(u[0], 'different player') + (u[0] === 1 ? ' uses' : ' use') + ' this mod, in ' + pl(u[1], 'build') + '.' + (u[0] >= us.min ? ' That puts it among the most used.' : '')
+          : 'None of the ' + us.players + ' players counted use this mod.'));
+        ub.appendChild(el('span', 'fine', 'Counted from ' + us.builds.toLocaleString('en-US') + ' builds by ' + us.players + ' players (' + us.label + '). One player with many builds counts once.'));
+        body.appendChild(ub);
+      }
+      if (tap.miss && tap.miss.length) body.appendChild(el('p', 'fine', 'Not in the database, so no stats for: ' + tap.miss.join(', ') + '.'));
+
+      if (m.set) {
+        const sb = el('div', 'mv-box'); sb.appendChild(el('b', null, 'Set mod'));
+        sb.appendChild(document.createTextNode('Part of the ' + m.set + ' set' + (m.sp && m.sp.length ? ' with ' + m.sp.join(', ') : '') + '. Equipping more pieces of a set makes each piece stronger.'));
+        body.appendChild(sb);
+      }
+
+      const facts = [];
+      if (m.tr != null) facts.push(m.tr ? 'Can be traded' : 'Cannot be traded');
+      if (m.ex) facts.push('Fits an Exilus slot');
+      if (m.intro) facts.push('Added in ' + m.intro);
+      if (m.xr) facts.push('The database lists ' + m.xr + ' more ranks above that');
+      if (facts.length) body.appendChild(el('p', 'fine', facts.join(' · ') + '.'));
+      body.appendChild(el('p', 'fine', 'Drain goes up by 1 for each rank. A slot with the same polarity halves it (rounded up) and doubles any capacity gained. A different polarity costs about a quarter more. Stats from the ' + MS.data.source + ' database, built ' + MS.data.built + '.'));
+      if (m.w && /^https:\/\/wiki\.warframe\.com\//.test(m.w)) {
+        const a = el('a', 'mv-link', 'Open on the Warframe wiki'); a.href = m.w; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        body.appendChild(a);
+      }
+    }
+    function initModDialog() {
+      const dlg = $('wf-moddlg');
+      $('wf-mod-close').addEventListener('click', closeMod);
+      dlg.addEventListener('click', (e) => {
+        if (e.target !== dlg) return;                      // a click on the dimmed backdrop, not on the padding inside
+        const r = dlg.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeMod();
+      });
+    }
+
+
+    /* ---------- builds you add yourself ---------- */
+    /* Saved in the same Firestore map as added goals, warframe/progress.custom.<id> with kind: 'build', so no rule change is
+       needed: { kind, name, cat, item, config, aura, auraRank, exilus, exilusRank, arcane, arcaneRank, arcane2, arcane2Rank,
+       mods: [10 names, '' for an empty slot], ranks: [10 ranks, null when not known], notes, at }. Mods are saved by name. The builds that
+       ship in warframe-data.json (burston, cyte, cyte-a) are edited the same way: saving writes custom.<their id>, which then wins over the
+       file's `form`; deleting one saves { kind: 'build', hidden: true } instead. */
+    const BUILD_SLOTS = 10;
+    const BUILD_CATS = [
+      /* arcaneSlots: one dropdown each, drawing on that kind of arcane. A Warframe has two arcane slots, a weapon one; an
+         Arch-Gun has two (top Primary, bottom Secondary). Exilus: a Warframe and a Primary, Secondary or Melee weapon have the
+         slot (Exilus adapter), the others do not (the dropdown only shows when the category has Exilus mods). */
+      { id: 'warframe', label: 'Warframe', types: ['Warframe Mod'], aura: 'Aura', arcaneSlots: [['Arcane 1', 'Warframe'], ['Arcane 2', 'Warframe']] },
+      { id: 'primary', label: 'Primary weapon', types: ['Primary Mod', 'Shotgun Mod'], arcaneSlots: [['Arcane', 'Primary']] },
+      { id: 'secondary', label: 'Secondary weapon', types: ['Secondary Mod'], arcaneSlots: [['Arcane', 'Secondary']] },
+      { id: 'melee', label: 'Melee weapon', types: ['Melee Mod'], aura: 'Stance', stance: true, arcaneSlots: [['Arcane', 'Melee']] },
+      { id: 'archwing', label: 'Archwing', types: ['Archwing Mod'] },
+      { id: 'archgun', label: 'Arch-Gun', types: ['Arch-Gun Mod'], arcaneSlots: [['Arcane 1 (Primary)', 'Primary'], ['Arcane 2 (Secondary)', 'Secondary']] },
+      { id: 'archmelee', label: 'Arch-Melee', types: ['Arch-Melee Mod'] },
+      { id: 'companion', label: 'Companion', types: ['Companion Mod'] },
+      { id: 'necramech', label: 'Necramech', types: ['Necramech Mod'] },
+    ];
+    const catOf = (id) => BUILD_CATS.find((c) => c.id === id) || null;
+    let bEditing = null, bDelTimer = null;
+    const CONFIGS = ['Config A', 'Config B', 'Config C'];
+    const ARC_MAX = 5;                       // most arcanes rank 0 to 5 (a few stop lower), so the arcane rank picker offers 0 to 5
+    const NOTES_MAX = 500;
+    const rankOf = (v) => (Number.isInteger(v) && v >= 0 && v <= 99 ? v : null);
+    /* The highest rank a mod can have, from the stats file; null when the mod is not in it or has no ranks. */
+    function modMax(name) {
+      const ks = MS.data && name ? MS.byName[String(name).toLowerCase()] : null;
+      const mx = ks ? Math.max.apply(null, ks.map((k) => MS.data.mods[k].m || 0)) : 0;
+      return mx > 0 ? mx : null;
+    }
+
+    /* The mods each dropdown offers for a category, from warframe-mod-stats.json: each is { name, state } with state
+       own (on the Owned list), miss (on the Missing list) or other, sorted A to Z and with duplicate names folded. */
+    function buildPools(catId) {
+      const pools = { general: [], aura: [], exilus: [], arcanes: [] };
+      const c = catOf(catId);
+      if (!c || !MS.data) return pools;
+      const own = listKeys('owned'), miss = listKeys('missing');
+      const maps = { general: {}, aura: {}, exilus: {} };
+      const put = (which, k) => {
+        const m = MS.data.mods[k], low = m.n.toLowerCase(), state = own.has(k) ? 'own' : miss.has(k) ? 'miss' : 'other';
+        const seen = maps[which][low];
+        if (!seen) { maps[which][low] = { name: m.n, state }; pools[which].push(maps[which][low]); }
+        else if (state === 'own' || (state === 'miss' && seen.state === 'other')) seen.state = state;
+      };
+      Object.keys(MS.data.mods).forEach((k) => {
+        const m = MS.data.mods[k];
+        if (c.aura === 'Aura' && m.c === 'Aura') put('aura', k);
+        else if (c.stance && (m.t === 'Stance Mod' || m.t === 'Posture Mod')) put('aura', k);
+        else if (c.types.includes(m.t) && m.c !== 'Aura') { put('general', k); if (m.ex || m.ut) put('exilus', k); }
+      });
+      const az = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+      ['general', 'aura', 'exilus'].forEach((w) => pools[w].sort(az));
+      pools.arcanes = (c.arcaneSlots || []).map(([label, kind]) => ({ label, pool: ((MS.data.arcanes && MS.data.arcanes[kind]) || []).map((n) => ({ name: n, state: 'other' })) }));
+      return pools;
+    }
+    /* Fill a dropdown: a "none" choice, then your owned mods, then your missing ones, then the rest. */
+    function fillSlot(sel, pool, value, otherLabel, keepUnknown) {
+      sel.textContent = '';
+      sel.appendChild(new Option('— none —', ''));
+      [['own', 'You own'], ['miss', 'You are missing'], ['other', otherLabel]].forEach(([st, label]) => {
+        const items = pool.filter((x) => x.state === st);
+        if (!items.length) return;
+        const og = document.createElement('optgroup'); og.label = label;
+        items.forEach((x) => og.appendChild(new Option(x.name, x.name)));
+        sel.appendChild(og);
+      });
+      const known = !value || pool.some((x) => x.name === value);
+      /* A saved mod the list no longer has stays on offer when you edit (so a save does not drop it); a choice left over
+         from another category is just cleared. */
+      if (!known && keepUnknown) sel.insertBefore(new Option(value + ' (not in the list now)', value), sel.options[0].nextSibling);
+      sel.value = known || keepUnknown ? (value || '') : '';
+    }
+    /* Fill a rank dropdown. value: a number keeps that rank, null shows "Rank ?" (not known), undefined means a mod was just
+       picked, so it starts at its max rank (an arcane starts on "Rank ?"). No max, no dropdown. */
+    function fillRank(rs, max, value, arcane) {
+      rs.textContent = '';
+      rs.hidden = !max;
+      if (!max) return;
+      rs.appendChild(new Option('Rank ?', ''));
+      for (let r = 0; r <= max; r++) rs.appendChild(new Option('Rank ' + r + '/' + max, String(r)));
+      const v = value === undefined ? (arcane ? null : max) : value;
+      rs.value = v == null ? '' : String(Math.min(v, max));
+    }
+    function readBuildForm() {
+      const v = (id) => { const s = $(id); return s ? s.value : ''; };
+      const rk = (id) => { const s = $(id + '-r'); return s && !s.hidden && s.value !== '' ? rankOf(Number(s.value)) : null; };
+      const mods = [], ranks = [];
+      for (let i = 0; i < BUILD_SLOTS; i++) { const n = cleanText(v('wf-b-m' + i), 80); mods.push(n); ranks.push(n ? rk('wf-b-m' + i) : null); }
+      const aura = cleanText(v('wf-b-aura'), 80), exilus = cleanText(v('wf-b-exilus'), 80), arcane = cleanText(v('wf-b-arcane'), 80), arcane2 = cleanText(v('wf-b-arcane2'), 80);
+      return { name: cleanText(v('wf-bname'), 60), cat: v('wf-bcat'), item: cleanText(v('wf-bitem') === OTHER_ITEM ? v('wf-bitem-other') : v('wf-bitem'), 60), config: cleanText(v('wf-bconfig'), 20),
+        aura, auraRank: aura ? rk('wf-b-aura') : null, exilus, exilusRank: exilus ? rk('wf-b-exilus') : null,
+        arcane, arcaneRank: arcane ? rk('wf-b-arcane') : null, arcane2, arcane2Rank: arcane2 ? rk('wf-b-arcane2') : null,
+        mods, ranks, notes: String(v('wf-bnotes') || '').trim().slice(0, NOTES_MAX) };
+    }
+    /* The "Which one" dropdown: the items of the chosen kind (Warframes, Primary weapons, ...) from `gear` in
+       warframe-mod-stats.json, A to Z, then "Other (type the name)" for anything the list does not have. It is required.
+       An item that is not in the list (an older build that was typed by hand, or a new item) is shown as Other. */
+    const OTHER_ITEM = '__other';
+    function fillItems(catId, value) {
+      const sel = $('wf-bitem'), list = (MS.data && MS.data.gear && MS.data.gear[catId]) || [];
+      sel.textContent = '';
+      sel.appendChild(new Option('Pick one…', ''));
+      list.forEach((n) => sel.appendChild(new Option(n, n)));
+      sel.appendChild(new Option('Other (type the name)', OTHER_ITEM));
+      const v = cleanText(value, 60), known = !v || list.includes(v);
+      sel.value = known ? v : OTHER_ITEM;
+      $('wf-bitem-other').value = known ? '' : v;
+      syncItemOther();
+    }
+    function syncItemOther() { $('wf-bitem-other-wrap').hidden = $('wf-bitem').value !== OTHER_ITEM; }
+    /* Draw the slot dropdowns for the chosen category, keeping any choice that is still on offer. */
+    function drawSlots(vals, keepUnknown) {
+      const box = $('wf-bslots'); box.textContent = '';
+      const c = catOf($('wf-bcat').value) || BUILD_CATS[0], pools = buildPools(c.id);
+      const grid = el('div', 'slotgrid');
+      /* One slot: the mod (or arcane) dropdown and, beside it, a rank dropdown that follows the choice. */
+      const add = (id, label, pool, value, other, rank, arc) => {
+        const f = el('div', 'field pick'); f.appendChild(el('span', null, label));
+        const sel = document.createElement('select'); sel.id = id; sel.setAttribute('aria-label', label);
+        fillSlot(sel, pool, value, other, keepUnknown);
+        const rs = document.createElement('select'); rs.id = id + '-r'; rs.className = 'rk'; rs.setAttribute('aria-label', label + ' rank');
+        const top = () => (arc ? (sel.value ? ARC_MAX : null) : modMax(sel.value));
+        fillRank(rs, top(), rank == null ? null : rank, arc);
+        sel.addEventListener('change', () => fillRank(rs, top(), undefined, arc));
+        f.appendChild(sel); f.appendChild(rs); grid.appendChild(f);
+      };
+      const ranks = vals.ranks || [];
+      if (c.aura && pools.aura.length) add('wf-b-aura', c.aura, pools.aura, vals.aura, 'Not on either list', vals.auraRank);
+      if (pools.exilus.length) add('wf-b-exilus', 'Exilus', pools.exilus, vals.exilus, 'Not on either list', vals.exilusRank);
+      for (let i = 0; i < BUILD_SLOTS; i++) add('wf-b-m' + i, 'Mod ' + (i + 1), pools.general, vals.mods[i], 'Not on either list', ranks[i]);
+      pools.arcanes.forEach((a, i) => { if (a.pool.length) add(i ? 'wf-b-arcane2' : 'wf-b-arcane', a.label, a.pool, i ? vals.arcane2 : vals.arcane, 'All arcanes', i ? vals.arcane2Rank : vals.arcaneRank, true); });
+      box.appendChild(grid);
+    }
+    function resetBuildDelete() { clearTimeout(bDelTimer); $('wf-bdel').textContent = 'Delete'; $('wf-bdel').dataset.armed = ''; }
+    function openBuildDialog(b, preset) {
+      if (!S.owner || !S.sync) return needOwner();
+      if (!MS.data) return flash('The mod list has not loaded yet. Try again in a moment.');
+      bEditing = b || null;
+      $('wf-bdlg-title').textContent = b ? 'Edit build' : 'Add a build';
+      $('wf-bsave').textContent = b ? 'Save changes' : 'Save build';
+      $('wf-bdel').hidden = !b; resetBuildDelete();
+      $('wf-berr').textContent = '';
+      const sel = $('wf-bcat');
+      if (!sel.options.length) BUILD_CATS.forEach((c) => sel.appendChild(new Option(c.label, c.id)));
+      const pre = !b && preset ? preset : null;             // "+ Config" on a card starts a new build for the same item
+      sel.value = b ? b.cat : pre ? pre.cat : 'warframe';
+      $('wf-bname').value = b ? b.name : pre ? pre.name : '';
+      fillItems(sel.value, b ? b.item : pre ? pre.item : '');
+      const cf = $('wf-bconfig'), cv = b ? b.config : pre ? pre.config : '';
+      cf.textContent = ''; cf.appendChild(new Option('— not set —', ''));
+      CONFIGS.concat(cv && !CONFIGS.includes(cv) ? [cv] : []).forEach((x) => cf.appendChild(new Option(x, x)));
+      cf.value = cv;
+      $('wf-bnotes').value = b ? b.notes : '';
+      drawSlots(b || { aura: '', exilus: '', arcane: '', arcane2: '', mods: [], ranks: [] }, true);
+      const dlg = $('wf-bdlg');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeBuildDialog() {
+      const dlg = $('wf-bdlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function newBuildId() { return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+    async function saveBuild(ev) {
+      ev.preventDefault();
+      const err = (m) => { $('wf-berr').textContent = m; };
+      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save builds.');
+      const f = readBuildForm();
+      if (!f.name) return err('Give the build a name.');
+      if (!catOf(f.cat)) return err('Pick what the build is for.');
+      if ($('wf-bitem').value === OTHER_ITEM && !f.item) return err('Type the name of the item.');
+      if (!f.item) return err('Pick which ' + catOf(f.cat).label.toLowerCase() + ' this build is for.');
+      const all = [['Aura or stance', f.aura], ['Exilus', f.exilus]].concat(f.mods.map((m, i) => ['Mod ' + (i + 1), m]));
+      if (!all.some((x) => x[1])) return err('Pick at least one mod.');
+      const seen = {};
+      for (const [slot, name] of all) {
+        if (!name) continue;
+        const low = name.toLowerCase();
+        if (seen[low]) return err(slot + ' is the same mod as ' + seen[low] + '. A build cannot use one mod twice.');
+        seen[low] = slot;
+      }
+      if (f.arcane && f.arcane.toLowerCase() === f.arcane2.toLowerCase()) return err('Arcane 1 and Arcane 2 are the same arcane. A build cannot use one arcane twice.');
+      const id = bEditing ? bEditing.id : newBuildId();
+      const was = S.custom[id];
+      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, config: f.config, aura: f.aura, auraRank: f.auraRank, exilus: f.exilus, exilusRank: f.exilusRank,
+        arcane: f.arcane, arcaneRank: f.arcaneRank, arcane2: f.arcane2, arcane2Rank: f.arcane2Rank, mods: f.mods, ranks: f.ranks, notes: f.notes,
+        at: (was && Number(was.at)) || Date.now() };
+      const wasEditing = !!bEditing;
+      if (val.item) { ui.btab[groupKey(val.cat, val.item)] = id; saveUi(); }       // show the tab you just saved
+      S.custom[id] = val; renderBuilds(); closeBuildDialog();
+      try {
+        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
+        flash(wasEditing ? 'Build updated.' : 'Build added.');
+      } catch (e) {
+        if (was) S.custom[id] = was; else delete S.custom[id];
+        renderBuilds(); writeFailed(e);
+      }
+    }
+    async function removeBuild() {
+      if (!bEditing || !S.owner || !S.sync) return;
+      const id = bEditing.id, was = S.custom[id], seed = !!bEditing.seed;
+      /* A build that ships in warframe-data.json cannot be removed from the file by the page, so deleting it saves a "hidden" marker. */
+      if (seed) S.custom[id] = { kind: 'build', hidden: true, at: Date.now() }; else delete S.custom[id];
+      renderBuilds(); closeBuildDialog();
+      try {
+        if (seed) await S.sync.write({ ['custom.' + id]: S.custom[id] }, { done: S.done, runs: S.tokens, custom: S.custom }); else await S.sync.remove(id);
+        flash('Build deleted.');
+      } catch (e) { if (was) S.custom[id] = was; else delete S.custom[id]; renderBuilds(); writeFailed(e); }
+    }
+    function initBuildDialog() {
+      /* Changing the kind refills "Which one" with that kind's items: the choice stays if it is on the new list (or was typed by hand), otherwise it is cleared. */
+      $('wf-bcat').addEventListener('change', () => {
+        const keep = readBuildForm(), typed = $('wf-bitem').value === OTHER_ITEM;
+        fillItems(keep.cat, keep.item);
+        if (!typed && $('wf-bitem').value === OTHER_ITEM) { $('wf-bitem').value = ''; $('wf-bitem-other').value = ''; syncItemOther(); }
+        drawSlots(readBuildForm());
+      });
+      $('wf-bitem').addEventListener('change', syncItemOther);
+      $('wf-bcancel').addEventListener('click', closeBuildDialog);
+      $('wf-buildform').addEventListener('submit', saveBuild);
+      $('wf-bdel').addEventListener('click', () => {
+        if ($('wf-bdel').dataset.armed) { resetBuildDelete(); removeBuild(); return; }
+        $('wf-bdel').dataset.armed = '1'; $('wf-bdel').textContent = 'Tap again to delete';
+        bDelTimer = setTimeout(resetBuildDelete, 4000);
+      });
+    }
+    /* One saved build, cleaned up for display (null when it is not a usable build or was deleted). */
+    function cleanBuild(id, v) {
+      if (!ID_RE.test(id) || !v || typeof v !== 'object' || v.kind !== 'build' || v.hidden) return null;
+      const c = catOf(v.cat), name = cleanText(v.name, 60);
+      if (!c || !name) return null;
+      const mods = Array.isArray(v.mods) ? v.mods.slice(0, BUILD_SLOTS).map((x) => cleanText(x, 80)) : [];
+      while (mods.length < BUILD_SLOTS) mods.push('');
+      const ranks = mods.map((n, i) => (n && Array.isArray(v.ranks) ? rankOf(v.ranks[i]) : null));
+      const t = (x) => cleanText(x, 80), aura = t(v.aura), exilus = t(v.exilus), arcane = t(v.arcane), arcane2 = t(v.arcane2);
+      return { id, name, cat: c.id, item: cleanText(v.item, 60), config: cleanText(v.config, 20),
+        aura, auraRank: aura ? rankOf(v.auraRank) : null, exilus, exilusRank: exilus ? rankOf(v.exilusRank) : null,
+        arcane, arcaneRank: arcane ? rankOf(v.arcaneRank) : null, arcane2, arcane2Rank: arcane2 ? rankOf(v.arcane2Rank) : null,
+        mods, ranks, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, NOTES_MAX), at: Number(v.at) || 0 };
+    }
+    const fileBuilds = () => (S.data && Array.isArray(S.data.builds) ? S.data.builds : []);
+    /* The builds you added, oldest first, cleaned up for display. */
+    function userBuilds() {
+      const skip = new Set(fileBuilds().map((s) => s.id)), out = [];
+      Object.keys(S.custom).forEach((id) => { if (skip.has(id)) return; const b = cleanBuild(id, S.custom[id]); if (b) out.push(b); });
+      out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+    /* The builds that come with the page (warframe-data.json `builds`, each with a `form` in the same shape as a saved build, plus
+       the extras the form cannot hold: stats, what was learned, next step). Once you save one, custom.<id> wins over the file. */
+    function seedBuilds() {
+      const out = [];
+      fileBuilds().forEach((s) => {
+        const ov = S.custom[s.id], saved = ov && typeof ov === 'object' && ov.kind === 'build' ? ov : null;
+        if (saved && saved.hidden) return;                       // deleted on this page
+        const b = (saved && cleanBuild(s.id, saved)) || cleanBuild(s.id, Object.assign({ kind: 'build', name: s.name }, s.form));
+        if (b) { b.seed = s; out.push(b); }
+      });
+      return out;
+    }
+    /* One card per Warframe or weapon: builds of the same kind and item (Cyte-09 in Config A and in Config B) are tabs on one
+       card, ordered Config A, B, C, then anything else. A build with no item stays a card of its own. */
+    const groupKey = (cat, item) => cat + '|' + String(item || '').toLowerCase();
+    const cfgRank = (c) => { const i = CONFIGS.indexOf(c); return i < 0 ? CONFIGS.length : i; };
+    function buildGroups(list) {
+      const groups = [], by = {};
+      list.forEach((b) => {
+        if (!b.item) { groups.push({ solo: b }); return; }
+        const key = groupKey(b.cat, b.item);
+        if (!by[key]) { by[key] = { key, cat: b.cat, item: b.item, builds: [] }; groups.push(by[key]); }
+        by[key].builds.push(b);
+      });
+      groups.forEach((g) => { if (g.builds) g.builds.sort((a, b) => cfgRank(a.config) - cfgRank(b.config)); });
+      return groups;
+    }
+    /* A tab's text: the config, or the build's name when it has none; if two tabs would read the same, add the name. */
+    function tabLabels(builds) {
+      const base = builds.map((b) => b.config || b.name);
+      return builds.map((b, i) => (base.filter((x) => x === base[i]).length > 1 && b.config ? b.config + ' (' + b.name + ')' : base[i]));
+    }
+    function ownBuildCard(b, have, group) {
+      const c = el('div', 'wfcard build mine'); c.dataset.build = b.id; c.dataset.name = b.name;
+      if (group) { c.dataset.group = group.key; c.dataset.builds = group.builds.map((x) => x.id).join(' '); }
+      const s = b.seed;
+      c.appendChild(el('span', 'pill', catOf(b.cat).label));
+      if (s && s.status) c.appendChild(el('span', 'pill', s.status));
+      const head = el('div', 'cardhead');
+      head.appendChild(el('h2', null, group ? group.item : b.name));
+      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + (group ? group.item + (b.config ? ' ' + b.config : '') : b.name));
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = () => openBuildDialog(b);
+      const btns = el('div', 'cardbtns'); btns.appendChild(ed); btns.appendChild(statsButton(ownStatsInfo(b, group)));   // Edit stays first in the page, Stats shows first
+      head.appendChild(btns);
+      c.appendChild(head);
+      if (group) {
+        const tabs = el('div', 'cfgtabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', group.item + ' configs');
+        const labels = tabLabels(group.builds);
+        group.builds.forEach((x, i) => {
+          const t = el('button', null, labels[i]); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.tab = x.id;
+          t.setAttribute('aria-selected', x.id === b.id ? 'true' : 'false');
+          t.addEventListener('click', () => {
+            ui.btab[group.key] = x.id; saveUi(); renderBuilds();
+            const n = $('p-builds').querySelector('.cfgtabs button[data-tab="' + x.id + '"]'); if (n) n.focus();
+          });
+          tabs.appendChild(t);
+        });
+        const free = CONFIGS.find((k) => !group.builds.some((x) => x.config === k));
+        if (free) {                                                        // + Config: a new build for this item, in the first config nobody uses yet
+          const add = el('button', 'cfgadd', '+ ' + free); add.type = 'button'; add.dataset.add = '1';
+          add.setAttribute('aria-label', 'Add ' + free + ' for ' + group.item);
+          if (!S.owner || !MS.data) add.setAttribute('aria-disabled', 'true');
+          add.addEventListener('click', () => openBuildDialog(null, { cat: group.cat, item: group.item, config: free, name: group.item }));
+          tabs.appendChild(add);
+        }
+        c.appendChild(tabs);
+        if (b.name && b.name.toLowerCase() !== group.item.toLowerCase()) c.appendChild(el('p', 'meta bname', b.name));
+      } else {
+        const meta = [b.item, b.config].filter(Boolean).join(' · ');
+        if (meta) c.appendChild(el('p', 'meta', meta));
+      }
+      if (s && s.goal) c.appendChild(el('p', 'meta', s.goal));
+      /* A mod chip: tap it for the View mod screen, opened at the rank the build uses. */
+      const chip = (name, rank) => {
+        const keys = MS.byName[name.toLowerCase()], mx = modMax(name), isMax = rank != null && mx != null && rank === mx;
+        const state = have && keys ? (keys.some((k) => have.own.has(k)) ? 'own' : keys.some((k) => have.miss.has(k)) ? 'miss' : null) : null;
+        const ch = el(keys ? 'button' : 'span', 'chip' + (isMax ? ' max' : '') + (state === 'miss' ? ' miss' : '') + (keys ? ' tap' : ''));
+        if (keys) {
+          ch.type = 'button'; ch.dataset.mod = name; ch.setAttribute('aria-haspopup', 'dialog');
+          ch.addEventListener('click', () => openMod({ keys, view: 'build', miss: [], build: b.name, rank: rank == null ? undefined : rank }, { name, count: null, rank: null, max: isMax, note: '', tags: [] }));
+        }
+        if (state === 'miss') ch.title = 'On your Missing list';
+        ch.appendChild(document.createTextNode(name));
+        if (rank != null) ch.appendChild(el('span', 'n', 'r' + rank + (mx ? '/' + mx : '')));
+        return ch;
+      };
+      const line = (label, items, arcane) => {
+        const row = el('div', 'slotline'); row.appendChild(el('b', null, label));
+        items.forEach(([n, r]) => {
+          if (!arcane) { row.appendChild(chip(n, r)); return; }
+          const ch = el('span', 'chip', n); if (r != null) ch.appendChild(el('span', 'n', 'r' + r)); row.appendChild(ch);
+        });
+        c.appendChild(row);
+      };
+      const mods = b.mods.map((n, i) => [n, b.ranks[i]]).filter((x) => x[0]);
+      if (b.aura) line(b.cat === 'melee' ? 'Stance' : 'Aura', [[b.aura, b.auraRank]]);
+      if (b.exilus) line('Exilus', [[b.exilus, b.exilusRank]]);
+      if (mods.length) { c.appendChild(el('p', 'label', 'Mods ' + mods.length)); const r = el('div', 'modrow'); mods.forEach((m) => r.appendChild(chip(m[0], m[1]))); c.appendChild(r); }
+      const arcs = [[b.arcane, b.arcaneRank], [b.arcane2, b.arcane2Rank]].filter((a) => a[0]);
+      if (arcs.length) line(arcs.length > 1 ? 'Arcanes' : 'Arcane', arcs, true);
+      if (have) {
+        const names = [b.aura, b.exilus].concat(b.mods).filter(Boolean);
+        let own = 0, miss = 0;
+        names.forEach((n) => { const keys = MS.byName[n.toLowerCase()]; if (!keys) return; if (keys.some((k) => have.own.has(k))) own++; else if (keys.some((k) => have.miss.has(k))) miss++; });
+        c.appendChild(el('p', 'muted', 'On your lists: ' + own + ' owned, ' + miss + ' missing' + (names.length - own - miss ? ', ' + (names.length - own - miss) + ' on neither.' : '.')));
+      }
+      if (b.notes) { c.appendChild(el('p', 'label', 'Notes')); c.appendChild(el('p', 'muted notetext', b.notes)); }
+      if (s) {                                                   // what a saved build cannot hold: kept in warframe-data.json
+        if (s.stats) {
+          c.appendChild(el('p', 'label', 'Stats'));
+          const g = el('div', 'stats');
+          s.stats.forEach((st) => { const x = el('div', 'stat'); x.appendChild(el('div', 'k', st[0])); x.appendChild(el('div', 'v', st[1])); g.appendChild(x); });
+          c.appendChild(g);
+          if (s.statsNote) c.appendChild(el('p', 'fine', s.statsNote));
+        }
+        if (s.slots) { c.appendChild(el('p', 'label', 'Slot polarities')); c.appendChild(el('p', 'muted', s.slots)); }
+        if (s.notes) {
+          c.appendChild(el('p', 'label', 'What we learned'));
+          const ul = el('ul', 'blist'); s.notes.forEach((n) => ul.appendChild(el('li', null, n))); c.appendChild(ul);
+        }
+        if (s.next) { c.appendChild(el('p', 'label', 'Next')); c.appendChild(el('p', 'muted', s.next)); }
+      }
+      return c;
+    }
+
+    /* ---------- Build stats screen ---------- */
+    /* The "Stats" button on a build card opens a screen that adds up the build's mods on top of the item's own numbers. The item's
+       numbers are `gearStats` in warframe-mod-stats.json (tools/build-mod-stats.py --gear): a weapon's base numbers, and a Warframe's
+       database numbers, to which rank 30 adds 100 health, 100 shield and 50 energy (checked against Cyte-09 Config A read from the game:
+       325 / 235 / 150 / 230). Each mod is read at the rank the build saved (its max rank when no rank is saved). Bonuses that always
+       apply are added up; anything that only happens sometimes (on kill, per combo, for 20s...) is listed, not added in. Nothing here is
+       saved or sent anywhere. */
+    const GEAR_CAT = { warframes: 'warframe', 'primary-weapons': 'primary', 'secondary-weapons': 'secondary', 'melee-weapons': 'melee', companions: 'companion' };
+    const STAT_KEY = {
+      'critical chance': 'cc', 'critical damage': 'cm', 'status chance': 'sc', 'fire rate': 'fr', 'attack speed': 'fr', multishot: 'ms',
+      'magazine capacity': 'mg', 'reload speed': 'rl', health: 'h', 'shield capacity': 's', armor: 'a', 'energy max': 'e',
+      'ability strength': 'str', 'ability duration': 'dur', 'ability range': 'rng', 'ability efficiency': 'eff',
+    };
+    const FRAME_R30 = { h: 100, s: 100, e: 50 };
+    /* The labels of a hand-kept build's game-read tiles (warframe-data.json `stats`) and the row each one belongs to. */
+    const TILE_KEY = { 'crit chance': 'cc', 'crit damage': 'cm', 'fire rate': 'fr', 'attack speed': 'fr', status: 'sc', 'status chance': 'sc', multishot: 'ms',
+      health: 'h', shield: 's', armor: 'a', energy: 'e', strength: 'str', duration: 'dur', range: 'rng', efficiency: 'eff' };
+    const WEAPON_ROWS = [
+      { k: 'cc', label: 'Critical chance', unit: '%', dp: 1 },
+      { k: 'cm', label: 'Critical damage', unit: 'x', dp: 2 },
+      { k: 'sc', label: 'Status chance', unit: '%', dp: 1 },
+      { k: 'fr', label: 'Fire rate', melee: 'Attack speed', unit: '', dp: 2 },
+      { k: 'ms', label: 'Multishot', unit: '', dp: 2 },
+      { k: 'mg', label: 'Magazine size', unit: '', dp: 0 },
+      { k: 'rl', label: 'Reload time', unit: ' s', dp: 2 },
+    ];
+    const FRAME_ROWS = [
+      { k: 'h', label: 'Health', gear: true }, { k: 's', label: 'Shield', gear: true }, { k: 'a', label: 'Armor', gear: true }, { k: 'e', label: 'Energy', gear: true },
+      { k: 'str', label: 'Ability strength' }, { k: 'dur', label: 'Ability duration' }, { k: 'rng', label: 'Ability range' }, { k: 'eff', label: 'Ability efficiency', cap: 175 },
+    ];
+    const fnum = (n, dp) => String(Number(n.toFixed(dp)));
+    const sgn = (n, dp) => (n > 0 ? '+' : n < 0 ? '-' : '') + fnum(Math.abs(n), dp);
+    const TRIGGER = /\b(for \d+(?:\.\d+)?s|per|stacks?|when|while|upon|after|on (?:the )?first|on bullet jump|for your|up to)\b/i;
+    /* One stat line of a mod: a header ("On Kill:"), a number ("+165% Damage", "-66% Ability Range", "+2 Punch Through"), a multiplier
+       ("x1.3 Damage to Corpus") or plain text. A number is `cond` when its words say it only sometimes applies. */
+    function parseStatLine(text) {
+      const t = String(text).trim();
+      if (/^[A-Z][A-Za-z0-9' ,()-]{1,60}:$/.test(t)) return { type: 'head', text: t };
+      let m = /^x(\d+(?:\.\d+)?)\s+(.+)$/.exec(t);
+      if (m) return { type: 'mult', value: parseFloat(m[1]), unit: 'x', name: m[2].replace(/\.$/, '').trim(), text: t, cond: false };
+      m = /^([+-])?(\d+(?:\.\d+)?)(%|m)?\s+(.+)$/.exec(t);
+      if (m) {
+        const name = m[4].replace(/\s*\([^)]*\)/g, '').replace(/\.$/, '').trim();
+        if (/\.\s/.test(name)) return { type: 'text', text: t };            // a whole sentence, not a stat name
+        return { type: 'num', value: (m[1] === '-' ? -1 : 1) * parseFloat(m[2]), unit: m[3] || '', name, text: t, cond: TRIGGER.test(name) };
+      }
+      return { type: 'text', text: t };
+    }
+    /* ---------- Stack tables ---------- */
+    /* Mods that grow as they stack get a table: one row per stack up to the most the mod allows. Three kinds, all read from the mod's own
+       stat lines (rank by rank, so a table is for the rank shown):
+       - "On Kill: +30% Multishot for 20s. Stacks up to 5x." (also "Stacks up to 90%", "Stacks up to 2 times", "stacking up to 3x" and a header
+         saying "(Max stacks 3)"): row k is k times the bonus.
+       - "+40% Status Chance per Combo Multiplier" / "+40% Critical Chance stacks with Combo Multiplier": the wiki's formula is bonus x (multiplier - 1),
+         so 1x adds nothing; the multiplier goes up by 1 for every 20 hits in a row, to 12x at 220 hits (wiki.warframe.com, Melee Combo Counter,
+         Blood Rush, Weeping Wounds).
+       - "+80% Melee Damage per Status Type affecting the target": bonus x the number of different statuses on the enemy; the wiki says 16 is the most
+         there can be at once (Condition Overload). With "Stacks up to 2x" as well (the Galvanized mods) it is a grid of statuses by stacks. */
+    const COMBO_MAX = 12, COMBO_HITS = 20, STATUS_MAX = 16;
+    const STACK_RE = /^(?:([A-Z][A-Za-z0-9' ,()-]{1,60}):\s+)?(.+?)(?:\s+for\s+(\d+(?:\.\d+)?)\s*(?:s|seconds))?[.,]?\s*(?:Stacks?|stacking) up to (\d+(?:\.\d+)?)\s*(x|%|times)\.?(?:\s.*)?$/i;
+    /* Multiply every number in an effect ("+30% Projectile Speed and +30% Beam Range") by f; a duration like 20s is left alone. */
+    const scaleText = (text, f) => text.replace(/(^|[^A-Za-z0-9.])([+-]?)(\d[\d,]*(?:\.\d+)?)(?!\d|s\b|\s*seconds)/g, (a, pre, sg, n) => pre + sg + fnum(parseFloat(n.replace(/,/g, '')) * f, 2));
+    function firstNum(text) { const m = /([+-]?)(\d[\d,]*(?:\.\d+)?)/.exec(text); return m ? (m[1] === '-' ? -1 : 1) * parseFloat(m[2].replace(/,/g, '')) : null; }
+    /* The stat a one-number effect changes ("+30% Multishot" -> ms), so the Stats screen can show the build's total at each stack. */
+    function effectKey(effect) {
+      const m = /^[+-]\d+(?:\.\d+)?%\s+([A-Za-z ]+?)(?:\s+when\s.*)?$/.exec(effect.trim());
+      return m ? STAT_KEY[m[1].trim().toLowerCase()] || null : null;
+    }
+    function stackTables(lines) {
+      const out = [];
+      let head = '', headMax = null;
+      (lines || []).forEach((raw) => {
+        const t = String(raw).trim();
+        if (/^[A-Z][A-Za-z0-9' ,()-]{1,60}:$/.test(t)) {
+          head = t.replace(/:$/, ''); const hm = /Max(?:imum)? stacks? (\d+)/i.exec(t); headMax = hm ? parseInt(hm[1], 10) : null; return;
+        }
+        const sm = STACK_RE.exec(t), perStatus = /\s+per Status Type affecting the target/i;
+        const lead = (sm && sm[1]) || head;
+        if (sm) {
+          let effect = sm[2].trim();
+          const step = firstNum(effect), cap = parseFloat(sm[4]), pct = sm[5] === '%';
+          if (step == null || !step || !cap) return;
+          const n = pct ? Math.ceil(cap / Math.abs(step)) : Math.round(cap), fk = (k) => (pct ? Math.min(k, cap / Math.abs(step)) : k);
+          const title = [lead, sm[3] ? 'lasts ' + sm[3] + 's' : '', 'up to ' + n + ' stack' + (n === 1 ? '' : 's')].filter(Boolean).join(' · ');
+          if (perStatus.test(effect)) {                                   // Galvanized Aptitude and its relatives: statuses on the enemy x stacks
+            effect = effect.replace(perStatus, '');
+            const cols = ['Status types'], rows = [];
+            for (let k = 1; k <= n; k++) cols.push(k + (k === 1 ? ' stack' : ' stacks'));
+            for (let st = 1; st <= STATUS_MAX; st++) { const r = [String(st)]; for (let k = 1; k <= n; k++) r.push(scaleText(effect, st * fk(k))); rows.push(r); }
+            out.push({ kind: 'grid', title: title + ' · ' + STATUS_MAX + ' status types at most', cols, rows, key: null, bonus: null });
+            return;
+          }
+          const rows = [], bonus = [];
+          for (let k = 1; k <= n; k++) { rows.push([String(k), scaleText(effect, fk(k))]); bonus.push(step * fk(k)); }
+          out.push({ kind: 'stack', title, cols: ['Stacks', 'Bonus'], rows, key: effectKey(effect), bonus });
+          return;
+        }
+        const p = parseStatLine(t);
+        if (p.type !== 'num') return;
+        let m;
+        if ((m = /^(.*?)\s*(?:stacks with|per) Combo Multiplier$/i.exec(p.name))) {
+          const effect = (p.value < 0 ? '-' : '+') + fnum(Math.abs(p.value), 2) + p.unit + ' ' + m[1], rows = [], bonus = [];
+          for (let c = 1; c <= COMBO_MAX; c++) { rows.push([c + 'x', String((c - 1) * COMBO_HITS), scaleText(effect, c - 1)]); bonus.push(p.value * (c - 1)); }
+          out.push({ kind: 'combo', title: 'by Combo Multiplier · 1x adds nothing, 12x needs ' + (COMBO_MAX - 1) * COMBO_HITS + ' hits in a row', cols: ['Combo multiplier', 'Hits in a row', 'Bonus'], rows,
+            key: p.unit === '%' ? STAT_KEY[m[1].trim().toLowerCase()] || null : null, bonus });
+        } else if ((m = /^(.*?)\s*per Status Type affecting the target$/i.exec(p.name))) {
+          const effect = (p.value < 0 ? '-' : '+') + fnum(Math.abs(p.value), 2) + p.unit + ' ' + m[1], rows = [];
+          for (let st = 1; st <= STATUS_MAX; st++) rows.push([String(st), scaleText(effect, st)]);
+          out.push({ kind: 'status', title: 'by Status Type · ' + STATUS_MAX + ' at most (every different status on the enemy counts)', cols: ['Status types', 'Bonus'], rows, key: null, bonus: null });
+        } else if (headMax) {
+          const step = firstNum(t), rows = [], bonus = [];
+          if (!step) return;
+          for (let k = 1; k <= headMax; k++) { rows.push([String(k), scaleText(t, k)]); bonus.push(step * k); }
+          out.push({ kind: 'stack', title: [head, 'up to ' + headMax + ' stacks'].join(' · '), cols: ['Stacks', 'Bonus'], rows, key: effectKey(t), bonus });
+        }
+      });
+      return out;
+    }
+    /* A table as a collapsible block. `calc` (from statsEngine) adds a column with the build's own total at each row, for a table that changes one stat. */
+    function stackTableEl(tb, calc, open) {
+      const det = el('details', 'mv-all st-stack'); det.open = !!open;
+      det.appendChild(el('summary', null, 'Stack table: ' + tb.title));
+      const c = calc && tb.key && tb.bonus ? calc[tb.key] : null;
+      const tbl = el('table', 'mv-table'), th = document.createElement('thead'), hr = document.createElement('tr');
+      tb.cols.concat(c ? [c.label + ' total'] : []).forEach((h) => { const x = el('th', null, h); x.scope = 'col'; hr.appendChild(x); });
+      th.appendChild(hr); tbl.appendChild(th);
+      const tbd = document.createElement('tbody');
+      tb.rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        r.forEach((v, j) => tr.appendChild(el(j === 0 ? 'th' : 'td', null, v)));
+        if (c) tr.appendChild(el('td', null, c.at(tb.bonus[i])));
+        tbd.appendChild(tr);
+      });
+      tbl.appendChild(tbd); det.appendChild(tbl);
+      return det;
+    }
+    /* The item's own numbers: { cat, stats } from the first of `cats` that lists the item (an Archwing build can hold an Arch-Gun or an Arch-Melee). */
+    function gearFind(data, cats, item) {
+      if (!data.gearStats || !item) return null;
+      const idx = data._gsl || (data._gsl = Object.keys(data.gearStats).reduce((o, k) => { o[k.toLowerCase()] = k; return o; }, {}));
+      for (const cat of cats) {
+        const k = idx[(cat + '|' + String(item).trim()).toLowerCase()];
+        if (k) return { cat, stats: data.gearStats[k] };
+      }
+      return null;
+    }
+    /* Of several mods with one name (Flawed, Intermediate, Expert copies) take the one for this kind of build that has stats. */
+    function pickModKey(data, byName, name, types) {
+      const ks = byName[String(name).toLowerCase()];
+      if (!ks || !ks.length) return null;
+      const score = (k) => { const m = data.mods[k]; return (types && types.indexOf(m.t) >= 0 ? 4 : 0) + (m.l && m.l.length ? 2 : 0) + (m.m || 0) / 1000; };
+      return ks.slice().sort((a, b) => score(b) - score(a))[0];
+    }
+    /* input: { gearCat, item, entries: [{ name, rank }] }. Returns { gs, isFrame, rows, bonuses, cond, other, none, guessed }. */
+    function statsEngine(data, byName, input) {
+      const cats = input.gearCats || [input.gearCat], found = gearFind(data, cats, input.item), gs = found ? found.stats : null;
+      const types = [].concat.apply([], cats.map((c) => (catOf(c) ? catOf(c).types : []))), isFrame = (found ? found.cat : input.gearCat) === 'warframe';
+      const sums = {}, cond = [], other = [], none = [], guessed = [];
+      input.entries.forEach((e) => {
+        const key = pickModKey(data, byName, e.name, types), m = key ? data.mods[key] : null;
+        if (!m || !m.l || !m.l.length) { none.push(e.name); return; }
+        let rank = e.rank;
+        if (typeof rank !== 'number') { rank = m.l.length - 1; guessed.push(e.name); }
+        rank = Math.min(rank, m.l.length - 1);
+        let head = null;
+        const flush = () => { if (head) { cond.push({ mod: m.n, rank, text: head.map((p) => p.text).join(' '), parts: head, tables: stackTables(head.map((p) => p.text)) }); head = null; } };
+        (m.l[rank] || []).forEach((t) => {
+          const p = parseStatLine(t);
+          if (p.type === 'head') { flush(); head = [p]; return; }
+          if (head) { head.push(p); return; }
+          if (p.type === 'text') { other.push({ mod: m.n, rank, text: p.text, tables: stackTables([p.text]) }); return; }
+          if (p.cond) { cond.push({ mod: m.n, rank, text: p.text, parts: [p], tables: stackTables([p.text]) }); return; }
+          const k = p.type === 'mult' ? 'x|' + p.name.toLowerCase() : (p.unit === '%' && STAT_KEY[p.name.toLowerCase()]) || 'o|' + p.name.toLowerCase() + '|' + p.unit;
+          const a = sums[k] || (sums[k] = { key: k, name: p.name, unit: p.unit, mult: p.type === 'mult', value: p.type === 'mult' ? 1 : 0, who: [] });
+          if (p.type === 'mult') a.value *= p.value; else a.value += p.value;
+          a.who.push({ mod: m.n, rank, value: p.value });
+        });
+        flush();
+      });
+      const whoText = (a) => (a ? a.who.map((w) => w.mod + ' ' + (a.mult ? 'x' + fnum(w.value, 2) : sgn(w.value, 1) + a.unit)).join(', ') : '');
+      const rows = [], used = new Set(), calc = {};
+      if (isFrame) {
+        FRAME_ROWS.forEach((d) => {
+          used.add(d.k);
+          if (d.gear && !(gs && gs[d.k] != null)) { used.delete(d.k); return; }
+          const a = sums[d.k], s = a ? a.value : 0;
+          let base, total, note = '';
+          if (d.gear) { base = gs[d.k] + (FRAME_R30[d.k] || 0); total = base * (1 + s / 100); }
+          else {
+            base = 100; total = Math.max(0, 100 + s);
+            if (d.cap && total > d.cap) { total = d.cap; note = 'capped at ' + d.cap + '%'; }
+          }
+          const dp = d.gear ? 0 : 1, unit = d.gear ? '' : '%';
+          calc[d.k] = { label: d.label, at: (extra) => {            // the same total with `extra` more percent from a stacking mod
+            const s2 = s + extra, t2 = d.gear ? base * (1 + s2 / 100) : Math.min(d.cap || Infinity, Math.max(0, 100 + s2));
+            return fnum(t2, dp) + unit;
+          } };
+          rows.push({ key: d.k, label: d.label, base: fnum(base, dp) + unit, mods: s ? sgn(s, 1) + '%' : '', total: fnum(total, dp) + unit, num: total, who: whoText(a), note });
+        });
+      } else if (gs) {
+        const melee = found.cat === 'melee' || found.cat === 'archmelee';
+        WEAPON_ROWS.forEach((d) => {
+          if (gs[d.k] == null) return;
+          used.add(d.k);
+          const a = sums[d.k], s = a ? a.value : 0, base = gs[d.k], factor = Math.max(0, 1 + s / 100);
+          const total = d.k === 'rl' ? base / Math.max(0.01, factor) : base * factor;
+          calc[d.k] = { label: melee && d.melee ? d.melee : d.label, at: (extra) => {
+            const f2 = Math.max(0, 1 + (s + extra) / 100);
+            return fnum(d.k === 'rl' ? base / Math.max(0.01, f2) : base * f2, d.dp) + d.unit;
+          } };
+          rows.push({ key: d.k, label: melee && d.melee ? d.melee : d.label, base: fnum(base, d.dp) + d.unit, mods: s ? sgn(s, 1) + '%' + (d.k === 'rl' ? ' speed' : '') : '',
+            total: fnum(total, d.dp) + d.unit, num: total, who: whoText(a), note: '' });
+        });
+      }
+      const bonuses = Object.keys(sums).filter((k) => !used.has(k)).map((k) => {
+        const a = sums[k];
+        return { name: a.name, text: (a.mult ? 'x' + fnum(a.value, 2) : sgn(a.value, 1) + a.unit) + ' ' + a.name, who: whoText(a) };
+      });
+      return { gs, isFrame, rows, bonuses, cond, other, none, guessed, calc };
+    }
+    function ownStatsInfo(b, group) {
+      const entries = [];
+      if (b.aura) entries.push({ name: b.aura, rank: b.auraRank });
+      if (b.exilus) entries.push({ name: b.exilus, rank: b.exilusRank });
+      b.mods.forEach((n, i) => { if (n) entries.push({ name: n, rank: b.ranks[i] }); });
+      const item = group ? group.item : b.item;
+      return { title: item || b.name, sub: ['Stats', catOf(b.cat).label, b.config, item && b.name.toLowerCase() !== item.toLowerCase() ? b.name : ''].filter(Boolean).join(' · '),
+        gearCat: b.cat, item, entries, seed: b.seed || null };
+    }
+    function communityStatsInfo(b, cm) {
+      const gc = GEAR_CAT[b.cat] || b.cat;
+      return { title: b.item, sub: ['Stats', 'by ' + b.by, cm.source + ' build'].join(' · '), gearCat: gc, gearCats: gc === 'archwing' ? ['archwing', 'archgun', 'archmelee'] : [gc],
+        item: b.item, entries: b.mods.map((m) => ({ name: m[0], rank: m[1] })), seed: null };
+    }
+    function statsButton(info) {
+      const b = el('button', 'btn-sm stbtn', 'Stats'); b.type = 'button'; b.setAttribute('aria-label', 'Stats for ' + info.title); b.setAttribute('aria-haspopup', 'dialog');
+      if (!MS.data) { b.setAttribute('aria-disabled', 'true'); b.title = 'The mod list has not loaded'; }
+      b.onclick = () => openStats(info);
+      return b;
+    }
+    function openStats(info) {
+      if (!MS.data) return;
+      renderStats(info);
+      const dlg = $('wf-statsdlg');
+      if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', '');
+      dlg.scrollTop = 0;
+    }
+    function closeStats() {
+      const dlg = $('wf-statsdlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function renderStats(info) {
+      const r = statsEngine(MS.data, MS.byName, info);
+      $('wf-stats-title').textContent = info.title;
+      $('wf-stats-sub').textContent = info.sub;
+      const body = $('wf-stats-body'); body.textContent = '';
+      const seed = info.seed;
+      if (seed && seed.stats) {
+        body.appendChild(el('p', 'label', 'Read from the game'));
+        const g = el('div', 'stats');
+        seed.stats.forEach((st) => { const x = el('div', 'stat'); x.appendChild(el('div', 'k', st[0])); x.appendChild(el('div', 'v', st[1])); g.appendChild(x); });
+        body.appendChild(g);
+        if (seed.statsNote) body.appendChild(el('p', 'fine', seed.statsNote));
+      }
+      body.appendChild(el('p', 'label', 'Worked out from the mods'));
+      /* A build read from the game also has the game's own number: say whether the sum above agrees with it (at the game's precision). */
+      const game = {};
+      if (seed && seed.stats) seed.stats.forEach((st) => { const k = TILE_KEY[String(st[0]).toLowerCase()]; if (k) game[k] = String(st[1]); });
+      if (r.rows.length) {
+        r.rows.forEach((row) => {
+          const d = el('div', 'st-row'); d.dataset.stat = row.key;
+          const top = el('div', 'st-top'); top.appendChild(el('span', 'st-name', row.label)); top.appendChild(el('span', 'st-total', row.total)); d.appendChild(top);
+          d.appendChild(el('div', 'st-calc', 'Base ' + row.base + (row.mods ? ' · mods ' + row.mods : ' · no mod changes it') + (row.note ? ' · ' + row.note : '')));
+          if (row.who) d.appendChild(el('div', 'st-who', row.who));
+          const gv = game[row.key], gnum = gv == null ? NaN : parseFloat(gv);
+          if (!isNaN(gnum)) {
+            const dec = (/\.(\d+)/.exec(gv) || [, ''])[1].length;
+            d.appendChild(el('div', 'st-game', 'The game shows ' + gv.replace(/\s*\(.*\)\s*$/, '') + (Number(row.num.toFixed(dec)) === gnum ? ', the same.' : ', which differs: the game counts something this page does not.')));
+          }
+          body.appendChild(d);
+        });
+        if (r.isFrame) body.appendChild(el('p', 'fine', 'Health, shield and energy are at rank 30.'));
+      } else {
+        body.appendChild(el('p', 'muted', !info.item ? 'This build has no Warframe or weapon picked, so there are no base numbers to add the mods to.'
+          : 'The database has no base numbers for ' + info.item + ', so only what the mods add is listed.'));
+      }
+      const list = (title, items, fill) => {
+        if (!items.length) return;
+        body.appendChild(el('p', 'label', title));
+        const ul = el('ul', 'st-list'); items.forEach((it) => { const li = el('li'); fill(li, it); ul.appendChild(li); }); body.appendChild(ul);
+      };
+      list(r.rows.length ? 'Other bonuses from the mods' : 'What the mods add', r.bonuses, (li, b) => { li.appendChild(document.createTextNode(b.text)); li.appendChild(el('span', 'st-who', b.who)); });
+      list('Only some of the time (not added in)', r.cond, (li, c) => {
+        li.appendChild(document.createTextNode(c.text)); li.appendChild(el('span', 'st-who', c.mod + ' rank ' + c.rank));
+        c.tables.forEach((tb) => li.appendChild(stackTableEl(tb, r.calc, false)));
+      });
+      list('Other effects (not added in)', r.other, (li, o) => {
+        li.appendChild(document.createTextNode(o.text)); li.appendChild(el('span', 'st-who', o.mod + ' rank ' + o.rank));
+        o.tables.forEach((tb) => li.appendChild(stackTableEl(tb, r.calc, false)));
+      });
+      if (r.guessed.length) body.appendChild(el('p', 'fine', 'No rank is saved for ' + r.guessed.join(', ') + ', so ' + (r.guessed.length > 1 ? 'they count' : 'it counts') + ' at max rank.'));
+      if (r.none.length) body.appendChild(el('p', 'fine', 'Not counted, no stats in the database: ' + r.none.join(', ') + '.'));
+      body.appendChild(el('p', 'fine', 'Added up by this page from the mod list, each mod at its saved rank, and the item\'s numbers in the ' + MS.data.source + ' database. Arcanes, set bonuses, weak points and Forma are not counted, so it can differ from the game\'s own panel.'));
+    }
+    function initStatsDialog() {
+      const dlg = $('wf-statsdlg');
+      $('wf-stats-close').addEventListener('click', closeStats);
+      dlg.addEventListener('click', (e) => {
+        if (e.target !== dlg) return;
+        const r = dlg.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeStats();
+      });
+    }
+
+    /* ---------- render: builds ---------- */
+    /* warframe-community-builds.json: top-rated builds by other players, fetched after the main data.
+       The page works without it (the Community builds button stays greyed out). */
+    const CM = { data: null };
+    async function loadCommunity() {
+      try {
+        const res = await fetch('warframe-community-builds.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        CM.data = await res.json();
+      } catch (e) { console.warn('Could not load warframe-community-builds.json:', e); CM.data = null; }
+      renderBuilds();
+    }
+    /* The stat keys of every mod on the Owned (or Missing) list, to tell which mods of a community build you have. */
+    function listKeys(view) {
+      const out = new Set();
+      modGroups(view).forEach((g) => g.items.forEach((it) => { const n = parseChip(it).name; (statKeys(gidOf(g, n), n) || []).forEach((k) => out.add(k)); }));
+      return out;
+    }
+    function communityCard(b, cm, have) {
+      const c = el('div', 'wfcard build comm');
+      const cat = cm.cats.find((x) => x[0] === b.cat);
+      c.appendChild(el('span', 'pill', cat ? cat[1] : b.cat));
+      const head = el('div', 'cardhead'); head.appendChild(el('h2', null, b.item)); head.appendChild(statsButton(communityStatsInfo(b, cm)));
+      c.appendChild(head);
+      c.appendChild(el('p', 'meta', b.title));
+      c.appendChild(el('p', 'meta', ['by ' + b.by, cm.source + ' score ' + b.score.toLocaleString('en-US'), b.formas + ' forma', 'rank ' + b.rank, 'updated ' + b.updated].join(' · ')));
+      if (b.frames && b.frames.length) {
+        const fr = el('p', 'frames'); fr.appendChild(el('b', null, b.frames.length > 1 ? 'Frames' : 'Frame'));
+        b.frames.forEach((f) => fr.appendChild(el('span', 'fchip', f)));
+        c.appendChild(fr);
+        if (b.frameNote) c.appendChild(el('p', 'muted framenote', b.frameNote));
+      }
+      c.appendChild(el('p', 'label', 'Mods'));
+      const r = el('div', 'modrow');
+      let own = 0, miss = 0;
+      b.mods.forEach((m) => {
+        const name = m[0], rank = m[1], keys = statKeys('community', name);
+        const state = have && keys ? (keys.some((k) => have.own.has(k)) ? 'own' : keys.some((k) => have.miss.has(k)) ? 'miss' : null) : null;
+        if (state === 'own') own++; else if (state === 'miss') miss++;
+        const top = keys ? MS.data.mods[keys[0]].m : null;
+        const isMax = typeof top === 'number' && top > 0 && rank === top;
+        const ch = el(keys ? 'button' : 'span', 'chip' + (isMax ? ' max' : '') + (state === 'miss' ? ' miss' : '') + (keys ? ' tap' : ''));
+        if (keys) {
+          ch.type = 'button'; ch.dataset.mod = name; ch.setAttribute('aria-haspopup', 'dialog');
+          ch.addEventListener('click', () => openMod({ keys, view: 'community', miss: missFor('community', name), build: b.item + ' by ' + b.by + ' (' + cm.source + ')', rank },
+            { name, count: null, rank: null, max: isMax, note: '', tags: [] }));
+        }
+        if (state === 'miss') ch.title = 'On your Missing list';
+        ch.appendChild(document.createTextNode(name));
+        ch.appendChild(el('span', 'n', 'r' + rank));
+        r.appendChild(ch);
+      });
+      c.appendChild(r);
+      if (have) c.appendChild(el('p', 'muted', 'On your lists: ' + own + ' owned, ' + miss + ' missing, ' + (b.mods.length - own - miss) + ' on neither.'));
+      if (b.arcanes && b.arcanes.length) {
+        c.appendChild(el('p', 'label', 'Arcanes'));
+        const ar = el('div', 'modrow');
+        b.arcanes.forEach((a) => { const ch = el('span', 'chip'); ch.appendChild(document.createTextNode(a[0])); ch.appendChild(el('span', 'n', 'r' + a[1])); ar.appendChild(ch); });
+        c.appendChild(ar);
+      }
+      const a = el('a', 'mv-link', 'Open on ' + cm.source); a.href = 'https://overframe.gg/build/' + String(b.id).replace(/\D/g, '') + '/'; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      c.appendChild(a);
+      return c;
+    }
+    function renderCommunity(p, cm) {
+      if (ui.bcat !== 'all' && !cm.cats.some((x) => x[0] === ui.bcat)) ui.bcat = 'all';
+      const pills = el('div', 'pills'); pills.setAttribute('role', 'group'); pills.setAttribute('aria-label', 'Category');
+      [['all', 'All']].concat(cm.cats).forEach(([id, label]) => {
+        const n = id === 'all' ? cm.builds.length : cm.builds.filter((b) => b.cat === id).length;
+        if (!n) return;
+        const b = el('button', null, label + ' ' + n); b.type = 'button'; b.dataset.cat = id;
+        b.setAttribute('aria-pressed', ui.bcat === id ? 'true' : 'false');
+        b.addEventListener('click', () => { ui.bcat = id; saveUi(); renderBuilds(); });
+        pills.appendChild(b);
+      });
+      p.appendChild(pills);
+      p.appendChild(el('p', 'legend', 'The highest-rated builds on ' + cm.source + ' in each category, one per item, read ' + cm.built + '. They are other players\' builds and they change, so use the link for the latest.' + (MS.data ? ' Tap a mod to see its stats at the rank used. A dashed mod is on your Missing list.' : '')));
+      const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
+      cm.builds.filter((b) => ui.bcat === 'all' || b.cat === ui.bcat).forEach((b) => p.appendChild(communityCard(b, cm, have)));
+    }
+    function renderBuilds() {
+      const p = $('p-builds'); p.textContent = '';
+      const cm = CM.data, community = ui.builds === 'community' && !!cm;
+      const tools = el('div', 'tools');
+      const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Which builds');
+      [['mine', 'My builds'], ['community', 'Community builds']].forEach(([id, label]) => {
+        const b = el('button', null, label); b.type = 'button'; b.id = 'bv-' + id;
+        b.setAttribute('aria-pressed', (id === 'community') === community ? 'true' : 'false');
+        if (id === 'community' && !cm) { b.disabled = true; b.title = 'The community builds have not loaded'; }
+        b.addEventListener('click', () => { ui.builds = id; saveUi(); renderBuilds(); });
+        seg.appendChild(b);
+      });
+      tools.appendChild(seg); p.appendChild(tools);
+      if (community) { renderCommunity(p, cm); return; }
+      const addRow = el('div', 'addrow');
+      const addBtn = el('button', 'btn-sm primary', '+ Add build'); addBtn.type = 'button'; addBtn.id = 'bv-add';
+      if (!S.owner || !MS.data) addBtn.setAttribute('aria-disabled', 'true');
+      if (!MS.data) addBtn.title = 'The mod list has not loaded';
+      addBtn.onclick = () => openBuildDialog(null);
+      addRow.appendChild(addBtn); p.appendChild(addRow);
+      const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
+      /* Cards you made come first, oldest first; a card that holds one of the page's own builds keeps that build's place, so adding
+         a config to Cyte-09 does not move it. */
+      const seeds = seedBuilds(), seedAt = (g) => (g.builds ? Math.min.apply(null, g.builds.map((x) => (seeds.indexOf(x) < 0 ? 1e9 : seeds.indexOf(x)))) : 1e9);
+      const groups = buildGroups(userBuilds().concat(seeds));
+      groups.forEach((g, i) => { g.pos = seedAt(g) < 1e9 ? 1e6 + seedAt(g) : i; });
+      groups.sort((a, b) => a.pos - b.pos);
+      groups.forEach((g) => {
+        if (g.solo) { p.appendChild(ownBuildCard(g.solo, have)); return; }
+        const open = g.builds.find((x) => x.id === ui.btab[g.key]) || g.builds[0];
+        p.appendChild(ownBuildCard(open, have, g));
+      });
+    }
+
 
     /* ---------- Firebase sync (optional layer) ---------- */
     const isMap = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -1344,8 +2760,9 @@
       });
       if (!GS.seeds.some((g) => g.id === WF)) GS.seeds.unshift({ id: WF, name: 'Warframe', source: 'warframe-data.json' });
       GS.seeds.sort((a, b) => (a.id === WF ? -1 : b.id === WF ? 1 : 0));   // Warframe first, the rest in file order
-      const h = location.hash.slice(1);
-      if (GAME_ID_RE.test(h)) ui.game = h;
+      const h = location.hash.slice(1).split('/');
+      if (h.length === 1 && TABS.includes(h[0])) { ui.game = WF; ui.tab = h[0]; }   // links from the old Warframe page: #mods, #builds, #goals
+      else if (GAME_ID_RE.test(h[0])) { ui.game = h[0]; if (h[0] === WF && TABS.includes(h[1])) ui.tab = h[1]; }
       $('g-lede').textContent = 'One list of goals for every game you play. Pick a game, tick things off, and add your own goals and games.'
         + (gd && gd.updatedLabel ? ' Updated ' + gd.updatedLabel + '.' : '');
       try {
@@ -1353,11 +2770,14 @@
         S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
         indexGoals(S.data.farm.tasks);
         initGoalDialog(); initTokenDialog();
+        $('wf-about-sum').textContent = 'Warframe data updated ' + S.data.updatedLabel;
+        $('wf-lede').textContent = S.data.source;
       } catch (e) {
         console.error('Could not load warframe-data.json:', e);
         S.data = null;
       }
-      initGenDialog();
+      initGenDialog(); initTabs();
+      if (S.data) { initModTools(); initBuildDialog(); initModDialog(); initStatsDialog(); loadModStats(); loadCommunity(); }
       renderLive();
       await startSync();
     }

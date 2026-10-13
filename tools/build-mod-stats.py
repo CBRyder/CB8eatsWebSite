@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build warframe-mod-stats.json, the data behind the "View mod" screen on warframe.html.
+"""Build warframe-mod-stats.json, the data behind the "View mod" screen on the Game goals page (goals.html, Warframe, Mods tab).
 
 Run from the repo root whenever the mod lists in warframe-data.json change:
 
@@ -90,7 +90,7 @@ for m in mods:
 
 
 def chip_name(s):
-    """Same reading of a chip as parseChip() in warframe.html, name only."""
+    """Same reading of a chip as parseChip() in goals.html, name only."""
     if isinstance(s, dict):
         s = s['t']
     s = re.sub(r'\(r\d+/\d+\)', '', s)

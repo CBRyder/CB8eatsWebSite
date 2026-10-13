@@ -525,11 +525,45 @@ you tap open (`#wf-about`).
   names the mod (today `narrow` and `bladed`), and `ownsMods: true` on a goal says every goal and part inside it is
   named exactly like its mod (the four collections: `allprimed`, `allarchon`, `allumbral`, `allnecra`). When such a
   goal is ticked (a saved tick, or `doneDefault`), `modGroups()` takes that mod off the Missing view and puts it in a
-  first Owned group, "Owned because you ticked the goal"; untick the goal and it goes back, nothing is saved or
+  first Owned group, "Owned because you ticked it"; untick the goal and it goes back, nothing is saved or
   edited (it is computed on every render, and `renderLive()` now redraws the Mods tab too). A mod that is already on
   Owned is never listed twice, and `listKeys()` uses the same groups, so the Add build form's "You own" list
   agrees. The match is by the chip's name (a family chip such as "Bane of Corpus/Grineer/Infested" is not matched).
   To link a new goal to a mod, put the mod's name in `mod` exactly as the Missing list spells it.
+- **Tick a mod you own, on the Mods tab (added 2026-10-13; CB: "I want to be able to tell you what I have ... check it off
+  on the website and u see it as I own it"). STANDING RULE: a tick on the site means CB owns it (or has done it).** Every
+  chip in the Missing view has a tick (`button.modtick`, `role=checkbox`, 44px, owner only; a visitor sees it disabled and
+  tapping says to sign in). Ticking saves `done.<modTickId(name)>` = true in `warframe/progress` (an explicit `false` when
+  unticked, same as every other tick), the mod leaves Missing at once and shows in the same first Owned group as the
+  goal-ticked mods, now called "Owned because you ticked it" (`id: 'ticked'`). In that group, the mods ticked on the Mods tab
+  keep a checked tick so they can be unticked from there; the scanned Owned list has no ticks (it is rescanned data, edit
+  `warframe-data.json` for that). A mod that is owned two ways (its tick and its goal) stays owned until both are undone.
+  - **Ids:** `modTickId(name)` = `m-` + the lowercased name as a slug (28 characters at most) + `-` + 6 characters of a djb2
+    hash of the whole name, so it is at most 40 characters, safe in a dotted Firestore path (`ID_RE`), the same for any letter
+    case or extra spaces, and never the id of a goal in `warframe-data.json` (a test checks all of that over the whole Missing
+    list). The name is the chip's name (`parseChip(it).name`), so **renaming a chip on the Missing list loses its tick**; a
+    mod that is moved to Owned in `warframe-data.json` after a rescan simply stops needing it.
+  - **No Firestore rule change:** `done` is a free-form map, so a new key inside it is allowed by the published
+    `hasOnly(['done','runs','theme','custom'])` rule. Do not add a top-level field for this.
+  - `tickedModSources()` returns `{ goal, chip }` (Maps from the lowercase name to the display name: owned through a ticked
+    goal, owned through a tick here); `tickedMods()` is the union and is what `modGroups()` and `listKeys()` (the Add build
+    form's "You own" list) use.
+- **Copy my list and how Claude sees what CB owns (added 2026-10-13).** Under the sync line on the Game goals page, a
+  **Copy my list** button (`#g-copy`, works for visitors too) copies `exportText()` to the clipboard (fallback when the browser
+  refuses: a dialog `#g-copydlg` with the text selected). **`window.cb8Export()` returns the same text**, so Claude can read it
+  from the open goals page in the built-in browser (`javascript_tool` -> `window.cb8Export()`) when CB's computer is linked.
+  The text has a header line, then per game: Warframe (the Mother Tokens count, every top-level goal as `- [x]`, `- [~]` or
+  `- [ ]` with its id in brackets, and for a list `have:` and `open:` lines, the open names only up to 15; the mods ticked on
+  the Mods tab; the Missing-list mods that count as owned only because their goal is ticked; a pointer to the scanned Owned
+  list in `warframe-data.json`; "Goals I removed") and every other game the same way from its own doc. It reads the page's
+  current state, so renames and removals CB made are applied. **Ways for Claude to read it, in order:** (1) the text CB pastes
+  from Copy my list; (2) `window.cb8Export()` in his built-in browser on `https://www.dev.cb8eats.com/goals` when linked;
+  (3) the public REST read of `warframe/progress` and `gameGoals` from a tab on his site (see Reading them as Claude above).
+  The sandbox itself cannot read Firestore, so without one of those Claude does not know what is ticked. A scanned
+  mod list change still goes through the Warframe standing request (replace the JSON), which is separate from ticks.
+  - **Tests:** `owntest.js` style checks (82): ids over the whole Missing list, visitor and owner flows, tick / untick /
+    from Owned, refused-write rollback, ticks saved on another device, both-ways ownership, the export (goals, mods, edits,
+    removed goals, another game), Copy with and without a clipboard, 360/390/430 layouts. Write them again rather than trusting this.
 - **Mother Token counter (changed 2026-10-10, again later that day; CB: "remove the red and make the top
   red section the typing section, the green be the add button and below those is a history Date and
   Time"):** the Warframe goals list's top card (on the Game goals page) counts **tokens**, not runs. It is a number box (`#tok-in`, a minus
@@ -860,7 +894,7 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
     a new entry at 200 with "This game is full". Writes are optimistic with a full rollback and the usual "server refused"
     message. An older cached copy of the page reads an edit entry as an added goal with the seed's id, which the duplicate-id
     check drops, so it is harmless.
-  - **Tests:** `edittest.js` style checks (111): visitor and owner flows, edit / merge / back to original, note clearing, group
+  - **Tests:** `edittest.js` style checks (112): visitor and owner flows, edit / merge / back to original, note clearing, group
     and new group, name clashes, steps, removing and restoring steps / lists / games, restore conflict, refused-write
     rollback, the 200 limit, Warframe tags and mod linking, 360/390/430 layouts. Write them again rather than trusting this list.
 - **Add goal form and the List toggle (2026-10-13).** CB: "group is like a column and a list is a dropdownable column

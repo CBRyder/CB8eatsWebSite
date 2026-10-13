@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game goals — CB8eats</title>
+  <meta name="description" content="Goals for every game: Warframe, ARC Raiders and whatever comes next. Live checklist, add your own goals and games.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/cb8-auth.css">
+  <link rel="stylesheet" href="css/dev-base.css">
+  <link rel="stylesheet" href="css/dev-widgets.css">
+  <script src="js/theme.js"></script>
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+  <script src="js/nav-scroll.js" defer></script>
+  <script src="js/members-nav.js" defer></script>
+  <script src="js/dev-auth.js" defer></script>
+
+  <style>
+    /* ===== Game goals page (page-specific styles only) =====
+       The shared look (colors, header, buttons, cards, theme) comes from css/dev-base.css,
+       css/dev-widgets.css and js/theme.js, the same files the Dev hub and Warframe use. The goal rows,
+       the Mother Tokens card and the dialogs are the ones that used to be on the Warframe page. */
+    :root {
+      --max-width: 920px;
+    }
+    main.wf { padding-top: 2.2rem; padding-inline: 1rem; }
+    @media (min-width: 640px) { main.wf { padding-inline: 2rem; } }
+    .wf h1 { margin-bottom: 0.6rem; }
+    .wf .lede { margin-bottom: 1.4rem; }
+    .wf-top { margin-bottom: 1.6rem; }
+    .big { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; margin: 0.2rem 0 0.6rem; color: var(--text); font-variant-numeric: tabular-nums; }
+    .big small { font-size: 0.95rem; color: var(--text-dim); font-family: var(--font-body); font-weight: 500; }
+    .bar { height: 10px; border-radius: 6px; background: var(--bg-alt); overflow: hidden; border: 1px solid var(--border); }
+    .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s ease; }
+    .stepper { display: flex; gap: 0.6rem; margin-top: 0.9rem; flex-wrap: wrap; }
+    .stepper .btn-sm { min-width: 48px; }
+    .tokrow { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 0.45rem; margin-top: 0.9rem; }
+    .tokrow input { width: 100%; box-sizing: border-box; min-width: 0; }
+    .tokrow .btn-sm { min-width: 0; padding-left: 0.3rem; padding-right: 0.3rem; }
+    .tokrow [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .tokdesc { white-space: pre-line; overflow-wrap: anywhere; }
+    .glance .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tokhead { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.1rem; min-height: 44px; }
+    .tokhead h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; }
+    .tokhead [aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .toklist { list-style: none; margin: 0.2rem 0 0; padding: 0; max-height: 16rem; overflow-y: auto; border-top: 1px solid var(--border-soft); }
+    .toklist li { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; padding: 0.5rem 0.1rem; border-bottom: 1px solid var(--border-soft); font-variant-numeric: tabular-nums; }
+    .toklist .amt { font-weight: 700; color: var(--accent-bright); flex: none; }
+    .toklist .amt.neg { color: var(--text-dim); }
+    .toklist .when { color: var(--text-dim); font-size: 0.9rem; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+    #wf-tokdlg .field select, #wf-tokdlg .field input, #wf-tokdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
+    #wf-tokdlg .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+    #wf-tokdlg .slotgrid input { min-height: 44px; }
+    /* The Edit button stays at the top right even when the title is long (the title wraps instead) */
+    .cardhead.tokcardhead { flex-wrap: nowrap; align-items: flex-start; }
+    .tokcardhead h2 { min-width: 0; overflow-wrap: anywhere; }
+    .tokcardhead .btn-sm { flex: none; }
+    #wf-tokdlg textarea, .bdlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
+      border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
+    .slotgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.8rem; }
+    .slotgrid .field { margin: 0.45rem 0; min-width: 0; }
+    @media (min-width: 540px) { .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+    .stepper [aria-disabled="true"], .task[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .group-label { font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin: 1.4rem 0 0.2rem; }
+    .task { display: flex; gap: 0.9rem; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-bottom: 1px solid var(--border);
+      padding: 0.8rem 0; min-height: 48px; cursor: pointer; }
+    .task .box { flex: none; width: 24px; height: 24px; margin-top: 2px; border: 2px solid var(--text-faint); border-radius: 7px; position: relative; }
+    .task.done .box { background: var(--accent); border-color: var(--accent); }
+    .task.done .box::after { content: ""; position: absolute; left: 6px; top: 1px; width: 6px; height: 12px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+    .task .tx { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+    .task .tt { font-weight: 500; }
+    .task .nt { font-size: 0.85rem; color: var(--text-dim); }
+    .tag { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.5rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      border-radius: 999px; border: 1px solid var(--tag, var(--accent-2)); color: var(--tag, var(--accent-2)); vertical-align: 0.1em; white-space: nowrap; }
+    /* A tag's colour is a tone (set from the TAGS list in the script). The chip on a goal and the
+       button in the Add goal form both read --tag, so they always match. */
+    .tone-accent { --tag: var(--accent); }
+    .tone-accent2 { --tag: var(--accent-2); }
+    .tone-bright { --tag: var(--accent-bright); }
+    .wfcard .seg { margin: 0.4rem 0 0.6rem; }
+    .wfcard .seg button { padding: 0.4rem 0.9rem; }
+    .task.done .tt { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+    /* A goal made of several parts is a dropdown: the row shows how many parts are
+       ticked, and opening it lists them (a part can itself be a dropdown). */
+    details.goal { border-bottom: 1px solid var(--border); }
+    details.goal > summary.task { list-style: none; border-bottom: 0; }
+    details.goal > summary::-webkit-details-marker { display: none; }
+    .gsum .tx { flex: 1 1 auto; }
+    .gsum .gmeta { flex: none; display: flex; align-items: center; gap: 0.5rem; margin-top: 2px; }
+    .gsum .chev::after { content: "+"; color: var(--accent-bright); font-size: 1.2rem; line-height: 1; }
+    details.goal[open] > .gsum .chev::after { content: "–"; }
+    .task.partial .box { border-color: var(--accent); }
+    .task.partial .box::after { content: ""; position: absolute; left: 3px; top: 7px; width: 12px; height: 3px; border-radius: 2px; background: var(--accent); }
+    .parts { margin: 0 0 0.7rem 11px; padding-left: 0.9rem; border-left: 2px solid var(--border); }
+    .parts .task { padding: 0.55rem 0; min-height: 44px; }
+    .parts details.goal > summary.task { padding: 0.7rem 0; }
+    .parts.flat { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); column-gap: 1.2rem; }
+    /* Added goals: header row, edit button, and the add / edit form */
+    .cardhead { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.2rem; }
+    .cardhead h2 { margin: 0; }
+    .cardhead .btn-sm[aria-disabled="true"], .taskrow .edit[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .taskrow { display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border); }
+    .taskrow .task { width: auto; flex: 1 1 auto; min-width: 0; border-bottom: 0; }
+    .taskrow .edit { flex: none; }
+    dialog.wfdlg { width: min(92vw, 28rem); max-height: 92vh; overflow: auto; padding: 1.2rem 1.3rem; color: var(--text); background: var(--card);
+      border: 1px solid var(--accent-2); border-radius: var(--radius); box-shadow: 0 0 30px var(--glow); color-scheme: dark; }
+    dialog.wfdlg::backdrop { background: rgba(0, 0, 0, 0.68); }
+    dialog.wfdlg h2 { margin: 0 0 0.2rem; font-size: 1.25rem; }
+    .field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.9rem 0; }
+    .field > span { font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; }
+    .field input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); flex: none; }
+    .check { display: flex; align-items: center; gap: 0.75rem; min-height: 48px; cursor: pointer; font-size: 1rem; }
+    .check small { display: block; color: var(--text-dim); font-size: 0.82rem; }
+    .field > small { color: var(--text-dim); font-size: 0.82rem; }
+    /* Tag buttons in the Add goal form: lit like the tag chip when on, grey when off. */
+    .tagpick { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tagbtn { margin: 0; min-height: 44px; padding: 0.35rem 1rem; font: inherit; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; border-radius: 999px; border: 1px solid var(--tag, var(--accent-2)); color: var(--tag, var(--accent-2));
+      background: color-mix(in srgb, var(--tag, var(--accent-2)) 14%, transparent); }
+    .tagbtn[aria-pressed="false"] { border-color: var(--border); color: var(--text-faint); background: transparent; opacity: 0.8; }
+    .tagbtn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    .formerr { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.4rem 0 0; }
+    .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
+    .dlgbtns .spacer { flex: 1 1 auto; }
+    .btn-sm.danger { border-color: #ff8a8a; color: #ff8a8a; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+    .seg button { font: inherit; font-weight: 600; font-size: 0.92rem; min-height: 44px; padding: 0.4rem 1.2rem; color: var(--text-dim); background: transparent; border: 0; cursor: pointer; }
+    .seg button[aria-pressed="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+    .gcount { font-size: 0.82rem; color: var(--text-dim); font-variant-numeric: tabular-nums; font-weight: 500; }
+    .pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.8rem; }
+    .pills button { font: inherit; font-size: 0.88rem; font-weight: 600; min-height: 40px; padding: 0.3rem 0.9rem; color: var(--text-dim); background: transparent; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+    .pills button[aria-pressed="true"] { color: var(--on-grad); background: linear-gradient(120deg, var(--accent), var(--accent-2)); border-color: transparent; }
+    .pills button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+    /* Game picker and the pieces only this page has */
+    .pills { margin-bottom: 1.2rem; }
+    .pills button.addgame { border-style: dashed; }
+    .pills button[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    #g-dlg .field select, #g-dlg .field input, #g-dlg .field textarea, #g-gamedlg .field input { width: 100%; box-sizing: border-box; min-width: 0; }
+    #g-dlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
+      border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
+    .gedit { display: flex; justify-content: flex-end; margin: 0.2rem 0 0.7rem; }
+    .gedit[aria-disabled="true"], .gedit .edit[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .gamefoot { margin: 0 0 1.4rem; }
+    .gamefoot .btn-sm[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .muted.warn { color: #ff8a8a; }
+    .task .tt, .task .nt, .pills button { overflow-wrap: anywhere; }
+  </style>
+
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="brand"><a href="https://www.iltep.cb8eats.com/">CB8eats</a></div>
+    </div>
+
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="https://www.iltep.cb8eats.com/">Main site</a></li>
+        <li><a href="dev.html">Dev hub</a></li>
+        <li><a href="goals.html" class="active">Game goals</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="wf">
+    <div class="wf-top">
+      <p class="eyebrow">Goals</p>
+      <h1>Game goals</h1>
+      <p class="lede" id="g-lede">Loading…</p>
+    </div>
+
+    <p class="syncline" id="g-sync">connecting…</p>
+
+    <div class="pills" id="g-games" role="group" aria-label="Games"></div>
+
+    <div id="g-panel"></div>
+  </main>
+
+  <p class="toast" id="wf-flash" role="status" aria-live="polite" hidden></p>
+
+  <dialog class="wfdlg" id="wf-dlg" aria-labelledby="wf-dlg-title">
+    <form id="wf-goalform" novalidate>
+      <h2 id="wf-dlg-title">Add a goal</h2>
+      <p class="muted">Pick the resource, say how many you want, and switch on any tags that fit.</p>
+      <label class="field"><span>Resource</span>
+        <select id="wf-res" required></select>
+      </label>
+      <label class="field" id="wf-other-wrap" hidden><span>Name of the resource</span>
+        <input type="text" id="wf-other" maxlength="60" autocomplete="off" placeholder="Type the name">
+      </label>
+      <label class="field"><span>Quantity goal</span>
+        <input type="number" id="wf-qty" min="1" max="100000000" step="1" inputmode="numeric" placeholder="For example 500" required>
+      </label>
+      <div class="field" role="group" aria-labelledby="wf-tags-label">
+        <span id="wf-tags-label">Tags</span>
+        <div class="tagpick" id="wf-tags"></div>
+        <small>A lit tag shows on the goal and works with the filters above the list.</small>
+      </div>
+      <p class="formerr" id="wf-adderr" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm danger" id="wf-del" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="wf-cancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="wf-save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wfdlg" id="wf-tokdlg" aria-labelledby="wf-tokdlg-title">
+    <form id="wf-tokform" novalidate>
+      <h2 id="wf-tokdlg-title">Edit this card</h2>
+      <p class="muted">Change the resource, the description and the quantity. The total you have is kept in the history, so it still adds up.</p>
+      <label class="field"><span>Resource</span>
+        <select id="wf-tok-res"></select>
+      </label>
+      <label class="field" id="wf-tok-other-wrap" hidden><span>Name of the resource</span>
+        <input type="text" id="wf-tok-other" maxlength="40" autocomplete="off" placeholder="Type the name">
+      </label>
+      <div class="slotgrid">
+        <label class="field"><span>Quantity you have</span>
+          <input type="number" id="wf-tok-have" min="0" max="100000000" step="1" inputmode="numeric" required>
+        </label>
+        <label class="field"><span>Quantity goal</span>
+          <input type="number" id="wf-tok-goal" min="1" max="100000000" step="1" inputmode="numeric" required>
+        </label>
+      </div>
+      <label class="field"><span>Description</span>
+        <textarea id="wf-tok-note" maxlength="300" rows="4"></textarea>
+        <small>Leave it empty to show the automatic lines (what is left, the shop picks and the refresh).</small>
+      </label>
+      <p class="formerr" id="wf-tok-err" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm" id="wf-tok-reset" hidden>Back to the defaults</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="wf-tok-cancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="wf-tok-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wfdlg" id="g-dlg" aria-labelledby="g-dlg-title">
+    <form id="g-goalform" novalidate>
+      <h2 id="g-dlg-title">Add a goal</h2>
+      <p class="muted">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks.</p>
+      <label class="field"><span>Goal</span>
+        <input type="text" id="g-text" maxlength="80" autocomplete="off" placeholder="For example Unlock the next weapon">
+      </label>
+      <label class="field"><span>Group</span>
+        <select id="g-group"></select>
+      </label>
+      <label class="field" id="g-group-new-wrap" hidden><span>Name of the new group</span>
+        <input type="text" id="g-group-new" maxlength="30" autocomplete="off" placeholder="For example Later">
+      </label>
+      <label class="field"><span>Note (optional)</span>
+        <textarea id="g-note" maxlength="200" rows="2" placeholder="Anything worth remembering"></textarea>
+      </label>
+      <label class="field"><span>Steps (optional)</span>
+        <textarea id="g-parts" maxlength="2000" rows="4" placeholder="One step per line"></textarea>
+        <small>Each line becomes its own tick inside the goal.</small>
+      </label>
+      <p class="formerr" id="g-err" role="alert"></p>
+      <div class="dlgbtns">
+        <button type="button" class="btn-sm danger" id="g-del" hidden>Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="g-cancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="g-save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="wfdlg" id="g-gamedlg" aria-labelledby="g-gamedlg-title">
+    <form id="g-gameform" novalidate>
+      <h2 id="g-gamedlg-title">Add a game</h2>
+      <p class="muted">Type the game's name. It shows up on the picker on every device, and you can add its goals straight after.</p>
+      <label class="field"><span>Game name</span>
+        <input type="text" id="g-gname" maxlength="40" autocomplete="off" placeholder="For example Deep Rock Galactic">
+      </label>
+      <p class="formerr" id="g-gerr" role="alert"></p>
+      <div class="dlgbtns">
+        <span class="spacer"></span>
+        <button type="button" class="btn-sm" id="g-gamecancel">Cancel</button>
+        <button type="submit" class="btn-sm primary" id="g-gamesave">Add game</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer>
+    <div class="joker-egg" aria-hidden="true"><span class="joker-egg-text">HAHAHA-HAHAHA<span class="joker-egg-drip joker-egg-drip-1"></span><span class="joker-egg-drip joker-egg-drip-2"></span><span class="joker-egg-drip joker-egg-drip-3"></span><span class="joker-egg-drip joker-egg-drip-4"></span><span class="joker-egg-drip joker-egg-drip-5"></span><span class="joker-egg-drip joker-egg-drip-6"></span></span></div>
+    &copy; 2026 CB8eats. All rights reserved.
+  </footer>
+
+  <script type="module">
+    /* Page logic. One page of goals for every game.
+       Warframe's goals, its Mother Tokens card and the goals added there used to be the Goals tab of
+       warframe.html. They are the same data (warframe-data.json), the same Firestore doc (warframe/progress)
+       and the same ids, so every saved tick carried over. Every other game is listed in goals-data.json and
+       saved in Firestore doc gameGoals/<game id> (the ticks, and the goals and games added with the Add buttons).
+       Everyone can read; only the owner can write. If Firebase can't load, the page still renders. */
+    const T = window.WFTheme;
+    const OWNER = 'cbleo73@gmail.com';
+    const CFG = {
+      apiKey: "AIzaSyDSWXJrKwLTwsW6Caadl2m1BPDwOH5ROiU",
+      authDomain: "tarborolifebackend.firebaseapp.com",
+      projectId: "tarborolifebackend",
+      storageBucket: "tarborolifebackend.firebasestorage.app",
+      messagingSenderId: "578368600107",
+      appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
+    };
+    const UI_KEY = 'cb8eats-goals-ui-v1';
+    const OLD_UI_KEY = 'cb8eats-warframe-ui-v1';   // where the Warframe page kept its goal filter
+    /* Warframe goal tags. A new tag is one line: the filters, the chip on a goal and the button in the
+       Add goal form are all built from this list. tone is accent, accent2 or bright (see .tone-*). */
+    const TAGS = [
+      { id: 'plat', label: 'Buy with plat', tone: 'accent2', explain: 'Buy with plat means you can get it from the Market or from other players.' },
+      { id: 'foundry', label: 'Foundry', tone: 'accent', explain: 'Foundry means you build it there from a blueprint and parts.' },
+    ];
+    const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
+    const TAG_TONE = Object.fromEntries(TAGS.map((t) => [t.id, t.tone || 'accent2']));
+    const GOAL_FILTERS = [['all', 'All']].concat(TAGS.map((t) => [t.id, t.label]));
+    function tagClass(tag) { return 'tag tag-' + tag + ' tone-' + (TAG_TONE[tag] || 'accent2'); }
+
+    const $ = (id) => document.getElementById(id);
+    function el(tag, cls, text) {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+    const cleanText = (v, max) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
+
+    const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;        // goal ids become Firestore field-path parts, so no dots
+    const GAME_ID_RE = /^[a-z0-9-]{1,30}$/;      // a game id is the Firestore doc id under gameGoals
+    const WF = 'warframe';
+    const GEN_GROUP = 'Goals';                   // the group a goal you add to another game starts in
+
+    const ui = { game: WF, goalFilter: 'all' };
+    try {
+      let raw = localStorage.getItem(UI_KEY);
+      const old = localStorage.getItem(OLD_UI_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && typeof p.game === 'string' && GAME_ID_RE.test(p.game)) ui.game = p.game;
+        if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
+      } else if (old) {
+        const p = JSON.parse(old);
+        if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
+      }
+    } catch (e) {}
+    function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) {} }
+
+    // S is Warframe (S.tokens is the Mother Tokens counted so far, saved in the Firestore field `runs`, see CLAUDE.md).
+    const S = { data: null, done: {}, tokens: 0, tokVal: '', custom: {}, owner: false, sync: null, index: {} };
+    // GS is every other game: seeds from goals-data.json, docs from Firestore gameGoals (doc id -> { name, at, done, custom }).
+    const GS = { seeds: [], docs: {}, listen: 'pending', sync: null };
+    const TOKLOG = 'tokenlog';   // custom.tokenlog = { e: { <key>: { n: amount, at: ms } } }, the Mother Tokens history (see CLAUDE.md)
+    const TOK_KEY_RE = /^t[0-9]{10,14}[a-z0-9]{0,8}$/;
+    const TOKCARD = 'tokencard'; // custom.tokencard = { name?, note?, target? }, what the card's Edit button changed (see CLAUDE.md)
+    const TOK_DEFAULT_NAME = 'Mother Tokens', TOK_MAX = 100000000;
+    const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
+    const CUSTOM_GROUP = 'Added by you';
+    /* The goal list being drawn right now: how to tell if a goal is ticked and what a tap does. renderWarframe and
+       renderGeneric set it before they draw, and the row builders below read it, so one set of rows serves every game. */
+    let CTX = null;
+
+    /* ---------- helpers ---------- */
+    function tokens() { return S.tokens; }
+    /* The Mother Tokens card, with whatever the Edit button changed laid over the defaults:
+       name = the resource (title), note = the description, target = the quantity goal. A missing or bad value falls back to the default. */
+    function tokCard() {
+      const v = S.custom[TOKCARD], out = { name: '', note: '', target: null };
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        out.name = typeof v.name === 'string' ? cleanText(v.name, 40) : '';   // only text counts: a number or object falls back to the default
+        out.note = (typeof v.note === 'string' ? v.note : '').replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 300);
+        const t = Number(v.target);
+        if (Number.isInteger(t) && t >= 1 && t <= TOK_MAX) out.target = t;
+      }
+      return out;
+    }
+    const tokName = () => tokCard().name || TOK_DEFAULT_NAME;
+    const tokTarget = () => tokCard().target || S.data.farm.target;
+    function tokensLeft() { return Math.max(0, tokTarget() - S.tokens); }
+    /* The two description lines the card shows until a description of your own is saved. */
+    function tokAutoNote() {
+      const f = S.data.farm, left = tokensLeft(), d = daysUntil(f.shopRefresh);
+      return (left > 0 ? left + ' to go.' : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').\n'
+        + (d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.');
+    }
+    let flashTimer = null;
+    function flash(msg) {
+      const f = $('wf-flash'); if (!f) return;
+      f.textContent = msg; f.hidden = !msg;
+      clearTimeout(flashTimer);
+      if (msg) flashTimer = setTimeout(() => { f.hidden = true; }, 6500);
+    }
+
+    /* The line under the title. wf = how the Warframe doc is doing, GS.listen = how the other games are doing. */
+    const SYNC = { wf: 'pending', wfErr: '' };
+    function updateSyncLine() {
+      const s = $('g-sync');
+      let msg, err = false;
+      if (SYNC.wf === 'err') { msg = SYNC.wfErr; err = true; }
+      else if (SYNC.wf === 'pending') msg = 'connecting…';
+      else if (GS.listen === 'denied') { msg = '⚠ Warframe is synced live, but the other games cannot sync until the gameGoals Firestore rule is published (see CLAUDE.md)'; err = true; }
+      else if (GS.listen === 'error') { msg = '⚠ Warframe is synced live, but the other games could not connect'; err = true; }
+      else msg = '☁ synced live';
+      s.textContent = msg;
+      s.classList.toggle('err', err);
+    }
+    function setSync(msg, isErr) {
+      SYNC.wf = isErr ? 'err' : 'ok'; SYNC.wfErr = isErr ? msg : '';
+      updateSyncLine();
+    }
+
+    function daysUntil(iso) {
+      const ms = new Date(iso).getTime() - Date.now();
+      return Math.ceil(ms / 86400000);
+    }
+
+    /* A goal is ticked when its saved tick says so; with no saved tick, the data's doneDefault decides. */
+    function isDoneIn(done, index, id) {
+      if (done[id] !== undefined) return !!done[id];
+      const t = index[id];
+      return !!(t && t.doneDefault);
+    }
+
+    function cleanGoals(list, ids, names) {
+      const out = [];
+      (Array.isArray(list) ? list : []).forEach((t) => {
+        if (!t || typeof t.id !== 'string' || typeof t.text !== 'string') { console.warn('Skipped a malformed goal:', t); return; }
+        const nm = t.text.replace(/\s+/g, ' ').trim().toLowerCase();
+        if (ids.has(t.id) || names.has(nm)) { console.warn('Skipped a duplicate goal:', t.id, t.text); return; }
+        ids.add(t.id); names.add(nm);
+        if (t.parts !== undefined) {
+          t.parts = cleanGoals(t.parts, ids, names);
+          if (!t.parts.length) delete t.parts;
+        }
+        out.push(t);
+      });
+      return out;
+    }
+    function indexGoals(list) {
+      list.forEach((t) => { S.index[t.id] = t; if (t.parts) indexGoals(t.parts); });
+    }
+    function hasParts(t) { return !!(t.parts && t.parts.length); }
+    function leavesOf(t) { return hasParts(t) ? t.parts.flatMap(leavesOf) : [t]; }
+    function progress(t) {
+      const ls = leavesOf(t);
+      return { done: ls.filter((x) => CTX.isDone(x.id)).length, total: ls.length };
+    }
+    function goalDone(t) {
+      if (!hasParts(t)) return CTX.isDone(t.id);
+      const p = progress(t);
+      return p.total > 0 && p.done === p.total;
+    }
+
+    function renderWarframe() {
+      const f = S.data.farm, p = $('g-panel');
+      CTX = { isDone: (id) => isDoneIn(S.done, S.index, id), toggle: toggleTask };
+      const hadFocus = !!(document.activeElement && document.activeElement.id === 'tok-in');   // a re-render must not drop what is being typed
+      p.textContent = '';
+      const card = el('div', 'wfcard'), tc = tokCard(), target = tokTarget();
+      // Title (the resource) with the Edit button at the top right.
+      const top = el('div', 'cardhead tokcardhead');
+      top.appendChild(el('h2', null, tokName()));
+      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.id = 'tok-edit';
+      ed.setAttribute('aria-label', 'Edit ' + tokName() + ': the resource, the description and the quantity');
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = openTokenDialog;
+      top.appendChild(ed);
+      card.appendChild(top);
+      const big = el('p', 'big'); big.appendChild(document.createTextNode(String(tokens())));
+      big.appendChild(el('small', null, ' of ' + target));
+      card.appendChild(big);
+      const bar = el('div', 'bar'); const fill = document.createElement('i');
+      fill.style.width = Math.min(100, tokens() / target * 100) + '%';
+      bar.appendChild(fill); card.appendChild(bar);
+      // The description: your own text if you saved one, otherwise the two automatic lines.
+      const desc = el('p', 'muted tokdesc', tc.note || tokAutoNote()); desc.id = 'tok-desc';
+      card.appendChild(desc);
+
+      // The typing box and the Add button.
+      const row = el('div', 'tokrow');
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.id = 'tok-in'; inp.step = '1';
+      inp.placeholder = (tc.name ? 'Amount' : 'Tokens') + ', - to spend'; inp.value = S.tokVal;
+      inp.setAttribute('aria-label', tokName() + ' to add. A minus takes some off.');
+      inp.oninput = () => { S.tokVal = inp.value; };
+      inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addTyped(); } };
+      const go = el('button', 'btn-sm primary', 'Add'); go.type = 'button'; go.id = 'tok-add';
+      if (!S.owner) go.setAttribute('aria-disabled', 'true');
+      go.onclick = addTyped;
+      row.appendChild(inp); row.appendChild(go);
+      card.appendChild(row);
+      if (hadFocus) setTimeout(() => { const i = $('tok-in'); if (i && document.activeElement !== i) i.focus(); }, 0);
+
+      // History: every Add with its date and time, newest first. Undo takes back the newest one.
+      const log = tokenLog();
+      const hh = el('div', 'tokhead');
+      hh.appendChild(el('h3', null, 'History'));
+      if (log.length) {
+        const un = el('button', 'btn-sm', 'Undo ' + signed(log[0].n)); un.type = 'button'; un.id = 'tok-undo';
+        if (!S.owner) un.setAttribute('aria-disabled', 'true');
+        un.onclick = undoTokens;
+        hh.appendChild(un);
+      }
+      card.appendChild(hh);
+      const before = S.tokens - log.reduce((t, x) => t + x.n, 0);
+      if (log.length || before !== 0) {
+        const ul = el('ul', 'toklist'); ul.id = 'tok-log';
+        log.forEach((x) => {
+          const li = el('li'); li.dataset.key = x.key;
+          li.appendChild(el('span', 'amt' + (x.n < 0 ? ' neg' : ''), signed(x.n)));
+          const tm = el('time', 'when', whenText(x.at)); tm.dateTime = new Date(x.at).toISOString();
+          li.appendChild(tm); ul.appendChild(li);
+        });
+        if (before !== 0) {
+          const li = el('li'); li.dataset.key = 'before';
+          li.appendChild(el('span', 'amt' + (before < 0 ? ' neg' : ''), signed(before)));
+          li.appendChild(el('span', 'when', 'Before the history started'));
+          ul.appendChild(li);
+        }
+        card.appendChild(ul);
+      }
+      if (!log.length) card.appendChild(el('p', 'muted', 'Each Add is listed here with its date and time.'));
+      p.appendChild(card);
+
+      const wrap = el('div', 'wfcard');
+      const head = el('div', 'cardhead');
+      head.appendChild(el('h2', null, 'Grind goals'));
+      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button';
+      if (!S.owner) add.setAttribute('aria-disabled', 'true');
+      add.onclick = () => openGoalDialog(null);
+      head.appendChild(add);
+      wrap.appendChild(head);
+      const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Filter goals');
+      GOAL_FILTERS.forEach((fl) => {
+        const b = el('button', null, fl[1]); b.type = 'button';
+        b.setAttribute('aria-pressed', ui.goalFilter === fl[0] ? 'true' : 'false');
+        b.onclick = () => { ui.goalFilter = fl[0]; saveUi(); renderLive(); };
+        seg.appendChild(b);
+      });
+      wrap.appendChild(seg);
+      const everything = f.tasks.concat(customTasks());
+      const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
+      const open = visible.filter((t) => !goalDone(t)).length;
+      wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + ((TAGS.find((x) => x.id === ui.goalFilter) || {}).explain ? ' ' + TAGS.find((x) => x.id === ui.goalFilter).explain : '')));
+      (f.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]).forEach((grp) => {
+        const items = visible.filter((t) => t.group === grp);
+        if (!items.length) return;
+        wrap.appendChild(el('p', 'group-label', grp));
+        items.forEach((t) => wrap.appendChild(t.custom ? customRowEl(t) : goalEl(t)));
+      });
+      if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
+      p.appendChild(wrap);
+    }
+
+    /* Goals the owner added with the Add button. They live in Firestore
+       (warframe/progress.custom, keyed by a generated id). Corrections made
+       by hand in warframe-data.json (farm.customFixes[id]) win over what is
+       stored, so a mistyped entry can be fixed without the owner's sign-in. */
+    function customTasks() {
+      const fixes = (S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object') ? S.data.farm.customFixes : {};
+      const out = [];
+      Object.keys(S.custom).forEach((id) => {
+        if (!ID_RE.test(id) || id === TOKLOG || id === TOKCARD) return;   // the token history and the token card's settings share this map but are not goals
+        const v = S.custom[id];
+        if (!v || typeof v !== 'object' || v.kind === 'build') return;   // builds you add share this map but are not goals
+        const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
+        if (fx && fx.hidden) return;
+        const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
+        const qty = Math.floor(Number(fx && fx.qty != null ? fx.qty : v.qty));
+        if (!name || !Number.isFinite(qty) || qty < 1) return;
+        const tags = customTags(v, fx);
+        out.push({
+          id, group: CUSTOM_GROUP, text: name + ' × ' + qty.toLocaleString('en-US'), note: '',
+          tags, custom: { name, qty, tags, plat: tags.includes('plat'), fixed: !!fx }, at: Number(v.at) || 0,
+        });
+      });
+      out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+
+    /* Tags of an added goal: the saved tags list, or for goals saved before tags existed the old
+       plat flag. A correction in warframe-data.json (customFixes) may set tags, or just plat. */
+    function customTags(v, fx) {
+      const known = (a) => TAGS.map((x) => x.id).filter((id) => Array.isArray(a) && a.includes(id));
+      let tags = Array.isArray(v.tags) ? known(v.tags) : (v.plat ? ['plat'] : []);
+      if (fx && Array.isArray(fx.tags)) tags = known(fx.tags);
+      else if (fx && fx.plat != null) tags = fx.plat ? Array.from(new Set(tags.concat('plat'))) : tags.filter((x) => x !== 'plat');
+      return TAGS.map((x) => x.id).filter((id) => tags.includes(id));
+    }
+
+    function customRowEl(t) {
+      const row = el('div', 'taskrow');
+      row.appendChild(taskEl(t));
+      const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button';
+      ed.setAttribute('aria-label', 'Edit ' + t.custom.name);
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = () => openGoalDialog(t);
+      row.appendChild(ed);
+      return row;
+    }
+
+    function goalText(t) {
+      const w = el('span', 'tx');
+      const title = el('span', 'tt', t.text);
+      (t.tags || []).forEach((tag) => title.appendChild(el('span', tagClass(tag), TAG_LABEL[tag] || tag)));
+      w.appendChild(title);
+      if (t.note) w.appendChild(el('span', 'nt', t.note));
+      return w;
+    }
+
+    function taskEl(t) {
+      const done = CTX.isDone(t.id);
+      const b = el('button', 'task' + (done ? ' done' : ''));
+      b.type = 'button';
+      b.setAttribute('role', 'checkbox');
+      b.setAttribute('aria-checked', done ? 'true' : 'false');
+      if (!S.owner) b.setAttribute('aria-disabled', 'true');
+      b.appendChild(el('span', 'box'));
+      b.appendChild(goalText(t));
+      b.onclick = () => CTX.toggle(t.id);
+      return b;
+    }
+
+    /* A goal with parts: a dropdown. Its row shows how many parts are ticked; the parts
+       (which can be dropdowns too) are the ticks, saved under their own ids. */
+    function goalEl(t) {
+      if (!hasParts(t)) return taskEl(t);
+      const p = progress(t);
+      const d = document.createElement('details'); d.className = 'goal';
+      d.open = !!openGoals[t.id];
+      d.addEventListener('toggle', () => { openGoals[t.id] = d.open; });
+      const sm = el('summary', 'task gsum' + (p.done === p.total ? ' done' : (p.done ? ' partial' : '')));
+      sm.appendChild(el('span', 'box'));
+      sm.appendChild(goalText(t));
+      const meta = el('span', 'gmeta');
+      meta.appendChild(el('span', 'gcount', p.done + ' / ' + p.total));
+      meta.appendChild(el('span', 'chev'));
+      sm.appendChild(meta);
+      d.appendChild(sm);
+      const flat = t.parts.every((x) => !hasParts(x) && !x.note);
+      const list = el('div', 'parts' + (flat ? ' flat' : ''));
+      t.parts.forEach((x) => list.appendChild(goalEl(x)));
+      d.appendChild(list);
+      return d;
+    }
+
+    /* sync: the Firestore helper that must be connected for this game (S.sync for Warframe, GS.sync for the others). */
+    function needOwner(sync) {
+      flash((sync === undefined ? S.sync : sync) ? 'Sign in as the owner (top right) to change this.' : 'Sync is not connected, so this cannot be saved right now.');
+    }
+
+    async function toggleTask(id) {
+      if (!S.owner || !S.sync) return needOwner();
+      const prev = isDoneIn(S.done, S.index, id), next = !prev;
+      S.done[id] = next; renderLive();
+      try {
+        await S.sync.write({ ['done.' + id]: next }, { done: S.done, runs: S.tokens });
+      } catch (e) {
+        S.done[id] = prev; renderLive(); writeFailed(e);
+      }
+    }
+    /* The Mother Tokens history. One Firestore field, custom.tokenlog, holds every entry:
+       { e: { <key>: { n: the change that was really applied, at: ms } } }. It counts once towards the
+       rule's limit of 200 entries in `custom`, and needs no rule change (custom is a map). */
+    function tokenLog() {
+      const v = S.custom[TOKLOG], out = [];
+      if (v && typeof v === 'object' && v.e && typeof v.e === 'object' && !Array.isArray(v.e)) {
+        Object.keys(v.e).forEach((k) => {
+          const x = v.e[k], n = x && Number(x.n), at = x && Number(x.at);
+          if (!TOK_KEY_RE.test(k) || !Number.isInteger(n) || n === 0 || !Number.isFinite(at) || at <= 0) return;
+          out.push({ key: k, n, at });
+        });
+      }
+      out.sort((a, b) => (b.at - a.at) || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+      return out;
+    }
+    function logPut(key, val) {
+      const v = S.custom[TOKLOG] && typeof S.custom[TOKLOG] === 'object' ? S.custom[TOKLOG] : (S.custom[TOKLOG] = {});
+      if (!v.e || typeof v.e !== 'object') v.e = {};
+      if (val === null) delete v.e[key]; else v.e[key] = val;
+    }
+    function signed(n) { return (n > 0 ? '+' : '') + n; }
+    function whenText(ms) {
+      const d = new Date(ms), o = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+      if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
+      return d.toLocaleString('en-US', o);
+    }
+    // Adds (or, with a minus, takes off) Mother Tokens: the total goes in the Firestore field `runs`
+    // and the change is written to the history in the same update, so the two never disagree.
+    async function changeTokens(delta) {
+      if (!S.owner || !S.sync) return needOwner();
+      const prev = S.tokens, next = Math.max(0, prev + delta), applied = next - prev;
+      if (!applied) return;
+      const at = Date.now(), key = 't' + at + Math.random().toString(36).slice(2, 6).replace(/[^a-z0-9]/g, 'x');
+      S.tokens = next; logPut(key, { n: applied, at }); renderLive();
+      try {
+        await S.sync.write({ runs: next, ['custom.' + TOKLOG + '.e.' + key]: { n: applied, at } }, { done: S.done, runs: next, custom: S.custom });
+      } catch (e) {
+        S.tokens = prev; logPut(key, null); renderLive(); writeFailed(e);
+      }
+    }
+    // Takes back the newest entry in the history.
+    async function undoTokens() {
+      if (!S.owner || !S.sync) return needOwner();
+      const log = tokenLog(); if (!log.length) return;
+      const last = log[0], prev = S.tokens, next = Math.max(0, prev - last.n), saved = S.custom[TOKLOG].e[last.key];
+      S.tokens = next; logPut(last.key, null); renderLive();
+      try {
+        await S.sync.write({ runs: next, ['custom.' + TOKLOG + '.e.' + last.key]: S.sync.del() }, { done: S.done, runs: next, custom: S.custom });
+      } catch (e) {
+        S.tokens = prev; logPut(last.key, saved); renderLive(); writeFailed(e);
+      }
+    }
+    function addTyped() {
+      if (!S.owner || !S.sync) return needOwner();
+      const raw = String(S.tokVal || '').trim();
+      const n = Number(raw);
+      if (!raw || !Number.isInteger(n) || n === 0 || Math.abs(n) > 100000) {
+        flash('Type a whole number of tokens, like 168. A minus takes tokens off, like -45.');
+        return;
+      }
+      S.tokVal = '';
+      changeTokens(n);
+    }
+    /* ---------- edit the Mother Tokens card ---------- */
+    /* The Edit button changes the resource (title), the description and the quantity (have and goal).
+       Everything is saved in the existing Firestore fields, so the published rule needs no change: the card's
+       settings in custom.tokencard, the total in `runs`, and a changed total is also one entry in the history
+       (custom.tokenlog), written in the same update so the history still adds up to the total. */
+    function buildTokenResourceSelect() {
+      const sel = $('wf-tok-res'); sel.textContent = '';
+      sel.appendChild(new Option(TOK_DEFAULT_NAME + ' (default)', ''));
+      (S.data.resources || []).forEach((g) => {
+        const og = document.createElement('optgroup'); og.label = g.group;
+        g.items.filter((n) => n !== 'Mother Token').forEach((n) => og.appendChild(new Option(n, n)));
+        if (og.children.length) sel.appendChild(og);
+      });
+      sel.appendChild(new Option('Other (type the name)', '__other'));
+    }
+    function syncTokenOther() { $('wf-tok-other-wrap').hidden = $('wf-tok-res').value !== '__other'; }
+    function openTokenDialog() {
+      if (!S.owner || !S.sync) return needOwner();
+      const tc = tokCard(), sel = $('wf-tok-res');
+      const known = tc.name && Array.from(sel.options).some((o) => o.value === tc.name && o.value !== '__other');
+      sel.value = !tc.name ? '' : (known ? tc.name : '__other');
+      $('wf-tok-other').value = tc.name && !known ? tc.name : '';
+      $('wf-tok-have').value = String(S.tokens);
+      $('wf-tok-goal').value = String(tokTarget());
+      const note = $('wf-tok-note'); note.value = tc.note; note.placeholder = tokAutoNote();
+      $('wf-tok-err').textContent = '';
+      $('wf-tok-reset').hidden = !(tc.name || tc.note || tc.target);
+      syncTokenOther();
+      const dlg = $('wf-tokdlg');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeTokenDialog() {
+      const dlg = $('wf-tokdlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    /* Saves the settings (and the total, if it changed). Settings equal to the defaults are left out, and
+       if nothing is left the whole custom.tokencard field is deleted. reset = true goes back to all defaults. */
+    async function saveTokenCard(ev, reset) {
+      if (ev) ev.preventDefault();
+      const err = (m) => { $('wf-tok-err').textContent = m; };
+      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save this.');
+      const prevTokens = S.tokens, was = S.custom[TOKCARD], hadKey = Object.prototype.hasOwnProperty.call(S.custom, TOKCARD);
+      let name = '', note = '', target = null, have = prevTokens;
+      if (!reset) {
+        const pick = $('wf-tok-res').value;
+        name = cleanText(pick === '__other' ? $('wf-tok-other').value : pick, 40);
+        if (pick === '__other' && !name) return err('Type the name of the resource.');
+        if (name === TOK_DEFAULT_NAME) name = '';
+        note = $('wf-tok-note').value.replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        if (note.length > 300) return err('That description is too long (300 characters at most).');
+        if (note === tokAutoNote().trim()) note = '';
+        const goal = Number($('wf-tok-goal').value), haveRaw = $('wf-tok-have').value.trim();
+        have = Number(haveRaw);
+        if (!haveRaw || !Number.isInteger(have) || have < 0 || have > TOK_MAX) return err('Quantity you have must be a whole number from 0 to 100,000,000.');
+        if (!Number.isInteger(goal) || goal < 1 || goal > TOK_MAX) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
+        target = goal === S.data.farm.target ? null : goal;
+      }
+      const val = {};
+      if (name) val.name = name;
+      if (note) val.note = note;
+      if (target) val.target = target;
+      const empty = !Object.keys(val).length;
+      if (empty && !hadKey && !(have - prevTokens)) { closeTokenDialog(); return; }   // nothing to save
+      const fields = { ['custom.' + TOKCARD]: empty ? S.sync.del() : val };
+      const delta = have - prevTokens;
+      let key = null, at = 0;
+      if (delta) {
+        at = Date.now(); key = 't' + at + Math.random().toString(36).slice(2, 6).replace(/[^a-z0-9]/g, 'x');
+        fields.runs = have; fields['custom.' + TOKLOG + '.e.' + key] = { n: delta, at };
+      }
+      if (empty) delete S.custom[TOKCARD]; else S.custom[TOKCARD] = val;
+      if (delta) { S.tokens = have; logPut(key, { n: delta, at }); }
+      renderLive(); closeTokenDialog();
+      try {
+        await S.sync.write(fields, { done: S.done, runs: S.tokens, custom: S.custom });
+        flash(reset ? 'Back to the defaults.' : 'Saved.');
+      } catch (e) {
+        if (hadKey) S.custom[TOKCARD] = was; else delete S.custom[TOKCARD];
+        if (delta) { S.tokens = prevTokens; logPut(key, null); }
+        renderLive(); writeFailed(e);
+      }
+    }
+    function initTokenDialog() {
+      buildTokenResourceSelect();
+      $('wf-tok-res').addEventListener('change', syncTokenOther);
+      $('wf-tok-cancel').addEventListener('click', closeTokenDialog);
+      $('wf-tokform').addEventListener('submit', (ev) => saveTokenCard(ev, false));
+      $('wf-tok-reset').addEventListener('click', (ev) => saveTokenCard(ev, true));
+    }
+    function writeFailed(e, doc) {
+      console.error('Write failed:', e);
+      const code = (e && e.code) || '';
+      flash(code === 'permission-denied'
+        ? 'The server refused that write. The ' + (doc || 'warframe/progress') + ' Firestore rule may not be published yet.'
+        : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
+    }
+    function renderLive() { renderGames(); renderPanel(); }
+
+    /* ---------- add / edit a goal ---------- */
+    let editing = null, delTimer = null;
+    function buildResourceSelect() {
+      const sel = $('wf-res'); sel.textContent = '';
+      const ph = new Option('Choose a resource…', ''); ph.disabled = true; sel.appendChild(ph);
+      (S.data.resources || []).forEach((g) => {
+        const og = document.createElement('optgroup'); og.label = g.group;
+        g.items.forEach((n) => og.appendChild(new Option(n, n)));
+        sel.appendChild(og);
+      });
+      sel.appendChild(new Option('Other (type a name)…', '__other'));
+    }
+    function buildTagButtons() {
+      const box = $('wf-tags'); box.textContent = '';
+      TAGS.forEach((tg) => {
+        const b = el('button', 'tagbtn tag-' + tg.id + ' tone-' + (tg.tone || 'accent2'), tg.label);
+        b.type = 'button'; b.dataset.tag = tg.id; b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
+        box.appendChild(b);
+      });
+    }
+    function setTagButtons(tags) {
+      $('wf-tags').querySelectorAll('.tagbtn').forEach((b) => b.setAttribute('aria-pressed', (tags || []).includes(b.dataset.tag) ? 'true' : 'false'));
+    }
+    function pickedTags() {
+      return Array.from($('wf-tags').querySelectorAll('.tagbtn')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tag);
+    }
+    function syncOther() { $('wf-other-wrap').hidden = $('wf-res').value !== '__other'; }
+    function resetDelete() { clearTimeout(delTimer); $('wf-del').textContent = 'Delete'; $('wf-del').dataset.armed = ''; }
+    function openGoalDialog(t) {
+      if (!S.owner || !S.sync) return needOwner();
+      editing = t || null;
+      $('wf-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal';
+      $('wf-save').textContent = t ? 'Save changes' : 'Save goal';
+      $('wf-del').hidden = !t; resetDelete();
+      $('wf-adderr').textContent = '';
+      const sel = $('wf-res');
+      if (t) {
+        const known = Array.from(sel.options).some((o) => o.value === t.custom.name && o.value !== '__other');
+        sel.value = known ? t.custom.name : '__other';
+        $('wf-other').value = known ? '' : t.custom.name;
+        $('wf-qty').value = String(t.custom.qty);
+        setTagButtons(t.custom.tags);
+      } else {
+        sel.selectedIndex = 0; $('wf-other').value = ''; $('wf-qty').value = ''; setTagButtons([]);
+      }
+      syncOther();
+      const dlg = $('wf-dlg');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeGoalDialog() {
+      const dlg = $('wf-dlg');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function newGoalId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+    async function saveGoal(ev) {
+      ev.preventDefault();
+      const err = (m) => { $('wf-adderr').textContent = m; };
+      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save goals.');
+      const pick = $('wf-res').value;
+      const name = (pick === '__other' ? $('wf-other').value : pick).replace(/\s+/g, ' ').trim();
+      const qty = Number($('wf-qty').value);
+      if (!name) return err(pick === '__other' ? 'Type the name of the resource.' : 'Pick a resource from the list.');
+      if (name.length > 60) return err('That name is too long (60 characters at most).');
+      if (!Number.isInteger(qty) || qty < 1 || qty > 100000000) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
+      const id = editing ? editing.id : newGoalId();
+      const was = S.custom[id];
+      const tags = pickedTags();
+      /* plat is still saved beside tags so an older copy of the page (a cached phone tab) reads it right. */
+      const val = { name, qty, tags, plat: tags.includes('plat'), at: (was && Number(was.at)) || Date.now() };
+      const overridden = !!(editing && editing.custom.fixed);
+      S.custom[id] = val; renderLive(); closeGoalDialog();
+      try {
+        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
+        flash(overridden ? 'Saved. A correction in the site data still overrides this goal, so ask Claude to clear it.' : (editing ? 'Goal updated.' : 'Goal added.'));
+      } catch (e) {
+        if (was) S.custom[id] = was; else delete S.custom[id];
+        renderLive(); writeFailed(e);
+      }
+    }
+    async function removeGoal() {
+      if (!editing || !S.owner || !S.sync) return;
+      const id = editing.id, was = S.custom[id], wasDone = S.done[id];
+      delete S.custom[id]; delete S.done[id]; renderLive(); closeGoalDialog();
+      try { await S.sync.remove(id); flash('Goal deleted.'); }
+      catch (e) {
+        if (was) S.custom[id] = was;
+        if (wasDone !== undefined) S.done[id] = wasDone;
+        renderLive(); writeFailed(e);
+      }
+    }
+    function initGoalDialog() {
+      buildResourceSelect(); buildTagButtons();
+      $('wf-res').addEventListener('change', syncOther);
+      $('wf-cancel').addEventListener('click', closeGoalDialog);
+      $('wf-goalform').addEventListener('submit', saveGoal);
+      $('wf-del').addEventListener('click', () => {
+        if ($('wf-del').dataset.armed) { resetDelete(); removeGoal(); return; }
+        $('wf-del').dataset.armed = '1'; $('wf-del').textContent = 'Tap again to delete';
+        delTimer = setTimeout(resetDelete, 4000);
+      });
+    }
+
+    /* ---------- the games ---------- */
+    /* Every game on the picker: the ones in goals-data.json, then the ones added with the Add game button
+       (a gameGoals doc with a name). Warframe is always first and is the only one with extras (the Mother Tokens
+       card, tags and resource goals), because its data lives in warframe-data.json. */
+    function gameList() {
+      const seen = new Set(), out = [];
+      GS.seeds.forEach((g) => { seen.add(g.id); out.push({ id: g.id, name: g.name, kind: g.id === WF ? 'warframe' : 'seed', seed: g }); });
+      Object.keys(GS.docs).filter((id) => !seen.has(id) && GS.docs[id].name)
+        .sort((a, b) => (GS.docs[a].at - GS.docs[b].at) || (a < b ? -1 : 1))
+        .forEach((id) => out.push({ id, name: GS.docs[id].name, kind: 'custom', seed: null }));
+      return out;
+    }
+    function curGame() {
+      const list = gameList();
+      return list.find((g) => g.id === ui.game) || list[0] || null;
+    }
+    function showGame(id) {
+      ui.game = id; saveUi();
+      try { history.replaceState(null, '', '#' + id); } catch (e) {}
+      renderLive();
+    }
+    function renderGames() {
+      const box = $('g-games'); box.textContent = '';
+      const cur = curGame();
+      gameList().forEach((g) => {
+        const b = el('button', null, g.name); b.type = 'button'; b.dataset.game = g.id;
+        b.setAttribute('aria-pressed', cur && cur.id === g.id ? 'true' : 'false');
+        b.onclick = () => showGame(g.id);
+        box.appendChild(b);
+      });
+      const add = el('button', 'addgame', '+ Add game'); add.type = 'button'; add.id = 'g-addgame';
+      if (!S.owner) add.setAttribute('aria-disabled', 'true');
+      add.onclick = openGameDialog;
+      box.appendChild(add);
+    }
+    function renderPanel() {
+      const game = curGame();
+      if (!game) return;
+      if (game.kind === 'warframe') {
+        if (!S.data) {
+          const p = $('g-panel'); p.textContent = '';
+          p.appendChild(el('p', 'muted', 'Could not load warframe-data.json, so the Warframe goals are not shown. Try reloading.'));
+          return;
+        }
+        renderWarframe();
+      } else renderGeneric(game);
+    }
+
+    /* ---------- goals for the other games ---------- */
+    function docFor(g) {
+      if (!GS.docs[g]) GS.docs[g] = { name: '', at: 0, done: {}, custom: {} };
+      return GS.docs[g];
+    }
+    function indexInto(list, map) {
+      list.forEach((t) => { map[t.id] = t; if (t.parts) indexInto(t.parts, map); });
+      return map;
+    }
+    /* The goals of one game: the ones in goals-data.json, then the ones added with the Add goal button (saved as
+       custom.<id> = { text, group, note?, parts?: [{ id, text }], at }). A repeated id or name is dropped (cleanGoals). */
+    function genData(g) {
+      const game = gameList().find((x) => x.id === g);
+      const seedTasks = game && game.seed && Array.isArray(game.seed.tasks) ? game.seed.tasks : [];
+      const custom = (GS.docs[g] && GS.docs[g].custom) || {};
+      const added = [];
+      Object.keys(custom).forEach((id) => {
+        const v = custom[id];
+        if (!ID_RE.test(id) || !v || typeof v !== 'object' || Array.isArray(v)) return;
+        const text = cleanText(v.text, 80);
+        if (!text) return;
+        const t = { id, group: cleanText(v.group, 30) || GEN_GROUP, text, note: cleanText(v.note, 200), custom: true, at: Number(v.at) || 0 };
+        if (Array.isArray(v.parts)) {
+          const parts = v.parts.slice(0, 30).filter((x) => x && ID_RE.test(String(x.id)) && cleanText(x.text, 60)).map((x) => ({ id: String(x.id), text: cleanText(x.text, 60) }));
+          if (parts.length) t.parts = parts;
+        }
+        added.push(t);
+      });
+      added.sort((a, b) => (a.at - b.at) || (a.id < b.id ? -1 : 1));
+      const tasks = cleanGoals(seedTasks.concat(added), new Set(), new Set());
+      const groups = ((game && game.seed && game.seed.groupOrder) || []).slice();
+      tasks.forEach((t) => { if (!groups.includes(t.group)) groups.push(t.group); });
+      return { tasks, groups, index: indexInto(tasks, {}) };
+    }
+
+    function renderGeneric(game) {
+      const p = $('g-panel'); p.textContent = '';
+      const g = game.id, d = genData(g);
+      CTX = { isDone: (id) => isDoneIn(docFor(g).done, d.index, id), toggle: (id) => toggleGeneric(g, id) };
+      const wrap = el('div', 'wfcard');
+      const head = el('div', 'cardhead');
+      head.appendChild(el('h2', null, game.name + ' goals'));
+      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button'; add.id = 'g-add';
+      if (!S.owner) add.setAttribute('aria-disabled', 'true');
+      add.onclick = () => openGenDialog(null);
+      head.appendChild(add);
+      wrap.appendChild(head);
+      if (game.seed && game.seed.blurb) wrap.appendChild(el('p', 'muted', game.seed.blurb));
+      const open = d.tasks.filter((t) => !goalDone(t)).length;
+      const sum = el('p', 'muted', d.tasks.length ? d.tasks.length + ' goals, ' + open + ' still open.' : 'No goals yet. Tap + Add goal to start the list.');
+      sum.id = 'g-summary';
+      wrap.appendChild(sum);
+      d.groups.forEach((grp) => {
+        const items = d.tasks.filter((t) => t.group === grp);
+        if (!items.length) return;
+        wrap.appendChild(el('p', 'group-label', grp));
+        items.forEach((t) => wrap.appendChild(genRowEl(t)));
+      });
+      if (GS.listen === 'denied') wrap.appendChild(el('p', 'muted warn', 'The gameGoals Firestore rule is not published yet, so ticks and added goals for this game cannot be saved.'));
+      p.appendChild(wrap);
+      if (game.kind === 'custom') {
+        const foot = el('div', 'gamefoot');
+        const drop = el('button', 'btn-sm danger', dropArmed === g ? 'Tap again to remove' : 'Remove this game'); drop.type = 'button'; drop.id = 'g-dropgame';
+        if (!S.owner) drop.setAttribute('aria-disabled', 'true');
+        drop.onclick = () => dropGame(g);
+        foot.appendChild(drop);
+        p.appendChild(foot);
+      }
+    }
+    /* A goal you added gets an Edit button; a goal from goals-data.json does not (it is changed in the file). */
+    function genRowEl(t) {
+      if (!t.custom) return goalEl(t);
+      const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + t.text);
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = () => openGenDialog(t);
+      if (hasParts(t)) {
+        const box = el('div', 'gcustom');
+        box.appendChild(goalEl(t));
+        const r = el('div', 'gedit'); r.appendChild(ed); box.appendChild(r);
+        return box;
+      }
+      const row = el('div', 'taskrow');
+      row.appendChild(taskEl(t)); row.appendChild(ed);
+      return row;
+    }
+    async function toggleGeneric(g, id) {
+      if (!S.owner || !GS.sync) return needOwner(GS.sync);
+      const d = docFor(g), idx = genData(g).index;
+      const prev = isDoneIn(d.done, idx, id), next = !prev;
+      d.done[id] = next; renderLive();
+      try {
+        await GS.sync.write(g, { ['done.' + id]: next }, { done: d.done, custom: d.custom });
+      } catch (e) {
+        d.done[id] = prev; renderLive(); writeFailed(e, 'gameGoals');
+      }
+    }
+
+    /* ---------- add / edit a goal for another game ---------- */
+    let genEditing = null, genDelTimer = null, dropArmed = null, dropTimer = null;
+    const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    function openDlg(id) {
+      const dlg = $(id);
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    function closeDlg(id) {
+      const dlg = $(id);
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    function resetGenDelete() { clearTimeout(genDelTimer); $('g-del').textContent = 'Delete'; $('g-del').dataset.armed = ''; }
+    function syncGroupNew() { $('g-group-new-wrap').hidden = $('g-group').value !== '__new'; }
+    function openGenDialog(t) {
+      if (!S.owner || !GS.sync) return needOwner(GS.sync);
+      const game = curGame(); if (!game) return;
+      genEditing = t || null;
+      $('g-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal to ' + game.name;
+      $('g-save').textContent = t ? 'Save changes' : 'Save goal';
+      $('g-del').hidden = !t; resetGenDelete();
+      $('g-err').textContent = '';
+      const groups = genData(game.id).groups, sel = $('g-group'); sel.textContent = '';
+      (groups.length ? groups : [GEN_GROUP]).forEach((n) => sel.appendChild(new Option(n, n)));
+      sel.appendChild(new Option('New group…', '__new'));
+      $('g-text').value = t ? t.text : '';
+      $('g-note').value = t ? (t.note || '') : '';
+      $('g-parts').value = t && t.parts ? t.parts.map((x) => x.text).join('\n') : '';
+      $('g-group-new').value = '';
+      sel.value = t && groups.includes(t.group) ? t.group : (groups[0] || GEN_GROUP);
+      syncGroupNew();
+      openDlg('g-dlg');
+    }
+    /* Every name in the list (goals and their steps) except one goal and its steps, lowercased. */
+    function namesExcept(tasks, exceptId) {
+      const out = new Set();
+      const walk = (list) => list.forEach((t) => { out.add(t.text.replace(/\s+/g, ' ').trim().toLowerCase()); if (t.parts) walk(t.parts); });
+      walk(tasks.filter((t) => t.id !== exceptId));
+      return out;
+    }
+    async function saveGenGoal(ev) {
+      ev.preventDefault();
+      const err = (m) => { $('g-err').textContent = m; };
+      if (!S.owner || !GS.sync) return err('Sign in as the owner (top right) to save goals.');
+      const game = curGame(); if (!game) return;
+      const g = game.id, d = docFor(g);
+      const text = cleanText($('g-text').value, 80);
+      if (!text) return err('Type the goal.');
+      if ($('g-text').value.trim().replace(/\s+/g, ' ').length > 80) return err('That goal is too long (80 characters at most).');
+      let group = $('g-group').value;
+      if (group === '__new') group = cleanText($('g-group-new').value, 30);
+      if (!group) return err('Type the name of the group.');
+      const note = cleanText($('g-note').value, 200);
+      const lines = $('g-parts').value.split(/\r?\n/).map((x) => cleanText(x, 60)).filter(Boolean);
+      if (lines.length > 30) return err('Thirty steps at most.');
+      const lower = lines.map((x) => x.toLowerCase());
+      if (new Set(lower).size !== lower.length) return err('Each step needs its own name.');
+      const others = namesExcept(genData(g).tasks, genEditing && genEditing.id);
+      if (others.has(text.toLowerCase()) || lower.includes(text.toLowerCase()) || lower.some((x) => others.has(x))) return err('That name is already used by another goal or step.');
+      const id = genEditing ? genEditing.id : newId('g');
+      const was = d.custom[id], oldParts = (genEditing && genEditing.parts) || [];
+      const byText = new Map(oldParts.map((x) => [x.text.toLowerCase(), x.id]));
+      const used = new Set();
+      const parts = lines.map((x, i) => {
+        let pid = byText.get(x.toLowerCase());
+        if (!pid || used.has(pid)) pid = 'p' + Date.now().toString(36) + i.toString(36) + Math.random().toString(36).slice(2, 4);
+        used.add(pid);
+        return { id: pid, text: x };
+      });
+      const val = { text, group, at: (was && Number(was.at)) || Date.now() };
+      if (note) val.note = note;
+      if (parts.length) val.parts = parts;
+      const gone = oldParts.filter((x) => !used.has(x.id)).map((x) => x.id);
+      const goneDone = {}; gone.forEach((pid) => { goneDone[pid] = d.done[pid]; });
+      const fields = { ['custom.' + id]: val };
+      gone.forEach((pid) => { fields['done.' + pid] = GS.sync.del(); delete d.done[pid]; });
+      d.custom[id] = val; renderLive(); closeDlg('g-dlg');
+      try {
+        await GS.sync.write(g, fields, { done: d.done, custom: d.custom });
+        flash(genEditing ? 'Goal updated.' : 'Goal added.');
+      } catch (e) {
+        if (was) d.custom[id] = was; else delete d.custom[id];
+        gone.forEach((pid) => { if (goneDone[pid] !== undefined) d.done[pid] = goneDone[pid]; });
+        renderLive(); writeFailed(e, 'gameGoals');
+      }
+    }
+    async function removeGenGoal() {
+      if (!genEditing || !S.owner || !GS.sync) return;
+      const game = curGame(); if (!game) return;
+      const g = game.id, d = docFor(g), id = genEditing.id;
+      const ids = [id].concat((genEditing.parts || []).map((x) => x.id));
+      const wasCustom = d.custom[id], wasDone = {}; ids.forEach((x) => { wasDone[x] = d.done[x]; });
+      delete d.custom[id]; ids.forEach((x) => { delete d.done[x]; }); renderLive(); closeDlg('g-dlg');
+      try { await GS.sync.remove(g, ids); flash('Goal deleted.'); }
+      catch (e) {
+        if (wasCustom) d.custom[id] = wasCustom;
+        ids.forEach((x) => { if (wasDone[x] !== undefined) d.done[x] = wasDone[x]; });
+        renderLive(); writeFailed(e, 'gameGoals');
+      }
+    }
+    function initGenDialog() {
+      $('g-group').addEventListener('change', syncGroupNew);
+      $('g-cancel').addEventListener('click', () => closeDlg('g-dlg'));
+      $('g-goalform').addEventListener('submit', saveGenGoal);
+      $('g-del').addEventListener('click', () => {
+        if ($('g-del').dataset.armed) { resetGenDelete(); removeGenGoal(); return; }
+        $('g-del').dataset.armed = '1'; $('g-del').textContent = 'Tap again to delete';
+        genDelTimer = setTimeout(resetGenDelete, 4000);
+      });
+      $('g-gamecancel').addEventListener('click', () => closeDlg('g-gamedlg'));
+      $('g-gameform').addEventListener('submit', saveGame);
+    }
+
+    /* ---------- add / remove a game ---------- */
+    const slugOf = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '');
+    function openGameDialog() {
+      if (!S.owner || !GS.sync) return needOwner(GS.sync);
+      $('g-gname').value = ''; $('g-gerr').textContent = '';
+      openDlg('g-gamedlg');
+      $('g-gname').focus();
+    }
+    async function saveGame(ev) {
+      ev.preventDefault();
+      const err = (m) => { $('g-gerr').textContent = m; };
+      if (!S.owner || !GS.sync) return err('Sign in as the owner (top right) to add a game.');
+      const name = cleanText($('g-gname').value, 40);
+      if (!name) return err('Type the name of the game.');
+      if ($('g-gname').value.trim().replace(/\s+/g, ' ').length > 40) return err('That name is too long (40 characters at most).');
+      const id = slugOf(name);
+      if (!GAME_ID_RE.test(id)) return err('Use letters or numbers in the name.');
+      if (gameList().some((x) => x.id === id || x.name.toLowerCase() === name.toLowerCase())) return err('That game is already on the list.');
+      const prevGame = ui.game, at = Date.now();
+      GS.docs[id] = { name, at, done: {}, custom: {} };
+      showGame(id); closeDlg('g-gamedlg');
+      try {
+        await GS.sync.create(id, name, at);
+        flash(name + ' added. Tap + Add goal to start its list.');
+      } catch (e) {
+        delete GS.docs[id]; ui.game = prevGame; saveUi(); renderLive(); writeFailed(e, 'gameGoals');
+      }
+    }
+    /* Remove a game you added (two taps). The games in goals-data.json cannot be removed here. */
+    function dropGame(g) {
+      if (!S.owner || !GS.sync) return needOwner(GS.sync);
+      if (dropArmed !== g) {
+        dropArmed = g; renderPanel();
+        clearTimeout(dropTimer); dropTimer = setTimeout(() => { dropArmed = null; renderPanel(); }, 4000);
+        return;
+      }
+      clearTimeout(dropTimer); dropArmed = null;
+      const was = GS.docs[g], prevGame = ui.game;
+      delete GS.docs[g]; ui.game = WF; saveUi();
+      try { history.replaceState(null, '', '#' + WF); } catch (e) {}
+      renderLive();
+      GS.sync.drop(g).then(() => flash('Game removed.')).catch((e) => {
+        if (was) GS.docs[g] = was; ui.game = prevGame; saveUi(); renderLive(); writeFailed(e, 'gameGoals');
+      });
+    }
+
+    /* ---------- Firebase sync (optional layer) ---------- */
+    const isMap = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+    async function startSync() {
+      let fa, fs, au;
+      try {
+        const base = 'https://www.gstatic.com/firebasejs/10.7.1/';
+        [fa, fs, au] = await Promise.all([
+          import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js'), import(base + 'firebase-auth.js'),
+        ]);
+      } catch (e) {
+        console.error('Firebase failed to load:', e);
+        setSync('⚠ live sync unavailable (could not load Firebase)', true);
+        return;
+      }
+      const app = fa.getApps().length ? fa.getApp() : fa.initializeApp(CFG);
+      const db = fs.getFirestore(app);
+      const ref = fs.doc(db, 'warframe', 'progress');
+      const auth = au.getAuth(app);
+      // Warframe: the same doc and the same helpers the Warframe page used for its Goals tab.
+      S.sync = {
+        async write(fields, full) {
+          try { await fs.updateDoc(ref, fields); }
+          catch (e) { if (e && e.code === 'not-found') await fs.setDoc(ref, full); else throw e; }
+        },
+        del() { return fs.deleteField(); },
+        async remove(id) {
+          try { await fs.updateDoc(ref, { ['custom.' + id]: fs.deleteField(), ['done.' + id]: fs.deleteField() }); }
+          catch (e) { if (!(e && e.code === 'not-found')) throw e; }
+        },
+      };
+      // Every other game: one doc per game under gameGoals.
+      GS.sync = {
+        async write(g, fields, full) {
+          const r = fs.doc(db, 'gameGoals', g);
+          try { await fs.updateDoc(r, fields); }
+          catch (e) { if (e && e.code === 'not-found') await fs.setDoc(r, full); else throw e; }
+        },
+        del() { return fs.deleteField(); },
+        async remove(g, ids) {
+          const f = {};
+          ids.forEach((id) => { f['custom.' + id] = fs.deleteField(); f['done.' + id] = fs.deleteField(); });
+          try { await fs.updateDoc(fs.doc(db, 'gameGoals', g), f); }
+          catch (e) { if (!(e && e.code === 'not-found')) throw e; }
+        },
+        async create(g, name, at) { await fs.setDoc(fs.doc(db, 'gameGoals', g), { name, at, done: {}, custom: {} }); },
+        async drop(g) { await fs.deleteDoc(fs.doc(db, 'gameGoals', g)); },
+      };
+
+      // Signing in and out happens with the button at the top right (js/dev-auth.js).
+      // It shares this Firebase app, so this handler hears about every change.
+      au.onAuthStateChanged(auth, (user) => {
+        S.owner = !!(user && user.email === OWNER);
+        renderLive();
+      });
+
+      try {
+        fs.onSnapshot(ref, (snap) => {
+          const d = snap.data() || {};
+          S.done = isMap(d.done) ? d.done : {};
+          S.tokens = Number.isInteger(d.runs) ? d.runs : 0;
+          S.custom = isMap(d.custom) ? d.custom : {};
+          T.setRemote(d.theme || null);
+          setSync('☁ synced live');
+          renderLive();
+        }, (err) => {
+          console.error('Firestore listen error:', err);
+          setSync('⚠ sync error: ' + (err.code || 'check console'), true);
+        });
+      } catch (e) {
+        console.error('Firestore init error:', e);
+        setSync('⚠ could not connect to the sync backend', true);
+      }
+      try {
+        fs.onSnapshot(fs.collection(db, 'gameGoals'), (snap) => {
+          const docs = {};
+          snap.forEach((s) => {
+            if (!GAME_ID_RE.test(s.id)) return;
+            const v = s.data() || {};
+            docs[s.id] = { name: typeof v.name === 'string' ? cleanText(v.name, 40) : '', at: Number(v.at) || 0, done: isMap(v.done) ? v.done : {}, custom: isMap(v.custom) ? v.custom : {} };
+          });
+          GS.docs = docs; GS.listen = 'ok';
+          updateSyncLine(); renderLive();
+        }, (err) => {
+          console.error('Firestore listen error (gameGoals):', err);
+          GS.listen = err && err.code === 'permission-denied' ? 'denied' : 'error';
+          updateSyncLine(); renderLive();
+        });
+      } catch (e) {
+        console.error('Firestore init error (gameGoals):', e);
+        GS.listen = 'error'; updateSyncLine();
+      }
+    }
+
+    /* ---------- boot ---------- */
+    async function loadJson(url) {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }
+    async function boot() {
+      let gd = null;
+      try { gd = await loadJson('goals-data.json'); }
+      catch (e) { console.error('Could not load goals-data.json:', e); }
+      const games = gd && Array.isArray(gd.games) ? gd.games : [];
+      games.forEach((g) => {
+        if (!g || typeof g.id !== 'string' || !GAME_ID_RE.test(g.id) || typeof g.name !== 'string' || GS.seeds.some((x) => x.id === g.id)) { console.warn('Skipped a malformed game:', g); return; }
+        if (Array.isArray(g.tasks)) g.tasks = cleanGoals(g.tasks, new Set(), new Set());
+        GS.seeds.push(g);
+      });
+      if (!GS.seeds.some((g) => g.id === WF)) GS.seeds.unshift({ id: WF, name: 'Warframe', source: 'warframe-data.json' });
+      GS.seeds.sort((a, b) => (a.id === WF ? -1 : b.id === WF ? 1 : 0));   // Warframe first, the rest in file order
+      const h = location.hash.slice(1);
+      if (GAME_ID_RE.test(h)) ui.game = h;
+      $('g-lede').textContent = 'One list of goals for every game you play. Pick a game, tick things off, and add your own goals and games.'
+        + (gd && gd.updatedLabel ? ' Updated ' + gd.updatedLabel + '.' : '');
+      try {
+        S.data = await loadJson('warframe-data.json');
+        S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
+        indexGoals(S.data.farm.tasks);
+        initGoalDialog(); initTokenDialog();
+      } catch (e) {
+        console.error('Could not load warframe-data.json:', e);
+        S.data = null;
+      }
+      initGenDialog();
+      renderLive();
+      await startSync();
+    }
+    boot();
+  </script>
+</body>
+</html>

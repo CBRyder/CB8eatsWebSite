@@ -1,0 +1,67 @@
+{
+ "updated": "2026-10-13",
+ "updatedLabel": "13 Oct 2026",
+ "games": [
+  {
+   "id": "warframe",
+   "name": "Warframe",
+   "source": "warframe-data.json"
+  },
+  {
+   "id": "arc-raiders",
+   "name": "ARC Raiders",
+   "blurb": "Early game: learn the systems, keep the stash for what the workshop needs, and get the benches and skills going.",
+   "groupOrder": [
+    "Next",
+    "Later"
+   ],
+   "tasks": [
+    {
+     "id": "ar-keep-list",
+     "group": "Next",
+     "text": "Check what each bench upgrade needs and keep only those materials",
+     "note": "Some items marked recyclable are bench upgrade parts. Sell or recycle the rest to free the stash."
+    },
+    {
+     "id": "ar-shani",
+     "group": "Next",
+     "text": "Work through Shani's quests",
+     "note": "Quest blueprints are guaranteed, and quests give the XP that pays for skill points."
+    },
+    {
+     "id": "ar-last-benches",
+     "group": "Next",
+     "text": "Build the last 2 or 3 workshop benches"
+    },
+    {
+     "id": "ar-stamina",
+     "group": "Next",
+     "text": "Spend skill points on stamina in the Mobility tree",
+     "note": "Names come from guides, so check them against the in-game tree.",
+     "parts": [
+      {
+       "id": "ar-marathon-runner",
+       "text": "Marathon Runner"
+      },
+      {
+       "id": "ar-youthful-lungs",
+       "text": "Youthful Lungs"
+      }
+     ]
+    },
+    {
+     "id": "ar-in-round-crafting",
+     "group": "Next",
+     "text": "Take In-Round Crafting in the Survival tree",
+     "doneDefault": true
+    },
+    {
+     "id": "ar-stash-space",
+     "group": "Later",
+     "text": "Spend coins on stash expansions",
+     "note": "Early on, coins go to stash space before anything else."
+    }
+   ]
+  }
+ ]
+}

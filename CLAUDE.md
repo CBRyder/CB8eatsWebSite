@@ -555,7 +555,7 @@ you tap open (`#wf-about`).
   The text has a header line, then per game: Warframe (the Mother Tokens count, every top-level goal as `- [x]`, `- [~]` or
   `- [ ]` with its id in brackets, and for a list `have:` and `open:` lines, the open names only up to 15; the mods ticked on
   the Mods tab; the Missing-list mods that count as owned only because their goal is ticked; a pointer to the scanned Owned
-  list in `warframe-data.json`; "Goals I removed") and every other game the same way from its own doc. It reads the page's
+  list in `warframe-data.json`; "Goals I removed or deleted (see History)") and every other game the same way from its own doc. It reads the page's
   current state, so renames and removals CB made are applied. **Ways for Claude to read it, in order:** (1) the text CB pastes
   from Copy my list; (2) `window.cb8Export()` in his built-in browser on `https://www.dev.cb8eats.com/goals` when linked;
   (3) the public REST read of `warframe/progress` and `gameGoals` from a tab on his site (see Reading them as Claude above).
@@ -782,8 +782,9 @@ published the original three-field rule, adding goals fails with permission-deni
   `warframe/progress.custom.<id>` = `{ text, group, note?, parts?, list?, tags, at }` (id `g` + time + random, letters and
   digits only, because it becomes a dotted Firestore field path). The default group is "Added by you" (`CUSTOM_GROUP`);
   the Group dropdown offers the columns in `farm.groupOrder`, Added by you, and any other group in use (`wfGroups()`),
-  plus "New group...". Goals can be ticked (`done.<id>`), edited and deleted by the owner (delete removes `custom.<id>`
-  and `done.<id>` and the ticks of its own steps). **Goals saved before this change** (`{ name, qty, tags, plat, at }`, ids
+  plus "New group...". Goals can be ticked (`done.<id>`), edited and deleted by the owner (**Delete keeps the goal**: it
+  saves `deleted: true` and `deletedAt` on `custom.<id>` and leaves every tick alone, so it shows in History and can be
+  restored; **Delete forever** in History is what erases `custom.<id>` and the ticks of its own steps, see "History button"). **Goals saved before this change** (`{ name, qty, tags, plat, at }`, ids
   starting `c`) are still read (`addedGoals()` marks them `legacy`; shown as "Name × qty", under Added by you, and never
   dropped for a repeated text); editing one opens the form with that text and saves it in the new shape (name and qty are
   replaced by the text).
@@ -856,7 +857,7 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
   steps one per line, at most 30 of 60 characters). **Every Edit button (on goals you added and on goals from a data file)
   shows only while the Edit goals toggle at the top is on** (CB, 2026-10-13: "the edit button on my added goals I only want
   to show when I click the edit goals button at the top"); with it on you can rename, move group, change steps and two-tap
-  Delete (which also clears the ticks). See the next bullet (changing the JSON still works too).
+  Delete (which moves the goal to History). See the next bullets (changing the JSON still works too).
 - **Edit and remove what Claude seeds (2026-10-13).** CB: "Make it backwards compatible so every thing u add I can edit or
   even remove". Anything Claude puts in `warframe-data.json` `farm.tasks` or `goals-data.json` (goals, the steps inside a
   list, and whole games) can be edited and removed on the page, with no Firestore rule change and no change to the data
@@ -867,7 +868,8 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
     like any other (no `.taskrow` wrapper, so a test that looks for added goals by `.taskrow` must turn Edit goals on or look
     for the "Added by you" group's rows). The seeded list's compact grid (`.parts.flat`) is not used while it is on.
   - **Storage:** one entry per changed goal in the same `custom` map, keyed by the goal's own id:
-    `custom.<goal id> = { kind: 'edit', text?, note?, group?, tags?, hidden? }`. Only keys that differ from the data file
+    `custom.<goal id> = { kind: 'edit', text?, note?, group?, tags?, hidden?, removedAt? }` (`removedAt` = ms, only with `hidden`,
+    so History can say when). Only keys that differ from the data file
     are saved (`note: ''` means "no note", `tags: []` means "no tags"); nothing differing = the entry is deleted. `editsOf(custom)`
     reads and cleans them, `applyEdits(list, edits, wf, path, removed)` lays them over a copy of the seed (copies carry
     `seed` = what the file says and `edit` = the saved changes, so the form can offer Back to original) and
@@ -878,14 +880,33 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
     **Remove** (two taps; labelled Remove, not Delete, because nothing is deleted) and **Back to original** (shown when the
     goal has edits). Renaming checks the name against every visible goal and the goal's own steps (the page drops a later
     duplicate name silently, so it must never be allowed to happen).
-  - **Remove hides, it never deletes:** it saves `hidden: true` on the entry (keeping any edits), the goal's tick stays in
-    `done`, and the goal appears under **Removed by you (N)** at the bottom of the list (`removedEl`), with its path
-    ("List › Step") and a **Restore** button. Removing every step of a list takes the list with it (the steps are what is
-    listed as removed; restoring one brings the list back). **Restore** first simulates the restore (`st.tree(sim)`) and
+  - **Remove hides, it never deletes:** it saves `hidden: true` and `removedAt` on the entry (keeping any edits), the goal's
+    tick stays in `done`, and the goal is listed in **History** (see the next bullet) with its path ("List › Step") and a
+    **Restore** button. Removing every step of a list takes the list with it (the steps are what is listed as removed;
+    restoring one brings the list back). **Restore** first simulates the restore (`st.tree(sim)`) and
     refuses with a message if any goal that shows now would vanish (a goal added since can share the removed goal's name).
     Goals added inside a removed list are not lost: they show under their group and go back inside when it is restored.
     `tickedMods()` skips removed goals, so a removed goal no longer makes its mod owned; a rename does not break the link
     (it reads the original seed's `mod` / `ownsMods` names).
+  - **History button (2026-10-13; CB: "make the 'removed by you' Section into a button beside edit goals that says history, and it
+    has the history of all the goals for that game that are deleted"):** the **Removed by you** box at the bottom of the list is
+    gone. `#g-history` ("History", between Edit goals and + Add goal, shown to visitors too) opens `#g-histdlg`, titled "History:
+    <game>", with one row per goal deleted from the open game: what it was (`<strong>`), where it came from and when ("Came with
+    the game, removed Oct 13, 4:52 PM" for a goal from a data file, "You added it, deleted ..." for one you added; no date for a
+    removal saved before `removedAt` existed, those sort last), newest first, then **Restore** and, for goals you added only,
+    **Delete forever** (two taps, the question goes away after 4 seconds). It is the same list for both kinds: `storeOf(game).removed()`
+    is `wfBuild().removed` / `genData(g).removed`, which `applyEdits` (data-file goals: `{ id, text, label, added: false, at }`) and
+    `addedGoals(custom, wf, gone)` (goals you added: `added: true`) both fill. The window redraws on every `renderLive()` while open
+    (`histOpen()`), and `flash()` also writes into `#g-histmsg` while it is open, because the toast sits behind a modal.
+    - **Delete on a goal you added is now a soft delete (was: erase).** `removeGenGoal` saves `custom.<id> = { ...the goal, deleted:
+      true, deletedAt: ms }` in one write that touches only that entry; the goal's ticks and its steps' ticks stay in `done`.
+      `addedGoals()` leaves a `deleted` goal out of the tree and reports it in `gone`. **Restore** (`restoreGoal`, for both kinds)
+      drops `hidden`/`removedAt` or `deleted`/`deletedAt` and runs the same name-clash simulation, so a goal whose name was taken
+      since is refused with a message inside the window. **Delete forever** (`forgetGoal`) removes `custom.<id>` and
+      `done.<each step id>` with `st.remove(ids)` and rolls back if refused. A goal deleted from History's point of view still counts
+      towards the 200 entries in `custom` until it is deleted forever (the "game is full" message says so).
+    - **Older cached pages** read a `deleted` entry as a normal added goal until they reload (no rule change, `custom` is free-form).
+    - The export's line is "Goals I removed or deleted (see History): ..." and lists both kinds.
   - **Games from `goals-data.json`:** a **Rename game** button and a two-tap **Remove this game** under every game except
     Warframe (which is always there). Both save `custom.gamemeta = { name?, hidden? }` in that game's `gameGoals` doc
     (`gameMeta(id)`, `gameList()`, `removedGames()`, `writeGameMeta()`); removing only hides it (goals and ticks stay) and
@@ -894,12 +915,16 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
     stays) and its Remove still deletes the doc. `addedGoals()` skips `gamemeta`. The game dialog (`#g-gamedlg`) is shared
     by Add and Rename (`gameRenaming`).
   - **Limits:** the rule allows 200 entries in `custom`, shared with added goals, builds and these edits, so the form refuses
-    a new entry at 200 with "This game is full". Writes are optimistic with a full rollback and the usual "server refused"
+    a new entry at 200 with "This game is full" (deleted goals still count until Delete forever). Writes are optimistic with a full rollback and the usual "server refused"
     message. An older cached copy of the page reads an edit entry as an added goal with the seed's id, which the duplicate-id
     check drops, so it is harmless.
-  - **Tests:** `edittest.js` style checks (112): visitor and owner flows, edit / merge / back to original, note clearing, group
-    and new group, name clashes, steps, removing and restoring steps / lists / games, restore conflict, refused-write
-    rollback, the 200 limit, Warframe tags and mod linking, 360/390/430 layouts. Write them again rather than trusting this list.
+  - **Tests:** `edittest.js` style checks (113): visitor and owner flows, edit / merge / back to original, note clearing, group
+    and new group, name clashes, steps, removing and restoring steps / lists / games (through History), restore conflict,
+    refused-write rollback, the 200 limit, Warframe tags and mod linking, 360/390/430 layouts. A `historytest.js` style suite
+    (47): the button's place and text, empty state, a visitor, newest-first order and the dates, soft delete of a goal you added
+    (one write, ticks kept), Restore, Delete forever (two taps, the timeout, the erased ids), name clash and refused writes
+    inside the window, Warframe's own History and an old resource goal, the export, 360/390/430 layouts. Write them again
+    rather than trusting this list.
 - **Add goal form and the List toggle (2026-10-13).** CB: "group is like a column and a list is a dropdownable column
   that has more checkboxes in it", and "all the games follow the same structure ... use the same ones". One form for every
   game, Warframe included (`#g-dlg`; `openGenDialog`, `saveGenGoal`, `removeGenGoal`). `storeOf(game)` is the small adapter that

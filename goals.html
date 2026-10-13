@@ -188,13 +188,17 @@
     .headbtns { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
     .btn-sm[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-bright); }
     .seedhint { font-size: 0.86rem; color: var(--text-dim); margin: 0.3rem 0 0; }
-    .removedbox { margin: 1rem 0 0.4rem; border: 1px dashed var(--border); border-radius: 10px; padding: 0.2rem 0.8rem; }
-    .removedbox > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--text-dim); }
     .removedlist { list-style: none; margin: 0 0 0.5rem; padding: 0; }
     .removedlist li { display: flex; align-items: center; gap: 0.6rem; border-top: 1px solid var(--border); padding: 0.4rem 0; }
     .removedlist li > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
     .removedlist .btn-sm { flex: none; }
     .removedlist .btn-sm[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    /* History: the goals deleted from the open game, one row each (what it was, where it came from, when), with Restore. */
+    .histlist li { flex-wrap: wrap; }
+    .histlist li > span { flex: 1 1 11rem; }
+    .histlist li small { display: block; color: var(--text-faint); font-size: 0.8rem; }
+    .histbtns { display: flex; flex: none; flex-wrap: wrap; gap: 0.4rem; }
+    .histmsg { min-height: 1.3rem; font-size: 0.88rem; color: var(--text-dim); margin: 0.4rem 0 0; }
     .gamefoot { display: flex; flex-wrap: wrap; gap: 0.6rem; }
     .dlgbtns .spacer { flex: 1 1 auto; }
     .btn-sm.danger { border-color: #ff8a8a; color: #ff8a8a; }
@@ -495,6 +499,18 @@
     </div>
   </dialog>
 
+  <dialog class="wfdlg" id="g-histdlg" aria-labelledby="g-histdlg-title">
+    <h2 id="g-histdlg-title">History</h2>
+    <p class="muted" id="g-histblurb">Goals you deleted from this game. Restore puts one back as it was, with its ticks.</p>
+    <ul class="removedlist histlist" id="g-histlist"></ul>
+    <p class="muted" id="g-histempty" hidden>Nothing deleted yet.</p>
+    <p class="histmsg" id="g-histmsg" role="status" aria-live="polite"></p>
+    <div class="dlgbtns">
+      <span class="spacer"></span>
+      <button type="button" class="btn-sm primary" id="g-histclose">Close</button>
+    </div>
+  </dialog>
+
   <dialog class="wfdlg" id="g-gamedlg" aria-labelledby="g-gamedlg-title">
     <form id="g-gameform" novalidate>
       <h2 id="g-gamedlg-title">Add a game</h2>
@@ -658,11 +674,10 @@
     const TOK_DEFAULT_NAME = 'Mother Tokens', TOK_MAX = 100000000;
     const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
     const CUSTOM_GROUP = 'Added by you';
-    const EDIT_KIND = 'edit';      // custom.<id of a goal from a data file> = { kind: 'edit', text?, note?, group?, tags?, hidden? }: what you changed on it (see CLAUDE.md)
+    const EDIT_KIND = 'edit';      // custom.<id of a goal from a data file> = { kind: 'edit', text?, note?, group?, tags?, hidden?, removedAt? }: what you changed on it (see CLAUDE.md)
     const GAMEMETA = 'gamemeta';   // custom.gamemeta = { name?, hidden? } in the gameGoals doc of a game from goals-data.json: its new title, or removed
     const CUSTOM_MAX = 200;        // the Firestore rule allows this many entries in a `custom` map
     let editMode = false;          // the Edit goals toggle: an Edit button on every goal that comes from a data file
-    let removedOpen = false;       // whether the Removed by you box is open (kept across re-renders)
     /* The goal list being drawn right now: how to tell if a goal is ticked and what a tap does. renderWarframe and
        renderGeneric set it before they draw, and the row builders below read it, so one set of rows serves every game. */
     let CTX = null;
@@ -694,6 +709,7 @@
     function flash(msg) {
       const f = $('wf-flash'); if (!f) return;
       f.textContent = msg; f.hidden = !msg;
+      if (histOpen()) $('g-histmsg').textContent = msg || '';   // the toast is behind an open window
       clearTimeout(flashTimer);
       if (msg) flashTimer = setTimeout(() => { f.hidden = true; }, 6500);
     }
@@ -773,7 +789,7 @@
         if (typeof v.note === 'string') e.note = cleanText(v.note, 200);
         const group = cleanText(v.group, 30); if (group) e.group = group;
         if (Array.isArray(v.tags)) e.tags = TAGS.map((x) => x.id).filter((x) => v.tags.includes(x));
-        if (v.hidden === true) e.hidden = true;
+        if (v.hidden === true) { e.hidden = true; if (Number.isFinite(v.removedAt) && v.removedAt > 0) e.removedAt = v.removedAt; }
         out[id] = e;
       });
       return out;
@@ -786,7 +802,7 @@
       const out = [], top = !path.length;
       (list || []).forEach((t) => {
         const e = edits[t.id];
-        if (e && e.hidden) { removed.push({ id: t.id, text: e.text || t.text, label: path.concat(e.text || t.text).join(' › ') }); return; }
+        if (e && e.hidden) { removed.push({ id: t.id, text: e.text || t.text, label: path.concat(e.text || t.text).join(' › '), added: false, at: e.removedAt || 0 }); return; }
         const c = Object.assign({}, t, { seed: { text: t.text, note: t.note || '', group: top ? t.group : '', tags: top ? (t.tags || []).slice() : [], top } });
         if (e) {
           let changed = false;
@@ -817,7 +833,7 @@
           custom: () => S.custom, done: () => S.done,
           write: (fields) => S.sync.write(fields, { done: S.done, runs: S.tokens, custom: S.custom }),
           del: () => S.sync.del(), remove: (ids) => S.sync.remove(ids),
-          tree: (c) => wfBuild(c).tree, groups: () => wfGroups(wfTree()),
+          tree: (c) => wfBuild(c).tree, groups: () => wfGroups(wfTree()), removed: () => wfBuild().removed,
         };
       }
       const g = game.id;
@@ -827,13 +843,15 @@
         custom: () => docFor(g).custom, done: () => docFor(g).done,
         write: (fields) => { const d = docFor(g); return GS.sync.write(g, fields, { done: d.done, custom: d.custom }); },
         del: () => GS.sync.del(), remove: (ids) => GS.sync.remove(g, ids),
-        tree: (c) => genData(g, c).tasks, groups: () => genData(g).groups,
+        tree: (c) => genData(g, c).tasks, groups: () => genData(g).groups, removed: () => genData(g).removed,
       };
     }
     /* The goals saved in one game's `custom` map, as goal objects. Every game saves { text, group, note?, parts?: [{ id, text }],
        list?, at } (Warframe also tags: [...]). Warframe's older resource goals, { name, qty, tags, at }, are still read, and
-       farm.customFixes in warframe-data.json can still correct or hide them. `list` is the id of the list the goal sits in. */
-    function addedGoals(custom, wf) {
+       farm.customFixes in warframe-data.json can still correct or hide them. `list` is the id of the list the goal sits in.
+       A goal you deleted stays in the map with deleted: true and deletedAt (ms), so History can bring it back; it is left out of
+       the goals and, when a `gone` array is passed, listed there. */
+    function addedGoals(custom, wf, gone) {
       const fixes = wf && S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object' ? S.data.farm.customFixes : {};
       const out = [];
       Object.keys(custom).forEach((id) => {
@@ -858,6 +876,7 @@
           if (!name || !Number.isFinite(qty) || qty < 1) return;
           t.text = name + ' × ' + qty.toLocaleString('en-US'); t.group = CUSTOM_GROUP; t.legacy = true;
         } else return;
+        if (v.deleted === true) { if (gone) gone.push({ id, text: t.text, label: t.text, added: true, at: Number(v.deletedAt) || 0 }); return; }
         if (wf) t.tags = customTags(v, fx);
         const lst = ID_RE.test(String(v.list || '')) ? String(v.list) : '';
         if (lst) t.list = lst;
@@ -903,7 +922,7 @@
     function wfBuild(custom) {
       const cu = custom || S.custom, removed = [], ids = new Set(), names = new Set();
       const seed = cleanGoals(applyEdits(S.data.farm.tasks, editsOf(cu), true, [], removed), ids, names);
-      const added = addedGoals(cu, true);
+      const added = addedGoals(cu, true, removed);
       // The older resource goals keep showing even when two have the same text (the same resource added twice).
       const clean = (list) => [].concat(...list.map((c) => (c.legacy ? [c] : cleanGoals([c], ids, names))));
       const g = graftListed(seed.concat(clean(added.filter((t) => !t.list))), clean(added.filter((t) => t.list)));
@@ -995,6 +1014,10 @@
         editMode = !editMode; renderLive();
       };
       box.appendChild(ed);
+      const hist = el('button', 'btn-sm', 'History'); hist.type = 'button'; hist.id = 'g-history';
+      hist.setAttribute('aria-haspopup', 'dialog');
+      hist.onclick = openHistory;
+      box.appendChild(hist);
       const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button'; add.id = 'g-add';
       if (!S.owner) add.setAttribute('aria-disabled', 'true');
       add.onclick = () => openGenDialog(null);
@@ -1002,24 +1025,49 @@
       head.appendChild(box);
       return head;
     }
-    /* The goals you removed from a data file, with a Restore button each. */
-    function removedEl(removed) {
-      if (!removed.length) return null;
-      const d = document.createElement('details'); d.className = 'removedbox'; d.id = 'g-removed'; d.open = removedOpen;
-      d.addEventListener('toggle', () => { removedOpen = d.open; });
-      d.appendChild(el('summary', null, 'Removed by you (' + removed.length + ')'));
-      const ul = el('ul', 'removedlist');
-      removed.forEach((r) => {
+    /* ---------- History: the goals deleted from the open game ---------- */
+    /* One list for the open game: goals from a data file that you removed (custom.<id> = { kind: 'edit', hidden: true, removedAt })
+       and goals you added and deleted (custom.<id> = the goal plus deleted: true, deletedAt). Restore brings one back as it was; for
+       a goal you added, Delete forever erases it and its steps' ticks (two taps). The window refreshes itself on every render. */
+    let histArmed = '', histTimer = null;
+    const histDate = (at) => {
+      const d = new Date(at), yr = d.getFullYear() !== new Date().getFullYear();
+      return d.toLocaleString('en-US', Object.assign({ month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, yr ? { year: 'numeric' } : {}));
+    };
+    function renderHistory() {
+      const game = curGame(), dlg = $('g-histdlg'); if (!game || !dlg) return;
+      const st = storeOf(game), ul = $('g-histlist');
+      const items = st.removed().slice().sort((a, b) => (b.at ? 1 : 0) - (a.at ? 1 : 0) || b.at - a.at || a.label.localeCompare(b.label));   // newest first, the ones with no date last
+      $('g-histdlg-title').textContent = 'History: ' + game.name;
+      $('g-histempty').hidden = items.length > 0;
+      ul.textContent = '';
+      items.forEach((r) => {
         const li = el('li'); li.dataset.id = r.id;
-        li.appendChild(el('span', null, r.label));
+        const sp = el('span'); sp.appendChild(el('strong', null, r.label));
+        sp.appendChild(el('small', null, (r.added ? 'You added it, deleted' : 'Came with the game, removed') + (r.at ? ' ' + histDate(r.at) : '')));
+        li.appendChild(sp);
+        const box = el('div', 'histbtns');
         const b = el('button', 'btn-sm', 'Restore'); b.type = 'button'; b.setAttribute('aria-label', 'Restore ' + r.label);
         if (!S.owner) b.setAttribute('aria-disabled', 'true');
-        b.onclick = () => restoreSeed(r.id);
-        li.appendChild(b); ul.appendChild(li);
+        b.onclick = () => restoreGoal(r.id);
+        box.appendChild(b);
+        if (r.added) {
+          const armed = histArmed === r.id;
+          const x = el('button', 'btn-sm danger', armed ? 'Tap again to erase' : 'Delete forever'); x.type = 'button'; x.setAttribute('aria-label', 'Delete forever ' + r.label);
+          if (!S.owner) x.setAttribute('aria-disabled', 'true');
+          x.onclick = () => forgetGoal(r.id);
+          box.appendChild(x);
+        }
+        li.appendChild(box); ul.appendChild(li);
       });
-      d.appendChild(ul);
-      return d;
     }
+    function openHistory() {
+      if (!curGame()) return;
+      histArmed = ''; clearTimeout(histTimer); $('g-histmsg').textContent = '';
+      renderHistory(); openDlg('g-histdlg');
+    }
+    /* A message from a save (Restored., a refused write ...) goes in the History window while it is open, because the toast sits behind it. */
+    function histOpen() { return !!($('g-histdlg') && $('g-histdlg').open); }
 
     function renderWarframe() {
       const f = S.data.farm, p = $('g-panel');
@@ -1113,7 +1161,6 @@
         items.forEach((t) => wrap.appendChild(genRowEl(t)));
       });
       if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
-      const rm = removedEl(built.removed); if (rm) wrap.appendChild(rm);
       p.appendChild(wrap);
     }
 
@@ -1358,6 +1405,7 @@
       });
       renderPanel();
       if (wf && S.data) { renderGlance(); renderBuilds(); renderMods(); }
+      if (histOpen()) renderHistory();
     }
 
     /* ---------- the games ---------- */
@@ -1457,7 +1505,7 @@
       const game = gameList().find((x) => x.id === g);
       const cu = custom || (GS.docs[g] && GS.docs[g].custom) || {}, removed = [];
       const seedTasks = game && game.seed && Array.isArray(game.seed.tasks) ? applyEdits(game.seed.tasks, editsOf(cu), false, [], removed) : [];
-      const added = addedGoals(cu, false);
+      const added = addedGoals(cu, false, removed);
       const ids = new Set(), names = new Set();
       const base = cleanGoals(seedTasks.concat(added.filter((t) => !t.list)), ids, names);
       const listed = [].concat(...added.filter((t) => t.list).map((c) => cleanGoals([c], ids, names)));
@@ -1485,7 +1533,6 @@
         wrap.appendChild(el('p', 'group-label', grp));
         items.forEach((t) => wrap.appendChild(genRowEl(t)));
       });
-      const rm = removedEl(d.removed); if (rm) wrap.appendChild(rm);
       if (GS.listen === 'denied') wrap.appendChild(el('p', 'muted warn', 'The gameGoals Firestore rule is not published yet, so ticks and added goals for this game cannot be saved.'));
       p.appendChild(wrap);
       const foot = el('div', 'gamefoot');
@@ -1598,7 +1645,7 @@
       if (!text) return err('Type the goal.');
       if ($('g-text').value.trim().replace(/\s+/g, ' ').length > 80) return err('That goal is too long (80 characters at most).');
       if (isSeedGoal()) return saveSeedEdit(st, text, err);
-      if (!d.custom[genEditing ? genEditing.id : ''] && Object.keys(d.custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.');
+      if (!d.custom[genEditing ? genEditing.id : ''] && Object.keys(d.custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something for good from History first.');
       const isNew = !genEditing && $('g-list-on').checked && $('g-list').value === NEW_LIST;   // this goal starts a new list
       const listName = isNew ? cleanText($('g-list-new').value, 80) : '';
       if (isNew) {
@@ -1692,7 +1739,7 @@
       if (st.wf && s.top && !sameList(tags, s.tags)) e.tags = tags;
       const empty = Object.keys(e).length === 1;
       if (empty && !(raw && raw.kind === EDIT_KIND)) { closeDlg('g-dlg'); return; }   // nothing changed from the file
-      if (!empty && !raw && Object.keys(custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.');
+      if (!empty && !raw && Object.keys(custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something for good from History first.');
       closeDlg('g-dlg');
       await writeEdit(st, id, empty ? null : e, empty ? 'Back to the original.' : 'Goal updated.');
     }
@@ -1702,42 +1749,65 @@
       const id = genEditing.id; closeDlg('g-dlg');
       await writeEdit(st, id, null, 'Back to the original.');
     }
-    /* Remove a goal from a data file: hide it (nothing is deleted, its tick stays). It can be restored from Removed by you. */
+    /* Remove a goal from a data file: hide it (nothing is deleted, its tick stays). It is listed in History, where it can be restored. */
     async function removeSeedGoal() {
       const game = curGame(); if (!game || !isSeedGoal()) return;
       const st = storeOf(game); if (!st.ready()) return;
       const id = genEditing.id, custom = st.custom(), raw = custom[id];
-      if (!raw && Object.keys(custom).length >= CUSTOM_MAX) { $('g-err').textContent = 'This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.'; return; }
-      const e = Object.assign({}, raw && raw.kind === EDIT_KIND ? raw : {}, { kind: EDIT_KIND, hidden: true });
+      if (!raw && Object.keys(custom).length >= CUSTOM_MAX) { $('g-err').textContent = 'This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something for good from History first.'; return; }
+      const e = Object.assign({}, raw && raw.kind === EDIT_KIND ? raw : {}, { kind: EDIT_KIND, hidden: true, removedAt: Date.now() });
       closeDlg('g-dlg');
-      await writeEdit(st, id, e, 'Goal removed. Restore it from Removed by you at the bottom of the list.');
+      await writeEdit(st, id, e, 'Goal removed. Restore it from History.');
     }
-    async function restoreSeed(id) {
+    /* Restore from History: a goal from a data file loses its hidden flag (and its edits stay); a goal you added loses deleted. */
+    async function restoreGoal(id) {
       const game = curGame(); if (!game) return;
       const st = storeOf(game);
-      if (!st.ready()) return st.nope();
+      if (!st.ready()) return histOpen() ? flash('Sign in as the owner (top right) to restore goals.') : st.nope();
       const custom = st.custom(), raw = custom[id];
-      if (!raw || raw.kind !== EDIT_KIND) return;
-      const keep = Object.assign({}, raw); delete keep.hidden;
-      const next = Object.keys(keep).some((k) => k !== 'kind') ? keep : null;
+      let next;
+      if (raw && raw.kind === EDIT_KIND) {
+        const keep = Object.assign({}, raw); delete keep.hidden; delete keep.removedAt;
+        next = Object.keys(keep).some((k) => k !== 'kind') ? keep : null;
+      } else if (raw && raw.deleted === true) {
+        next = Object.assign({}, raw); delete next.deleted; delete next.deletedAt;
+      } else return;
       // A goal added since can share its name with this one, and then the page would drop one of the two. Check first.
       const sim = Object.assign({}, custom); if (next) sim[id] = next; else delete sim[id];
       const now = new Set(idsOf(st.tree())), after = new Set(idsOf(st.tree(sim)));
       if (!after.has(id) || Array.from(now).some((x) => !after.has(x))) return flash('Cannot restore that: a goal or step with the same name is already on the list. Rename or delete that one first.');
       await writeEdit(st, id, next, 'Restored.');
     }
+    /* Delete a goal you added: it is kept in the map as deleted (ticks and steps untouched) so History can bring it back. */
     async function removeGenGoal() {
       if (isSeedGoal()) return removeSeedGoal();
       const game = curGame(); if (!game || !genEditing) return;
       const st = storeOf(game);
       if (!st.ready()) return;
-      const d = { custom: st.custom(), done: st.done() }, id = genEditing.id;
-      const ids = [id].concat(ownSteps(genEditing).map((x) => x.id));
-      const wasCustom = d.custom[id], wasDone = {}; ids.forEach((x) => { wasDone[x] = d.done[x]; });
-      delete d.custom[id]; ids.forEach((x) => { delete d.done[x]; }); renderLive(); closeDlg('g-dlg');
-      try { await st.remove(ids); flash('Goal deleted.'); }
+      const id = genEditing.id, raw = st.custom()[id];
+      if (!raw || typeof raw !== 'object') return;
+      closeDlg('g-dlg');
+      await writeEdit(st, id, Object.assign({}, raw, { deleted: true, deletedAt: Date.now() }), 'Goal deleted. Restore it from History.');
+    }
+    /* Delete forever (History, goals you added only): erase the entry and the ticks of its own steps. Two taps. */
+    async function forgetGoal(id) {
+      const game = curGame(); if (!game) return;
+      const st = storeOf(game);
+      if (!st.ready()) return flash('Sign in as the owner (top right) to change this.');
+      const d = { custom: st.custom(), done: st.done() }, raw = d.custom[id];
+      if (!raw || raw.deleted !== true) return;
+      if (histArmed !== id) {
+        histArmed = id; renderHistory();
+        clearTimeout(histTimer); histTimer = setTimeout(() => { histArmed = ''; if (histOpen()) renderHistory(); }, 4000);
+        return;
+      }
+      clearTimeout(histTimer); histArmed = '';
+      const ids = [id].concat((Array.isArray(raw.parts) ? raw.parts : []).map((x) => String(x && x.id)).filter((x) => ID_RE.test(x)));
+      const wasDone = {}; ids.forEach((x) => { wasDone[x] = d.done[x]; });
+      delete d.custom[id]; ids.forEach((x) => { delete d.done[x]; }); renderLive();
+      try { await st.remove(ids); flash('Deleted for good.'); }
       catch (e) {
-        if (wasCustom) d.custom[id] = wasCustom;
+        d.custom[id] = raw;
         ids.forEach((x) => { if (wasDone[x] !== undefined) d.done[x] = wasDone[x]; });
         renderLive(); writeFailed(e, st.doc);
       }
@@ -3074,12 +3144,12 @@
           S.data.mods.owned.forEach((g) => g.items.forEach((it) => viaGoal.delete(parseChip(it).name.toLowerCase())));   // already on the scanned Owned list
           L.push('Mods from my Missing list that count as owned because their goal is ticked (' + viaGoal.size + '): ' + (viaGoal.size ? names(viaGoal).join(', ') : 'none'));
           L.push('The scanned Owned list is in warframe-data.json (scanned ' + S.data.meta.scannedLabel + ').');
-          if (b.removed.length) L.push('Goals I removed: ' + b.removed.map((r) => r.label).join('; '));
+          if (b.removed.length) L.push('Goals I removed or deleted (see History): ' + b.removed.map((r) => r.label).join('; '));
         } else {
           const d = genData(game.id), dn = docFor(game.id).done;
           goals(d.tasks, (id) => isDoneIn(dn, d.index, id));
           if (!d.tasks.length) L.push('(no goals yet)');
-          if (d.removed.length) L.push('Goals I removed: ' + d.removed.map((r) => r.label).join('; '));
+          if (d.removed.length) L.push('Goals I removed or deleted (see History): ' + d.removed.map((r) => r.label).join('; '));
         }
       });
       return L.join('\n');
@@ -3095,6 +3165,9 @@
       $('g-copytext').value = text;
       openDlg('g-copydlg');
       $('g-copytext').focus(); $('g-copytext').select();
+    }
+    function initHistory() {
+      $('g-histclose').addEventListener('click', () => closeDlg('g-histdlg'));
     }
     function initCopy() {
       $('g-copy').addEventListener('click', copyList);
@@ -3231,7 +3304,7 @@
         console.error('Could not load warframe-data.json:', e);
         S.data = null;
       }
-      initGenDialog(); initTabs(); initCopy();
+      initGenDialog(); initTabs(); initCopy(); initHistory();
       if (S.data) { initModTools(); initBuildDialog(); initModDialog(); initStatsDialog(); loadModStats(); loadCommunity(); }
       renderLive();
       await startSync();

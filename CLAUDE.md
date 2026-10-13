@@ -341,10 +341,17 @@ whole nested object as the value for an existing map field.
 ## Warframe page (`warframe.html`)
 
 A phone-first page for CB's Warframe account, built in the same JSON-driven +
-Firebase style as the trackers. Four tabs: **Goals** (Mother Token farm counter and a
-checklist of grind goals, with "Buy with plat" and "Foundry" filters), **Mods**
+Firebase style as the trackers. Three tabs: **Mods**
 (Owned / Missing lists, search, and a "Buy with plat" filter on Missing), **Builds**,
-and **Theme**.
+and **Theme**. **The Goals tab (Mother Token farm counter and the checklist of grind goals,
+with "Buy with plat" and "Foundry" filters) moved to the Game goals page on 2026-10-13**
+(see "Game goals page" below). The data, the Firestore doc and every goal id are unchanged;
+only the screen moved, so ticks carried over. Wherever this section says "the Goals tab",
+it now means the Warframe game on `goals.html#warframe`. The page keeps reading `farm.tasks`
+and the ticks (`S.done`) because the Mods tab marks mods owned from ticked goals and the
+glance strip shows the tokens and Burston Prime. It shows a link to `goals.html#warframe`
+under the heading, and an old `warframe.html#goals` link or bookmark redirects there
+(a stored `ui.tab` of `goals` falls back to Mods).
 
 - **Content is data:** `warframe-data.json` (fetched with `cache: 'no-store'`). Shape:
   `{ updated, updatedLabel, source, caveat, meta, farm{..., customFixes{}}, mods{owned[],
@@ -354,7 +361,7 @@ and **Theme**.
   (a scan, a new mod, a mod ranked up), replace this JSON and push so the page shows
   the correct list.**
 - **A goal made of several things is a dropdown (`parts`), added 2026-10-09.** CB's rule:
-  anything on the Goals tab that includes more than one thing (Own every Warframe, Own all
+  anything on the Warframe goals list that includes more than one thing (Own every Warframe, Own all
   the Primed mods, Own all the Archon mods, the Mother Token shop picks, the AX-52 parts)
   is a dropdown, and **nothing is listed twice**. A goal gets `parts: [{id, text, note?,
   doneDefault?, parts?}]`, nested as deep as needed (Primed mods holds one dropdown per
@@ -509,7 +516,7 @@ and **Theme**.
   To link a new goal to a mod, put the mod's name in `mod` exactly as the Missing list spells it.
 - **Mother Token counter (changed 2026-10-10, again later that day; CB: "remove the red and make the top
   red section the typing section, the green be the add button and below those is a history Date and
-  Time"):** the Goals tab's top card counts **tokens**, not runs. It is a number box (`#tok-in`, a minus
+  Time"):** the Warframe goals list's top card (on the Game goals page) counts **tokens**, not runs. It is a number box (`#tok-in`, a minus
   takes tokens off, for spending at the shop) with an **Add** button (`#tok-add`) beside it, and below
   that a **History** list (`#tok-log`) of every add with its date and time, newest first, plus an
   **Undo** button (`#tok-undo`) that takes back the newest entry. The earlier Tier 1/2/3 buttons, the
@@ -716,7 +723,7 @@ writes. `custom` was added after the first version of this rule, so if the owner
 published the original three-field rule, adding goals fails with permission-denied
 (the page says "The server refused that write") until the rule above is republished.
 
-- **Added goals (the "+ Add goal" button, owner only):** opens a form with a resource
+- **Added goals (the "+ Add goal" button, owner only, now on the Game goals page):** opens a form with a resource
   dropdown (built from `resources` in `warframe-data.json`, grouped; plus an "Other"
   option for anything missing), a quantity goal and a row of **tag buttons** (see the
   tag list below). Each goal is stored
@@ -757,12 +764,82 @@ published the original three-field rule, adding goals fails with permission-deni
   the dev hostnames below, and the Worker no longer rewrites them (if they are still
   attached in the dashboard, they just show the home page).
 
+## Game goals page (`goals.html` + `goals-data.json`)
+
+Added 2026-10-13. CB: "turn that into a just goals for multiple games like whatever and
+expandable". One dev page, served at `/goals` (dev hostnames only, fourth card on the Dev hub,
+id `hub-goals`), with a pill picker of games. **Warframe's Goals tab lives here now.** CB chose
+"replace Warframe's Goals tab" and "both ways" to add games and goals.
+
+- **Games.** The list is the `games` seeds in `goals-data.json` plus every `gameGoals/<id>` doc
+  that has a `name`. `#<gameId>` in the address picks a game; the last one opened and the goal
+  filter are kept in localStorage `cb8eats-goals-ui-v1` (the goal filter falls back to the old
+  `cb8eats-warframe-ui-v1`).
+- **Warframe** is the seed with `source: "warframe-data.json"`: goals come from
+  `warframe-data.json` `farm.tasks`, ticks, the Mother Tokens card and added goals
+  stay in `warframe/progress` exactly as described in the Warframe section (same ids, same
+  `custom` map). The code for it was moved from `warframe.html` unchanged apart from reading the
+  active game through a small `CTX = { isDone, toggle }` that the shared row builders (`taskEl`,
+  `goalEl`, `progress`, `goalDone`) use. Do not "tidy" Warframe onto the generic path: that would
+  need a migration of `done` and the token fields.
+- **Every other game** has seed goals in `goals-data.json`
+  (`{ id, name, blurb?, groupOrder?, tasks: [{ id, group, text, note?, doneDefault?, parts?: [{ id, text, ... }] }] }`,
+  same goal shape as Warframe's, so a goal made of several things is a dropdown with `parts`).
+  Ids are unique within a game and match `^[A-Za-z0-9_-]{1,40}$`. Ticks are saved in Firestore
+  doc `gameGoals/<gameId>` as `done.<goalId>`. **To seed a game or goal as Claude:** edit
+  `goals-data.json` and push (that is how ARC Raiders was added). **To add one as CB:** the owner-only
+  `+ Add game` and `+ Add goal` buttons on the page. A game CB adds is the doc
+  `gameGoals/<slug>` = `{ name, at, done: {}, custom: {} }` (slug = the name in lowercase letters,
+  digits and `-`, at most 30; a repeated slug is refused; a two-tap Remove game deletes the doc,
+  and seeded games have no remove button). A goal CB adds is `custom.<id>` =
+  `{ text, group, note?, parts?: [{ id, text }], at }` (id `g` + time + random; text 80, note 200, group 30,
+  steps one per line, at most 30 of 60 characters). Added goals have an Edit button (rename, move group, change steps,
+  two-tap Delete that also clears the ticks); seeded goals do not, change those in the JSON.
+- **Rule needed (new, the owner must publish it in the Firebase console, Firestore -> Rules; add
+  this block alongside the others, do not replace them).** Games are created and ticked with
+  `setDoc` (only when the doc does not exist yet) and `updateDoc` with dotted paths, so the page needs no rule change when
+  a game is added later, because the rule is a wildcard on the doc id:
+
+```
+match /gameGoals/{gameId} {
+  allow read: if true;
+  allow delete: if request.auth != null && request.auth.token.email == 'cbleo73@gmail.com';
+  allow create, update: if request.auth != null
+      && request.auth.token.email == 'cbleo73@gmail.com'
+      && gameId.matches('^[a-z0-9-]{1,30}$')
+      && request.resource.data.keys().hasOnly(['name', 'done', 'custom', 'at'])
+      && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 40))
+      && (!('done' in request.resource.data) || request.resource.data.done is map)
+      && (!('custom' in request.resource.data) || (request.resource.data.custom is map && request.resource.data.custom.size() <= 200))
+      && (!('at' in request.resource.data) || request.resource.data.at is number);
+}
+```
+
+  `hasOnly` must list every top-level field the page writes, the same gotcha as everywhere else.
+  **Until the rule is published**, Warframe keeps working (its doc has its own rule), but reading
+  `gameGoals` is denied, so the sync line says the other games cannot sync, the panel warns, a tick
+  rolls back with a toast naming `gameGoals`, and Add game / Add goal cannot save. Reading is
+  public (`https://firestore.googleapis.com/v1/projects/tarborolifebackend/databases/(default)/documents/gameGoals`,
+  from the owner's browser, like `warframe/progress`).
+- **Worker and config:** `/goals`, `/goals.html` are in `DEV_PAGES` and `run_worker_first`, and
+  `/goals-data.json` is in `DEV_DATA` and `run_worker_first` (dev hostnames only; elsewhere the page
+  302s to the dev host and the data file 404s). Tested in real workerd with the `x-test-host` debug copy.
+- **Sync:** two listeners on one Firebase app: the `warframe/progress` doc and the `gameGoals`
+  collection. `GS.listen` is `pending`, `ok`, `denied` or `error` and drives the sync line.
+- **Tests I used (Playwright with the Firebase modules faked, phone viewport 390x844, also 360, 430, 768):**
+  visitor cannot write (a `.task` with `aria-disabled` needs `dispatchEvent('click')`, not a forced
+  click, because the pinned sign-in button can sit on top of it), owner ticks Warframe and ARC Raiders,
+  first tick of a new game falls back to `setDoc`, add / edit / delete a goal and a game, rule not
+  published, no sideways scroll with a long game name and a long unbroken word. Write them again
+  rather than trusting this list.
+
 ## Dev hub (`dev.html`) and the dev pages
 
-The Tarboro Life tracker, the COA tracker and Warframe are owner/dev tools, not public
-content. They live together under one hub page with three big cards (`dev.html`; ids
-`hub-tarboro`, `hub-coa`, `hub-warframe`). **Four dev pages:** `dev.html`,
-`tracker.html`, `coa-tracker.html`, `warframe.html`.
+The Tarboro Life tracker, the COA tracker, Warframe and Game goals are owner/dev tools, not public
+content. They live together under one hub page with four cards (`dev.html`; ids
+`hub-tarboro`, `hub-coa`, `hub-warframe`, `hub-goals`; four columns on wide screens, two on
+tablets, one on phones). **Five dev pages:** `dev.html`,
+`tracker.html`, `coa-tracker.html`, `warframe.html`, `goals.html`.
 
 - **Address:** `www.dev.cb8eats.com` (and `dev.cb8eats.com`) shows the hub at its bare
   root, and `/dev` works on every hostname. `worker.js` checks
@@ -779,9 +856,9 @@ content. They live together under one hub page with three big cards (`dev.html`;
   Settings -> Authorized domains and the web API key's website restrictions in Google
   Cloud.
 - **The lock: Cloudflare Access on the dev hostname, and dev pages only exist there.**
-  `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/warframe` (and their `.html`
+  `worker.js` serves `/dev`, `/tracker`, `/coa-tracker`, `/warframe`, `/goals` (and their `.html`
   forms) and the data files `resource-inventory.json`, `coa-inventory.json`,
-  `warframe-data.json`, `warframe-mod-stats.json`, `warframe-community-builds.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
+  `warframe-data.json`, `warframe-mod-stats.json`, `warframe-community-builds.json`, `goals-data.json` ONLY on `DEV_HOSTS`. On any other hostname (the public site, the
   `workers.dev` address) the pages 302 to `https://www.dev.cb8eats.com/...` and the data
   files 404, so nothing dev-related can be read from the public hostname. Variants like
   `/%64ev`, `//tracker`, `/Tracker` are normalized in the Worker or answered by the asset
@@ -851,9 +928,9 @@ content. They live together under one hub page with three big cards (`dev.html`;
   the `not-found` fallback; writes only the `theme` field, so `hasOnly` in the
   `warframe/progress` rule is unchanged).
 - **Shared look:** `css/dev-base.css` (page background wash, header, nav pill, buttons,
-  slim header at <=420px; load it after `css/cb8-auth.css`) is loaded by all four dev pages;
-  `css/dev-widgets.css` (cards, inputs, toast, theme editor) only by the hub and
-  Warframe, because the trackers define colliding class names. The trackers' `.res-inv`
+  slim header at <=420px; load it after `css/cb8-auth.css`) is loaded by all five dev pages;
+  `css/dev-widgets.css` (cards, inputs, toast, theme editor) only by the hub,
+  Warframe and Game goals, because the trackers define colliding class names. The trackers' `.res-inv`
   panel maps its own `--ri-*` variables onto the theme (`--ri-bg: var(--bg-alt)`,
   `--ri-accent: var(--accent)`, ...) so it follows the colors, but the status colors
   (crit/warn/good/verified/planned) stay fixed on purpose because they carry meaning.

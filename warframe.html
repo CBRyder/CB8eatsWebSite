@@ -46,6 +46,8 @@
     .glance .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.05rem, 4.4vw, 1.5rem); color: var(--accent-bright); font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 0.2rem; }
     .glance .sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.1rem; }
     /* Section tabs */
+    .goalslink { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0; color: var(--text-dim); }
+    a.btn-sm { display: inline-flex; align-items: center; text-decoration: none; }
     .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.4rem; }
     .tab { font: inherit; font-size: 0.92rem; font-weight: 600; min-height: 44px; padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
       color: var(--text-dim); background: transparent; border: 1px solid var(--border); }
@@ -296,7 +298,8 @@
       <ul class="nav-tabs">
         <li><a href="https://www.iltep.cb8eats.com/">Main site</a></li>
         <li><a href="dev.html">Dev hub</a></li>
-        <li><a href="#goals" class="active">Warframe</a></li>
+        <li><a href="warframe.html" class="active">Warframe</a></li>
+        <li><a href="goals.html">Game goals</a></li>
       </ul>
     </nav>
   </header>
@@ -306,19 +309,17 @@
       <p class="eyebrow">Warframe</p>
       <h1>Farm, mods and builds</h1>
       <p class="lede" id="wf-lede">Loading…</p>
+      <p class="goalslink"><span>The grind goals and the Mother Tokens card moved to the Game goals page.</span> <a class="btn-sm primary" href="goals.html#warframe">Open Warframe goals</a></p>
     </div>
 
     <div class="glance" id="wf-glance" aria-label="At a glance"></div>
     <p class="syncline" id="wf-sync">connecting…</p>
 
     <div class="tabs" role="tablist" aria-label="Sections">
-      <button class="tab" role="tab" id="t-goals" data-tab="goals" aria-selected="true" aria-controls="p-goals">Goals</button>
       <button class="tab" role="tab" id="t-mods" data-tab="mods" aria-selected="false" aria-controls="p-mods">Mods</button>
       <button class="tab" role="tab" id="t-builds" data-tab="builds" aria-selected="false" aria-controls="p-builds">Builds</button>
       <button class="tab" role="tab" id="t-theme" data-tab="theme" aria-selected="false" aria-controls="p-theme">Theme</button>
     </div>
-
-    <div id="p-goals" role="tabpanel" aria-labelledby="t-goals"></div>
 
     <div id="p-mods" role="tabpanel" aria-labelledby="t-mods" hidden>
       <div class="tools">
@@ -348,66 +349,6 @@
   </main>
 
   <p class="toast" id="wf-flash" role="status" aria-live="polite" hidden></p>
-
-  <dialog class="wfdlg" id="wf-dlg" aria-labelledby="wf-dlg-title">
-    <form id="wf-goalform" novalidate>
-      <h2 id="wf-dlg-title">Add a goal</h2>
-      <p class="muted">Pick the resource, say how many you want, and switch on any tags that fit.</p>
-      <label class="field"><span>Resource</span>
-        <select id="wf-res" required></select>
-      </label>
-      <label class="field" id="wf-other-wrap" hidden><span>Name of the resource</span>
-        <input type="text" id="wf-other" maxlength="60" autocomplete="off" placeholder="Type the name">
-      </label>
-      <label class="field"><span>Quantity goal</span>
-        <input type="number" id="wf-qty" min="1" max="100000000" step="1" inputmode="numeric" placeholder="For example 500" required>
-      </label>
-      <div class="field" role="group" aria-labelledby="wf-tags-label">
-        <span id="wf-tags-label">Tags</span>
-        <div class="tagpick" id="wf-tags"></div>
-        <small>A lit tag shows on the goal and works with the filters above the list.</small>
-      </div>
-      <p class="formerr" id="wf-adderr" role="alert"></p>
-      <div class="dlgbtns">
-        <button type="button" class="btn-sm danger" id="wf-del" hidden>Delete</button>
-        <span class="spacer"></span>
-        <button type="button" class="btn-sm" id="wf-cancel">Cancel</button>
-        <button type="submit" class="btn-sm primary" id="wf-save">Save goal</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog class="wfdlg" id="wf-tokdlg" aria-labelledby="wf-tokdlg-title">
-    <form id="wf-tokform" novalidate>
-      <h2 id="wf-tokdlg-title">Edit this card</h2>
-      <p class="muted">Change the resource, the description and the quantity. The total you have is kept in the history, so it still adds up.</p>
-      <label class="field"><span>Resource</span>
-        <select id="wf-tok-res"></select>
-      </label>
-      <label class="field" id="wf-tok-other-wrap" hidden><span>Name of the resource</span>
-        <input type="text" id="wf-tok-other" maxlength="40" autocomplete="off" placeholder="Type the name">
-      </label>
-      <div class="slotgrid">
-        <label class="field"><span>Quantity you have</span>
-          <input type="number" id="wf-tok-have" min="0" max="100000000" step="1" inputmode="numeric" required>
-        </label>
-        <label class="field"><span>Quantity goal</span>
-          <input type="number" id="wf-tok-goal" min="1" max="100000000" step="1" inputmode="numeric" required>
-        </label>
-      </div>
-      <label class="field"><span>Description</span>
-        <textarea id="wf-tok-note" maxlength="300" rows="4"></textarea>
-        <small>Leave it empty to show the automatic lines (what is left, the shop picks and the refresh).</small>
-      </label>
-      <p class="formerr" id="wf-tok-err" role="alert"></p>
-      <div class="dlgbtns">
-        <button type="button" class="btn-sm" id="wf-tok-reset" hidden>Back to the defaults</button>
-        <span class="spacer"></span>
-        <button type="button" class="btn-sm" id="wf-tok-cancel">Cancel</button>
-        <button type="submit" class="btn-sm primary" id="wf-tok-save">Save</button>
-      </div>
-    </form>
-  </dialog>
 
   <dialog class="wfdlg bdlg" id="wf-bdlg" aria-labelledby="wf-bdlg-title">
     <form id="wf-buildform" novalidate>
@@ -489,7 +430,7 @@
       appId: "1:578368600107:web:e8ce50f4c4ab2839c4126e",
     };
     const UI_KEY = 'cb8eats-warframe-ui-v1';
-    const TABS = ['goals', 'mods', 'builds', 'theme'];
+    const TABS = ['mods', 'builds', 'theme'];
     /* Every goal tag lives here. A new tag is one line: the goal filters, the chip on a goal and
        the button in the Add goal form are all built from this list. tone is accent, accent2 or
        bright (see .tone-* in the styles); explain is the sentence shown under the filter. */
@@ -499,7 +440,6 @@
     ];
     const TAG_LABEL = Object.fromEntries(TAGS.map((t) => [t.id, t.label]));
     const TAG_TONE = Object.fromEntries(TAGS.map((t) => [t.id, t.tone || 'accent2']));
-    const GOAL_FILTERS = [['all', 'All']].concat(TAGS.map((t) => [t.id, t.label]));
     function tagClass(tag) { return 'tag tag-' + tag + ' tone-' + (TAG_TONE[tag] || 'accent2'); }
 
     const $ = (id) => document.getElementById(id);
@@ -510,14 +450,13 @@
       return n;
     }
 
-    const ui = { tab: 'goals', view: 'owned', goalFilter: 'all', modFilter: 'all', community: false, builds: 'mine', bcat: 'all', btab: {} };
+    const ui = { tab: 'mods', view: 'owned', modFilter: 'all', community: false, builds: 'mine', bcat: 'all', btab: {} };
     try {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
         const p = JSON.parse(raw);
         if (p && TABS.includes(p.tab)) ui.tab = p.tab;
         if (p && (p.view === 'owned' || p.view === 'missing')) ui.view = p.view;
-        if (p && GOAL_FILTERS.some((f) => f[0] === p.goalFilter)) ui.goalFilter = p.goalFilter;
         if (p && (p.modFilter === 'all' || p.modFilter === 'plat')) ui.modFilter = p.modFilter;
         if (p && p.community === true) ui.community = true;
         if (p && p.builds === 'community') ui.builds = 'community';
@@ -529,13 +468,9 @@
 
     // S.tokens is the Mother Tokens counted so far. It is saved in the Firestore field `runs` (see CLAUDE.md), so the published rule needs no change.
     const S = { data: null, done: {}, tokens: 0, tokVal: '', custom: {}, owner: false, sync: null, index: {} };
-    const TOKLOG = 'tokenlog';   // custom.tokenlog = { e: { <key>: { n: amount, at: ms } } }, the Mother Tokens history (see CLAUDE.md)
-    const TOK_KEY_RE = /^t[0-9]{10,14}[a-z0-9]{0,8}$/;
     const TOKCARD = 'tokencard'; // custom.tokencard = { name?, note?, target? }, what the card's Edit button changed (see CLAUDE.md)
-    const TOK_DEFAULT_NAME = 'Mother Tokens', TOK_MAX = 100000000;
+    const TOK_MAX = 100000000;
     const openGroups = {};
-    const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
-    const CUSTOM_GROUP = 'Added by you';
     const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;   // goal ids become Firestore field-path parts, so no dots
 
     /* ---------- helpers ---------- */
@@ -573,15 +508,8 @@
       }
       return out;
     }
-    const tokName = () => tokCard().name || TOK_DEFAULT_NAME;
     const tokTarget = () => tokCard().target || S.data.farm.target;
     function tokensLeft() { return Math.max(0, tokTarget() - S.tokens); }
-    /* The two description lines the card shows until a description of your own is saved. */
-    function tokAutoNote() {
-      const f = S.data.farm, left = tokensLeft(), d = daysUntil(f.shopRefresh);
-      return (left > 0 ? left + ' to go.' : 'That covers the shop picks.') + ' Shop picks ' + f.picks.join(', ') + ' (' + f.pickCosts + ').\n'
-        + (d > 0 ? 'Shop refreshes in about ' + d + ' days (estimate).' : 'The shop refresh is due. Check in game.');
-    }
     let flashTimer = null;
     function flash(msg) {
       const f = $('wf-flash'); if (!f) return;
@@ -647,374 +575,11 @@
     }
     function hasParts(t) { return !!(t.parts && t.parts.length); }
     function leavesOf(t) { return hasParts(t) ? t.parts.flatMap(leavesOf) : [t]; }
-    function progress(t) {
-      const ls = leavesOf(t);
-      return { done: ls.filter((x) => isDone(x.id)).length, total: ls.length };
-    }
-    function goalDone(t) {
-      if (!hasParts(t)) return isDone(t.id);
-      const p = progress(t);
-      return p.total > 0 && p.done === p.total;
-    }
-
-    function renderGoals() {
-      const f = S.data.farm, p = $('p-goals');
-      const hadFocus = !!(document.activeElement && document.activeElement.id === 'tok-in');   // a re-render must not drop what is being typed
-      p.textContent = '';
-      const card = el('div', 'wfcard'), tc = tokCard(), target = tokTarget();
-      // Title (the resource) with the Edit button at the top right.
-      const top = el('div', 'cardhead tokcardhead');
-      top.appendChild(el('h2', null, tokName()));
-      const ed = el('button', 'btn-sm', 'Edit'); ed.type = 'button'; ed.id = 'tok-edit';
-      ed.setAttribute('aria-label', 'Edit ' + tokName() + ': the resource, the description and the quantity');
-      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
-      ed.onclick = openTokenDialog;
-      top.appendChild(ed);
-      card.appendChild(top);
-      const big = el('p', 'big'); big.appendChild(document.createTextNode(String(tokens())));
-      big.appendChild(el('small', null, ' of ' + target));
-      card.appendChild(big);
-      const bar = el('div', 'bar'); const fill = document.createElement('i');
-      fill.style.width = Math.min(100, tokens() / target * 100) + '%';
-      bar.appendChild(fill); card.appendChild(bar);
-      // The description: your own text if you saved one, otherwise the two automatic lines.
-      const desc = el('p', 'muted tokdesc', tc.note || tokAutoNote()); desc.id = 'tok-desc';
-      card.appendChild(desc);
-
-      // The typing box and the Add button.
-      const row = el('div', 'tokrow');
-      const inp = document.createElement('input');
-      inp.type = 'number'; inp.id = 'tok-in'; inp.step = '1';
-      inp.placeholder = (tc.name ? 'Amount' : 'Tokens') + ', - to spend'; inp.value = S.tokVal;
-      inp.setAttribute('aria-label', tokName() + ' to add. A minus takes some off.');
-      inp.oninput = () => { S.tokVal = inp.value; };
-      inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addTyped(); } };
-      const go = el('button', 'btn-sm primary', 'Add'); go.type = 'button'; go.id = 'tok-add';
-      if (!S.owner) go.setAttribute('aria-disabled', 'true');
-      go.onclick = addTyped;
-      row.appendChild(inp); row.appendChild(go);
-      card.appendChild(row);
-      if (hadFocus) setTimeout(() => { const i = $('tok-in'); if (i && document.activeElement !== i) i.focus(); }, 0);
-
-      // History: every Add with its date and time, newest first. Undo takes back the newest one.
-      const log = tokenLog();
-      const hh = el('div', 'tokhead');
-      hh.appendChild(el('h3', null, 'History'));
-      if (log.length) {
-        const un = el('button', 'btn-sm', 'Undo ' + signed(log[0].n)); un.type = 'button'; un.id = 'tok-undo';
-        if (!S.owner) un.setAttribute('aria-disabled', 'true');
-        un.onclick = undoTokens;
-        hh.appendChild(un);
-      }
-      card.appendChild(hh);
-      const before = S.tokens - log.reduce((t, x) => t + x.n, 0);
-      if (log.length || before !== 0) {
-        const ul = el('ul', 'toklist'); ul.id = 'tok-log';
-        log.forEach((x) => {
-          const li = el('li'); li.dataset.key = x.key;
-          li.appendChild(el('span', 'amt' + (x.n < 0 ? ' neg' : ''), signed(x.n)));
-          const tm = el('time', 'when', whenText(x.at)); tm.dateTime = new Date(x.at).toISOString();
-          li.appendChild(tm); ul.appendChild(li);
-        });
-        if (before !== 0) {
-          const li = el('li'); li.dataset.key = 'before';
-          li.appendChild(el('span', 'amt' + (before < 0 ? ' neg' : ''), signed(before)));
-          li.appendChild(el('span', 'when', 'Before the history started'));
-          ul.appendChild(li);
-        }
-        card.appendChild(ul);
-      }
-      if (!log.length) card.appendChild(el('p', 'muted', 'Each Add is listed here with its date and time.'));
-      p.appendChild(card);
-
-      const wrap = el('div', 'wfcard');
-      const head = el('div', 'cardhead');
-      head.appendChild(el('h2', null, 'Grind goals'));
-      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button';
-      if (!S.owner) add.setAttribute('aria-disabled', 'true');
-      add.onclick = () => openGoalDialog(null);
-      head.appendChild(add);
-      wrap.appendChild(head);
-      const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Filter goals');
-      GOAL_FILTERS.forEach((fl) => {
-        const b = el('button', null, fl[1]); b.type = 'button';
-        b.setAttribute('aria-pressed', ui.goalFilter === fl[0] ? 'true' : 'false');
-        b.onclick = () => { ui.goalFilter = fl[0]; saveUi(); renderGoals(); };
-        seg.appendChild(b);
-      });
-      wrap.appendChild(seg);
-      const everything = f.tasks.concat(customTasks());
-      const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
-      const open = visible.filter((t) => !goalDone(t)).length;
-      wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + ((TAGS.find((x) => x.id === ui.goalFilter) || {}).explain ? ' ' + TAGS.find((x) => x.id === ui.goalFilter).explain : '')));
-      (f.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]).forEach((grp) => {
-        const items = visible.filter((t) => t.group === grp);
-        if (!items.length) return;
-        wrap.appendChild(el('p', 'group-label', grp));
-        items.forEach((t) => wrap.appendChild(t.custom ? customRowEl(t) : goalEl(t)));
-      });
-      if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
-      p.appendChild(wrap);
-    }
-
-    /* Goals the owner added with the Add button. They live in Firestore
-       (warframe/progress.custom, keyed by a generated id). Corrections made
-       by hand in warframe-data.json (farm.customFixes[id]) win over what is
-       stored, so a mistyped entry can be fixed without the owner's sign-in. */
-    function customTasks() {
-      const fixes = (S.data.farm.customFixes && typeof S.data.farm.customFixes === 'object') ? S.data.farm.customFixes : {};
-      const out = [];
-      Object.keys(S.custom).forEach((id) => {
-        if (!ID_RE.test(id) || id === TOKLOG || id === TOKCARD) return;   // the token history and the token card's settings share this map but are not goals
-        const v = S.custom[id];
-        if (!v || typeof v !== 'object' || v.kind === 'build') return;   // builds you add share this map but are not goals
-        const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
-        if (fx && fx.hidden) return;
-        const name = String(fx && fx.name != null ? fx.name : (v.name || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
-        const qty = Math.floor(Number(fx && fx.qty != null ? fx.qty : v.qty));
-        if (!name || !Number.isFinite(qty) || qty < 1) return;
-        const tags = customTags(v, fx);
-        out.push({
-          id, group: CUSTOM_GROUP, text: name + ' × ' + qty.toLocaleString('en-US'), note: '',
-          tags, custom: { name, qty, tags, plat: tags.includes('plat'), fixed: !!fx }, at: Number(v.at) || 0,
-        });
-      });
-      out.sort((a, b) => a.at - b.at);
-      return out;
-    }
-
-    /* Tags of an added goal: the saved tags list, or for goals saved before tags existed the old
-       plat flag. A correction in warframe-data.json (customFixes) may set tags, or just plat. */
-    function customTags(v, fx) {
-      const known = (a) => TAGS.map((x) => x.id).filter((id) => Array.isArray(a) && a.includes(id));
-      let tags = Array.isArray(v.tags) ? known(v.tags) : (v.plat ? ['plat'] : []);
-      if (fx && Array.isArray(fx.tags)) tags = known(fx.tags);
-      else if (fx && fx.plat != null) tags = fx.plat ? Array.from(new Set(tags.concat('plat'))) : tags.filter((x) => x !== 'plat');
-      return TAGS.map((x) => x.id).filter((id) => tags.includes(id));
-    }
-
-    function customRowEl(t) {
-      const row = el('div', 'taskrow');
-      row.appendChild(taskEl(t));
-      const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button';
-      ed.setAttribute('aria-label', 'Edit ' + t.custom.name);
-      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
-      ed.onclick = () => openGoalDialog(t);
-      row.appendChild(ed);
-      return row;
-    }
-
-    function goalText(t) {
-      const w = el('span', 'tx');
-      const title = el('span', 'tt', t.text);
-      (t.tags || []).forEach((tag) => title.appendChild(el('span', tagClass(tag), TAG_LABEL[tag] || tag)));
-      w.appendChild(title);
-      if (t.note) w.appendChild(el('span', 'nt', t.note));
-      return w;
-    }
-
-    function taskEl(t) {
-      const done = isDone(t.id);
-      const b = el('button', 'task' + (done ? ' done' : ''));
-      b.type = 'button';
-      b.setAttribute('role', 'checkbox');
-      b.setAttribute('aria-checked', done ? 'true' : 'false');
-      if (!S.owner) b.setAttribute('aria-disabled', 'true');
-      b.appendChild(el('span', 'box'));
-      b.appendChild(goalText(t));
-      b.onclick = () => toggleTask(t.id);
-      return b;
-    }
-
-    /* A goal with parts: a dropdown. Its row shows how many parts are ticked; the parts
-       (which can be dropdowns too) are the ticks, saved under their own ids. */
-    function goalEl(t) {
-      if (!hasParts(t)) return taskEl(t);
-      const p = progress(t);
-      const d = document.createElement('details'); d.className = 'goal';
-      d.open = !!openGoals[t.id];
-      d.addEventListener('toggle', () => { openGoals[t.id] = d.open; });
-      const sm = el('summary', 'task gsum' + (p.done === p.total ? ' done' : (p.done ? ' partial' : '')));
-      sm.appendChild(el('span', 'box'));
-      sm.appendChild(goalText(t));
-      const meta = el('span', 'gmeta');
-      meta.appendChild(el('span', 'gcount', p.done + ' / ' + p.total));
-      meta.appendChild(el('span', 'chev'));
-      sm.appendChild(meta);
-      d.appendChild(sm);
-      const flat = t.parts.every((x) => !hasParts(x) && !x.note);
-      const list = el('div', 'parts' + (flat ? ' flat' : ''));
-      t.parts.forEach((x) => list.appendChild(goalEl(x)));
-      d.appendChild(list);
-      return d;
-    }
 
     function needOwner() {
       flash(S.sync ? 'Sign in as the owner (top right) to change this.' : 'Sync is not connected, so this cannot be saved right now.');
     }
 
-    async function toggleTask(id) {
-      if (!S.owner || !S.sync) return needOwner();
-      const prev = isDone(id), next = !prev;
-      S.done[id] = next; renderLive();
-      try {
-        await S.sync.write({ ['done.' + id]: next }, { done: S.done, runs: S.tokens });
-      } catch (e) {
-        S.done[id] = prev; renderLive(); writeFailed(e);
-      }
-    }
-    /* The Mother Tokens history. One Firestore field, custom.tokenlog, holds every entry:
-       { e: { <key>: { n: the change that was really applied, at: ms } } }. It counts once towards the
-       rule's limit of 200 entries in `custom`, and needs no rule change (custom is a map). */
-    function tokenLog() {
-      const v = S.custom[TOKLOG], out = [];
-      if (v && typeof v === 'object' && v.e && typeof v.e === 'object' && !Array.isArray(v.e)) {
-        Object.keys(v.e).forEach((k) => {
-          const x = v.e[k], n = x && Number(x.n), at = x && Number(x.at);
-          if (!TOK_KEY_RE.test(k) || !Number.isInteger(n) || n === 0 || !Number.isFinite(at) || at <= 0) return;
-          out.push({ key: k, n, at });
-        });
-      }
-      out.sort((a, b) => (b.at - a.at) || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
-      return out;
-    }
-    function logPut(key, val) {
-      const v = S.custom[TOKLOG] && typeof S.custom[TOKLOG] === 'object' ? S.custom[TOKLOG] : (S.custom[TOKLOG] = {});
-      if (!v.e || typeof v.e !== 'object') v.e = {};
-      if (val === null) delete v.e[key]; else v.e[key] = val;
-    }
-    function signed(n) { return (n > 0 ? '+' : '') + n; }
-    function whenText(ms) {
-      const d = new Date(ms), o = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
-      if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
-      return d.toLocaleString('en-US', o);
-    }
-    // Adds (or, with a minus, takes off) Mother Tokens: the total goes in the Firestore field `runs`
-    // and the change is written to the history in the same update, so the two never disagree.
-    async function changeTokens(delta) {
-      if (!S.owner || !S.sync) return needOwner();
-      const prev = S.tokens, next = Math.max(0, prev + delta), applied = next - prev;
-      if (!applied) return;
-      const at = Date.now(), key = 't' + at + Math.random().toString(36).slice(2, 6).replace(/[^a-z0-9]/g, 'x');
-      S.tokens = next; logPut(key, { n: applied, at }); renderLive();
-      try {
-        await S.sync.write({ runs: next, ['custom.' + TOKLOG + '.e.' + key]: { n: applied, at } }, { done: S.done, runs: next, custom: S.custom });
-      } catch (e) {
-        S.tokens = prev; logPut(key, null); renderLive(); writeFailed(e);
-      }
-    }
-    // Takes back the newest entry in the history.
-    async function undoTokens() {
-      if (!S.owner || !S.sync) return needOwner();
-      const log = tokenLog(); if (!log.length) return;
-      const last = log[0], prev = S.tokens, next = Math.max(0, prev - last.n), saved = S.custom[TOKLOG].e[last.key];
-      S.tokens = next; logPut(last.key, null); renderLive();
-      try {
-        await S.sync.write({ runs: next, ['custom.' + TOKLOG + '.e.' + last.key]: S.sync.del() }, { done: S.done, runs: next, custom: S.custom });
-      } catch (e) {
-        S.tokens = prev; logPut(last.key, saved); renderLive(); writeFailed(e);
-      }
-    }
-    function addTyped() {
-      if (!S.owner || !S.sync) return needOwner();
-      const raw = String(S.tokVal || '').trim();
-      const n = Number(raw);
-      if (!raw || !Number.isInteger(n) || n === 0 || Math.abs(n) > 100000) {
-        flash('Type a whole number of tokens, like 168. A minus takes tokens off, like -45.');
-        return;
-      }
-      S.tokVal = '';
-      changeTokens(n);
-    }
-    /* ---------- edit the Mother Tokens card ---------- */
-    /* The Edit button changes the resource (title), the description and the quantity (have and goal).
-       Everything is saved in the existing Firestore fields, so the published rule needs no change: the card's
-       settings in custom.tokencard, the total in `runs`, and a changed total is also one entry in the history
-       (custom.tokenlog), written in the same update so the history still adds up to the total. */
-    function buildTokenResourceSelect() {
-      const sel = $('wf-tok-res'); sel.textContent = '';
-      sel.appendChild(new Option(TOK_DEFAULT_NAME + ' (default)', ''));
-      (S.data.resources || []).forEach((g) => {
-        const og = document.createElement('optgroup'); og.label = g.group;
-        g.items.filter((n) => n !== 'Mother Token').forEach((n) => og.appendChild(new Option(n, n)));
-        if (og.children.length) sel.appendChild(og);
-      });
-      sel.appendChild(new Option('Other (type the name)', '__other'));
-    }
-    function syncTokenOther() { $('wf-tok-other-wrap').hidden = $('wf-tok-res').value !== '__other'; }
-    function openTokenDialog() {
-      if (!S.owner || !S.sync) return needOwner();
-      const tc = tokCard(), sel = $('wf-tok-res');
-      const known = tc.name && Array.from(sel.options).some((o) => o.value === tc.name && o.value !== '__other');
-      sel.value = !tc.name ? '' : (known ? tc.name : '__other');
-      $('wf-tok-other').value = tc.name && !known ? tc.name : '';
-      $('wf-tok-have').value = String(S.tokens);
-      $('wf-tok-goal').value = String(tokTarget());
-      const note = $('wf-tok-note'); note.value = tc.note; note.placeholder = tokAutoNote();
-      $('wf-tok-err').textContent = '';
-      $('wf-tok-reset').hidden = !(tc.name || tc.note || tc.target);
-      syncTokenOther();
-      const dlg = $('wf-tokdlg');
-      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
-    }
-    function closeTokenDialog() {
-      const dlg = $('wf-tokdlg');
-      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
-    }
-    /* Saves the settings (and the total, if it changed). Settings equal to the defaults are left out, and
-       if nothing is left the whole custom.tokencard field is deleted. reset = true goes back to all defaults. */
-    async function saveTokenCard(ev, reset) {
-      if (ev) ev.preventDefault();
-      const err = (m) => { $('wf-tok-err').textContent = m; };
-      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save this.');
-      const prevTokens = S.tokens, was = S.custom[TOKCARD], hadKey = Object.prototype.hasOwnProperty.call(S.custom, TOKCARD);
-      let name = '', note = '', target = null, have = prevTokens;
-      if (!reset) {
-        const pick = $('wf-tok-res').value;
-        name = cleanText(pick === '__other' ? $('wf-tok-other').value : pick, 40);
-        if (pick === '__other' && !name) return err('Type the name of the resource.');
-        if (name === TOK_DEFAULT_NAME) name = '';
-        note = $('wf-tok-note').value.replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-        if (note.length > 300) return err('That description is too long (300 characters at most).');
-        if (note === tokAutoNote().trim()) note = '';
-        const goal = Number($('wf-tok-goal').value), haveRaw = $('wf-tok-have').value.trim();
-        have = Number(haveRaw);
-        if (!haveRaw || !Number.isInteger(have) || have < 0 || have > TOK_MAX) return err('Quantity you have must be a whole number from 0 to 100,000,000.');
-        if (!Number.isInteger(goal) || goal < 1 || goal > TOK_MAX) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
-        target = goal === S.data.farm.target ? null : goal;
-      }
-      const val = {};
-      if (name) val.name = name;
-      if (note) val.note = note;
-      if (target) val.target = target;
-      const empty = !Object.keys(val).length;
-      if (empty && !hadKey && !(have - prevTokens)) { closeTokenDialog(); return; }   // nothing to save
-      const fields = { ['custom.' + TOKCARD]: empty ? S.sync.del() : val };
-      const delta = have - prevTokens;
-      let key = null, at = 0;
-      if (delta) {
-        at = Date.now(); key = 't' + at + Math.random().toString(36).slice(2, 6).replace(/[^a-z0-9]/g, 'x');
-        fields.runs = have; fields['custom.' + TOKLOG + '.e.' + key] = { n: delta, at };
-      }
-      if (empty) delete S.custom[TOKCARD]; else S.custom[TOKCARD] = val;
-      if (delta) { S.tokens = have; logPut(key, { n: delta, at }); }
-      renderLive(); closeTokenDialog();
-      try {
-        await S.sync.write(fields, { done: S.done, runs: S.tokens, custom: S.custom });
-        flash(reset ? 'Back to the defaults.' : 'Saved.');
-      } catch (e) {
-        if (hadKey) S.custom[TOKCARD] = was; else delete S.custom[TOKCARD];
-        if (delta) { S.tokens = prevTokens; logPut(key, null); }
-        renderLive(); writeFailed(e);
-      }
-    }
-    function initTokenDialog() {
-      buildTokenResourceSelect();
-      $('wf-tok-res').addEventListener('change', syncTokenOther);
-      $('wf-tok-cancel').addEventListener('click', closeTokenDialog);
-      $('wf-tokform').addEventListener('submit', (ev) => saveTokenCard(ev, false));
-      $('wf-tok-reset').addEventListener('click', (ev) => saveTokenCard(ev, true));
-    }
     function writeFailed(e) {
       console.error('Write failed:', e);
       const code = (e && e.code) || '';
@@ -1022,110 +587,7 @@
         ? 'The server refused that write. The warframe/progress Firestore rule may not be published yet.'
         : 'Could not save: ' + (code || (e && e.message) || 'unknown error'));
     }
-    function renderLive() { renderGlance(); renderGoals(); renderBuilds(); if (S.data) renderMods(); }
-
-    /* ---------- add / edit a goal ---------- */
-    let editing = null, delTimer = null;
-    function buildResourceSelect() {
-      const sel = $('wf-res'); sel.textContent = '';
-      const ph = new Option('Choose a resource…', ''); ph.disabled = true; sel.appendChild(ph);
-      (S.data.resources || []).forEach((g) => {
-        const og = document.createElement('optgroup'); og.label = g.group;
-        g.items.forEach((n) => og.appendChild(new Option(n, n)));
-        sel.appendChild(og);
-      });
-      sel.appendChild(new Option('Other (type a name)…', '__other'));
-    }
-    function buildTagButtons() {
-      const box = $('wf-tags'); box.textContent = '';
-      TAGS.forEach((tg) => {
-        const b = el('button', 'tagbtn tag-' + tg.id + ' tone-' + (tg.tone || 'accent2'), tg.label);
-        b.type = 'button'; b.dataset.tag = tg.id; b.setAttribute('aria-pressed', 'false');
-        b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
-        box.appendChild(b);
-      });
-    }
-    function setTagButtons(tags) {
-      $('wf-tags').querySelectorAll('.tagbtn').forEach((b) => b.setAttribute('aria-pressed', (tags || []).includes(b.dataset.tag) ? 'true' : 'false'));
-    }
-    function pickedTags() {
-      return Array.from($('wf-tags').querySelectorAll('.tagbtn')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tag);
-    }
-    function syncOther() { $('wf-other-wrap').hidden = $('wf-res').value !== '__other'; }
-    function resetDelete() { clearTimeout(delTimer); $('wf-del').textContent = 'Delete'; $('wf-del').dataset.armed = ''; }
-    function openGoalDialog(t) {
-      if (!S.owner || !S.sync) return needOwner();
-      editing = t || null;
-      $('wf-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal';
-      $('wf-save').textContent = t ? 'Save changes' : 'Save goal';
-      $('wf-del').hidden = !t; resetDelete();
-      $('wf-adderr').textContent = '';
-      const sel = $('wf-res');
-      if (t) {
-        const known = Array.from(sel.options).some((o) => o.value === t.custom.name && o.value !== '__other');
-        sel.value = known ? t.custom.name : '__other';
-        $('wf-other').value = known ? '' : t.custom.name;
-        $('wf-qty').value = String(t.custom.qty);
-        setTagButtons(t.custom.tags);
-      } else {
-        sel.selectedIndex = 0; $('wf-other').value = ''; $('wf-qty').value = ''; setTagButtons([]);
-      }
-      syncOther();
-      const dlg = $('wf-dlg');
-      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
-    }
-    function closeGoalDialog() {
-      const dlg = $('wf-dlg');
-      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
-    }
-    function newGoalId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
-    async function saveGoal(ev) {
-      ev.preventDefault();
-      const err = (m) => { $('wf-adderr').textContent = m; };
-      if (!S.owner || !S.sync) return err('Sign in as the owner (top right) to save goals.');
-      const pick = $('wf-res').value;
-      const name = (pick === '__other' ? $('wf-other').value : pick).replace(/\s+/g, ' ').trim();
-      const qty = Number($('wf-qty').value);
-      if (!name) return err(pick === '__other' ? 'Type the name of the resource.' : 'Pick a resource from the list.');
-      if (name.length > 60) return err('That name is too long (60 characters at most).');
-      if (!Number.isInteger(qty) || qty < 1 || qty > 100000000) return err('Quantity goal must be a whole number from 1 to 100,000,000.');
-      const id = editing ? editing.id : newGoalId();
-      const was = S.custom[id];
-      const tags = pickedTags();
-      /* plat is still saved beside tags so an older copy of the page (a cached phone tab) reads it right. */
-      const val = { name, qty, tags, plat: tags.includes('plat'), at: (was && Number(was.at)) || Date.now() };
-      const overridden = !!(editing && editing.custom.fixed);
-      S.custom[id] = val; renderLive(); closeGoalDialog();
-      try {
-        await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
-        flash(overridden ? 'Saved. A correction in the site data still overrides this goal, so ask Claude to clear it.' : (editing ? 'Goal updated.' : 'Goal added.'));
-      } catch (e) {
-        if (was) S.custom[id] = was; else delete S.custom[id];
-        renderLive(); writeFailed(e);
-      }
-    }
-    async function removeGoal() {
-      if (!editing || !S.owner || !S.sync) return;
-      const id = editing.id, was = S.custom[id], wasDone = S.done[id];
-      delete S.custom[id]; delete S.done[id]; renderLive(); closeGoalDialog();
-      try { await S.sync.remove(id); flash('Goal deleted.'); }
-      catch (e) {
-        if (was) S.custom[id] = was;
-        if (wasDone !== undefined) S.done[id] = wasDone;
-        renderLive(); writeFailed(e);
-      }
-    }
-    function initGoalDialog() {
-      buildResourceSelect(); buildTagButtons();
-      $('wf-res').addEventListener('change', syncOther);
-      $('wf-cancel').addEventListener('click', closeGoalDialog);
-      $('wf-goalform').addEventListener('submit', saveGoal);
-      $('wf-del').addEventListener('click', () => {
-        if ($('wf-del').dataset.armed) { resetDelete(); removeGoal(); return; }
-        $('wf-del').dataset.armed = '1'; $('wf-del').textContent = 'Tap again to delete';
-        delTimer = setTimeout(resetDelete, 4000);
-      });
-    }
+    function renderLive() { renderGlance(); renderBuilds(); if (S.data) renderMods(); }
 
     /* ---------- render: mods ---------- */
     /* A goal (or a part of one) can stand for a mod, and ticking it means CB owns that mod:
@@ -1157,7 +619,7 @@
         if (ticked.has(n) && !have.has(n)) { const c = parseChip(it); add.push(c.name); from[c.name] = g.id; have.add(n); }
       }));
       if (!add.length) return base;
-      return [{ id: 'ticked', name: 'Owned because you ticked the goal', note: 'These were on your Missing list. You ticked their goal on the Goals tab, so they count as owned. Untick the goal to put one back.', items: add, from }].concat(base);
+      return [{ id: 'ticked', name: 'Owned because you ticked the goal', note: 'These were on your Missing list. You ticked their goal on the Game goals page, so they count as owned. Untick the goal to put one back.', items: add, from }].concat(base);
     }
     function renderMods() {
       const q = $('wf-q').value.trim().toLowerCase();
@@ -2223,7 +1685,7 @@
 
     /* ---------- tabs ---------- */
     function showTab(name) {
-      if (!TABS.includes(name)) name = 'goals';
+      if (!TABS.includes(name)) name = 'mods';
       ui.tab = name; saveUi();
       TABS.forEach((t) => {
         $('p-' + t).hidden = t !== name;
@@ -2234,6 +1696,7 @@
     function initTabs() {
       TABS.forEach((t) => $('t-' + t).addEventListener('click', () => showTab(t)));
       const h = location.hash.slice(1);
+      if (h === 'goals') { location.replace('goals.html#warframe'); return; }   // the Goals tab moved to the Game goals page
       showTab(TABS.includes(h) ? h : ui.tab);
       $('v-owned').addEventListener('click', () => { ui.view = 'owned'; saveUi(); renderMods(); });
       $('v-missing').addEventListener('click', () => { ui.view = 'missing'; saveUi(); renderMods(); });
@@ -2313,8 +1776,8 @@
       }
       S.data.farm.tasks = cleanGoals(S.data.farm.tasks, new Set(), new Set());
       indexGoals(S.data.farm.tasks);
-      $('wf-lede').textContent = 'The full list of grind goals, every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
-      renderLive(); renderMods(); renderBuilds(); initTabs(); initGoalDialog(); initBuildDialog(); initTokenDialog(); initModDialog(); initStatsDialog();
+      $('wf-lede').textContent = 'Every mod owned and missing, and the saved builds. Updated ' + S.data.updatedLabel + '. ' + S.data.source;
+      renderLive(); initTabs(); initBuildDialog(); initModDialog(); initStatsDialog();
       loadModStats(); loadCommunity();
       await startSync();
     }

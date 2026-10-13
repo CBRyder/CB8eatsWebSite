@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dev hub — CB8eats</title>
-  <meta name="description" content="Dev hub: the Tarboro Life tracker, the COA tracker and Warframe, in one place.">
+  <meta name="description" content="Dev hub: the Tarboro Life tracker, the COA tracker, Warframe and Game goals, in one place.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,8 +33,9 @@
     .dev h1 { margin-bottom: 0.6rem; }
     .dev .lede { margin-bottom: 1.8rem; }
 
-    .hubgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; margin-bottom: 2.2rem; }
-    @media (max-width: 860px) { .hubgrid { grid-template-columns: 1fr; } }
+    .hubgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; margin-bottom: 2.2rem; }
+    @media (max-width: 980px) { .hubgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .hubgrid { grid-template-columns: 1fr; } }
 
     .hubcard {
       display: flex; flex-direction: column; gap: 0.5rem;
@@ -93,8 +94,15 @@
         <span class="icon" aria-hidden="true">⚔️</span>
         <span class="kind">Personal</span>
         <h2>Warframe</h2>
-        <p>Grind goals, every mod owned and missing, and the saved builds, all synced live.</p>
+        <p>Every mod owned and missing, and the saved builds, all synced live.</p>
         <span class="cta">Open Warframe &rarr;</span>
+      </a>
+      <a class="hubcard" href="goals.html" id="hub-goals">
+        <span class="icon" aria-hidden="true">🎯</span>
+        <span class="kind">Personal</span>
+        <h2>Game goals</h2>
+        <p>What to do next in Warframe, ARC Raiders and any game you add, ticked off and synced live.</p>
+        <span class="cta">Open Game goals &rarr;</span>
       </a>
     </div>
 

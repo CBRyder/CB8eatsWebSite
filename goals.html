@@ -174,6 +174,17 @@
     #g-dlg .field.listtoggle input[type="checkbox"] { width: 24px; height: 24px; }
     .formerr { min-height: 1.3rem; font-size: 0.88rem; color: #ff8a8a; margin: 0.4rem 0 0; }
     .dlgbtns { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
+    .headbtns { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+    .btn-sm[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-bright); }
+    .seedhint { font-size: 0.86rem; color: var(--text-dim); margin: 0.3rem 0 0; }
+    .removedbox { margin: 1rem 0 0.4rem; border: 1px dashed var(--border); border-radius: 10px; padding: 0.2rem 0.8rem; }
+    .removedbox > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--text-dim); }
+    .removedlist { list-style: none; margin: 0 0 0.5rem; padding: 0; }
+    .removedlist li { display: flex; align-items: center; gap: 0.6rem; border-top: 1px solid var(--border); padding: 0.4rem 0; }
+    .removedlist li > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .removedlist .btn-sm { flex: none; }
+    .removedlist .btn-sm[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+    .gamefoot { display: flex; flex-wrap: wrap; gap: 0.6rem; }
     .dlgbtns .spacer { flex: 1 1 auto; }
     .btn-sm.danger { border-color: #ff8a8a; color: #ff8a8a; }
     /* Mods */
@@ -299,6 +310,8 @@
     .gedit { display: flex; justify-content: flex-end; margin: 0.2rem 0 0.7rem; }
     .gedit[aria-disabled="true"], .gedit .edit[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .gamefoot { margin: 0 0 1.4rem; }
+    #g-removedgames { margin-top: 0.8rem; }
+    #g-removedgames h3 { margin: 0 0 0.2rem; font-size: 1rem; }
     .gamefoot .btn-sm[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
     .muted.warn { color: #ff8a8a; }
     .about { margin: 0.2rem 0 1rem; }
@@ -412,11 +425,12 @@
   <dialog class="wfdlg" id="g-dlg" aria-labelledby="g-dlg-title">
     <form id="g-goalform" novalidate>
       <h2 id="g-dlg-title">Add a goal</h2>
-      <p class="muted">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks. Or turn on List to put it inside a list that is already a dropdown.</p>
+      <p class="muted" id="g-dlg-blurb">Name the goal and pick its group. Add steps if it is made of several things: it then opens as a dropdown of ticks. Or turn on List to put it inside a list that is already a dropdown.</p>
       <label class="field"><span>Goal</span>
         <input type="text" id="g-text" maxlength="80" autocomplete="off" placeholder="For example Unlock the next weapon">
       </label>
-      <label class="field listtoggle"><input type="checkbox" id="g-list-on"><span>List</span>
+      <p class="seedhint" id="g-seedhint" hidden></p>
+      <label class="field listtoggle" id="g-list-toggle"><input type="checkbox" id="g-list-on"><span>List</span>
         <small>Turn on to put this goal inside a list instead of in a group.</small>
       </label>
       <label class="field" id="g-list-wrap" hidden><span>Pick the list</span>
@@ -437,13 +451,14 @@
       <label class="field"><span>Note (optional)</span>
         <textarea id="g-note" maxlength="200" rows="2" placeholder="Anything worth remembering"></textarea>
       </label>
-      <label class="field"><span>Steps (optional)</span>
+      <label class="field" id="g-parts-wrap"><span>Steps (optional)</span>
         <textarea id="g-parts" maxlength="2000" rows="4" placeholder="One step per line"></textarea>
         <small>Each line becomes its own tick inside the goal.</small>
       </label>
       <p class="formerr" id="g-err" role="alert"></p>
       <div class="dlgbtns">
         <button type="button" class="btn-sm danger" id="g-del" hidden>Delete</button>
+        <button type="button" class="btn-sm" id="g-reset" hidden>Back to original</button>
         <span class="spacer"></span>
         <button type="button" class="btn-sm" id="g-cancel">Cancel</button>
         <button type="submit" class="btn-sm primary" id="g-save">Save goal</button>
@@ -454,11 +469,16 @@
   <dialog class="wfdlg" id="g-gamedlg" aria-labelledby="g-gamedlg-title">
     <form id="g-gameform" novalidate>
       <h2 id="g-gamedlg-title">Add a game</h2>
-      <p class="muted">Type the game's name. It shows up on the picker on every device, and you can add its goals straight after.</p>
+      <p class="muted" id="g-gamedlg-blurb">Type the game's name. It shows up on the picker on every device, and you can add its goals straight after.</p>
       <label class="field"><span>Game name</span>
         <input type="text" id="g-gname" maxlength="40" autocomplete="off" placeholder="For example Deep Rock Galactic">
       </label>
       <p class="formerr" id="g-gerr" role="alert"></p>
+      <div id="g-removedgames" hidden>
+        <h3>Removed games</h3>
+        <p class="muted">Games you removed that come with the page. Restore one to put it, its goals and its ticks back.</p>
+        <ul class="removedlist" id="g-removedgames-list"></ul>
+      </div>
       <div class="dlgbtns">
         <span class="spacer"></span>
         <button type="button" class="btn-sm" id="g-gamecancel">Cancel</button>
@@ -609,6 +629,11 @@
     const TOK_DEFAULT_NAME = 'Mother Tokens', TOK_MAX = 100000000;
     const openGoals = {};   // which goal dropdowns are open, by goal id (kept across re-renders)
     const CUSTOM_GROUP = 'Added by you';
+    const EDIT_KIND = 'edit';      // custom.<id of a goal from a data file> = { kind: 'edit', text?, note?, group?, tags?, hidden? }: what you changed on it (see CLAUDE.md)
+    const GAMEMETA = 'gamemeta';   // custom.gamemeta = { name?, hidden? } in the gameGoals doc of a game from goals-data.json: its new title, or removed
+    const CUSTOM_MAX = 200;        // the Firestore rule allows this many entries in a `custom` map
+    let editMode = false;          // the Edit goals toggle: an Edit button on every goal that comes from a data file
+    let removedOpen = false;       // whether the Removed by you box is open (kept across re-renders)
     /* The goal list being drawn right now: how to tell if a goal is ticked and what a tap does. renderWarframe and
        renderGeneric set it before they draw, and the row builders below read it, so one set of rows serves every game. */
     let CTX = null;
@@ -704,6 +729,54 @@
       return p.total > 0 && p.done === p.total;
     }
 
+    /* ---------- goals from the data files can be edited and removed too ---------- */
+    /* What was changed on a goal that comes from warframe-data.json or goals-data.json is saved on top of it, in the same `custom`
+       map as the goals you add: custom.<goal id> = { kind: 'edit', text?, note?, group?, tags?, hidden? }. Only what differs from
+       the file is kept. The files are never touched and the goal keeps its id, so its tick, its place in a list and its link to a
+       mod all carry on; Back to original just deletes the entry. */
+    function editsOf(custom) {
+      const out = {};
+      Object.keys(custom || {}).forEach((id) => {
+        const v = custom[id];
+        if (!ID_RE.test(id) || !v || typeof v !== 'object' || Array.isArray(v) || v.kind !== EDIT_KIND) return;
+        const e = {};
+        const text = cleanText(v.text, 80); if (text) e.text = text;
+        if (typeof v.note === 'string') e.note = cleanText(v.note, 200);
+        const group = cleanText(v.group, 30); if (group) e.group = group;
+        if (Array.isArray(v.tags)) e.tags = TAGS.map((x) => x.id).filter((x) => v.tags.includes(x));
+        if (v.hidden === true) e.hidden = true;
+        out[id] = e;
+      });
+      return out;
+    }
+    /* The goals from a data file with the edits laid over them, on copies (the loaded data is never changed). Each copy gets
+       `seed` (what the file says, so the form can offer Back to original; `top` is true for a goal that sits in a group) and
+       `edit` (the saved changes, when there are any). A removed goal is left out and listed in `removed` with the path it sat
+       under; a list whose steps were all removed goes too. Only a top-level goal has a group, and only Warframe's have tags. */
+    function applyEdits(list, edits, wf, path, removed) {
+      const out = [], top = !path.length;
+      (list || []).forEach((t) => {
+        const e = edits[t.id];
+        if (e && e.hidden) { removed.push({ id: t.id, text: e.text || t.text, label: path.concat(e.text || t.text).join(' › ') }); return; }
+        const c = Object.assign({}, t, { seed: { text: t.text, note: t.note || '', group: top ? t.group : '', tags: top ? (t.tags || []).slice() : [], top } });
+        if (e) {
+          let changed = false;
+          if (e.text) { c.text = e.text; changed = true; }
+          if ('note' in e) { c.note = e.note; changed = true; }
+          if (top && e.group) { c.group = e.group; changed = true; }
+          if (top && wf && 'tags' in e) { c.tags = e.tags; changed = true; }
+          if (changed) c.edit = e;
+        }
+        if (t.parts) {
+          c.parts = applyEdits(t.parts, edits, wf, path.concat(c.text), removed);
+          if (!c.parts.length) return;
+        }
+        out.push(c);
+      });
+      return out;
+    }
+    const idsOf = (tree) => Object.keys(indexInto(tree, {}));
+
     /* ---------- goals you add: one form and one set of rows for every game ---------- */
     /* Where a game keeps the goals added to it and how they are saved. Warframe's live in warframe/progress, every
        other game's in gameGoals/<id>; the form, the rows and the lists work the same on both. */
@@ -715,7 +788,7 @@
           custom: () => S.custom, done: () => S.done,
           write: (fields) => S.sync.write(fields, { done: S.done, runs: S.tokens, custom: S.custom }),
           del: () => S.sync.del(), remove: (ids) => S.sync.remove(ids),
-          tree: () => wfTree(), groups: () => wfGroups(wfTree()),
+          tree: (c) => wfBuild(c).tree, groups: () => wfGroups(wfTree()),
         };
       }
       const g = game.id;
@@ -725,7 +798,7 @@
         custom: () => docFor(g).custom, done: () => docFor(g).done,
         write: (fields) => { const d = docFor(g); return GS.sync.write(g, fields, { done: d.done, custom: d.custom }); },
         del: () => GS.sync.del(), remove: (ids) => GS.sync.remove(g, ids),
-        tree: () => genData(g).tasks, groups: () => genData(g).groups,
+        tree: (c) => genData(g, c).tasks, groups: () => genData(g).groups,
       };
     }
     /* The goals saved in one game's `custom` map, as goal objects. Every game saves { text, group, note?, parts?: [{ id, text }],
@@ -738,7 +811,8 @@
         const v = custom[id];
         if (!ID_RE.test(id) || !v || typeof v !== 'object' || Array.isArray(v)) return;
         if (wf && (id === TOKLOG || id === TOKCARD)) return;   // the token history and the token card's settings share this map but are not goals
-        if (v.kind === 'build') return;                        // builds you add share this map but are not goals
+        if (id === GAMEMETA) return;                           // a game's new title / removed flag shares this map too
+        if (v.kind === 'build' || v.kind === EDIT_KIND) return; // builds, and the edits to goals from a data file, share this map but are not added goals
         const fx = fixes[id] && typeof fixes[id] === 'object' ? fixes[id] : null;
         if (fx && fx.hidden) return;
         const t = { id, note: '', custom: true, at: Number(v.at) || 0 };
@@ -797,15 +871,16 @@
     const ownSteps = (t) => (t && (t.ownParts || t.parts)) || [];
     /* Warframe's goals as they are drawn: the ones in warframe-data.json, then the ones you added, with each added goal
        that sits in a list put inside that list. */
-    function wfTree() {
-      const seed = S.data.farm.tasks, ids = new Set(), names = new Set();
-      (function seen(l) { l.forEach((t) => { ids.add(t.id); names.add(t.text.replace(/\s+/g, ' ').trim().toLowerCase()); if (t.parts) seen(t.parts); }); })(seed);
-      const added = addedGoals(S.custom, true);
+    function wfBuild(custom) {
+      const cu = custom || S.custom, removed = [], ids = new Set(), names = new Set();
+      const seed = cleanGoals(applyEdits(S.data.farm.tasks, editsOf(cu), true, [], removed), ids, names);
+      const added = addedGoals(cu, true);
       // The older resource goals keep showing even when two have the same text (the same resource added twice).
       const clean = (list) => [].concat(...list.map((c) => (c.legacy ? [c] : cleanGoals([c], ids, names))));
       const g = graftListed(seed.concat(clean(added.filter((t) => !t.list))), clean(added.filter((t) => t.list)));
-      return g.tree.concat(g.orphans);
+      return { tree: g.tree.concat(g.orphans), removed };
     }
+    function wfTree() { return wfBuild().tree; }
     /* The groups (columns) of the Warframe goals: the ones in the data file, Added by you, then any other name in use. */
     function wfGroups(tree) {
       const out = (S.data.farm.groupOrder || ['Next', 'Later']).concat([CUSTOM_GROUP]);
@@ -863,6 +938,45 @@
     }
     function pickedTags() {
       return Array.from($('g-tags').querySelectorAll('.tagbtn')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tag);
+    }
+
+    /* The title row of the goals card: the title, then Edit goals (a toggle) and + Add goal. */
+    function goalHead(title) {
+      const head = el('div', 'cardhead');
+      head.appendChild(el('h2', null, title));
+      const box = el('div', 'headbtns');
+      const ed = el('button', 'btn-sm', editOn() ? 'Done editing' : 'Edit goals'); ed.type = 'button'; ed.id = 'g-editmode';
+      ed.setAttribute('aria-pressed', editOn() ? 'true' : 'false');
+      if (!S.owner) ed.setAttribute('aria-disabled', 'true');
+      ed.onclick = () => {
+        if (!S.owner) return flash('Sign in as the owner (top right) to change this.');
+        editMode = !editMode; renderLive();
+      };
+      box.appendChild(ed);
+      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button'; add.id = 'g-add';
+      if (!S.owner) add.setAttribute('aria-disabled', 'true');
+      add.onclick = () => openGenDialog(null);
+      box.appendChild(add);
+      head.appendChild(box);
+      return head;
+    }
+    /* The goals you removed from a data file, with a Restore button each. */
+    function removedEl(removed) {
+      if (!removed.length) return null;
+      const d = document.createElement('details'); d.className = 'removedbox'; d.id = 'g-removed'; d.open = removedOpen;
+      d.addEventListener('toggle', () => { removedOpen = d.open; });
+      d.appendChild(el('summary', null, 'Removed by you (' + removed.length + ')'));
+      const ul = el('ul', 'removedlist');
+      removed.forEach((r) => {
+        const li = el('li'); li.dataset.id = r.id;
+        li.appendChild(el('span', null, r.label));
+        const b = el('button', 'btn-sm', 'Restore'); b.type = 'button'; b.setAttribute('aria-label', 'Restore ' + r.label);
+        if (!S.owner) b.setAttribute('aria-disabled', 'true');
+        b.onclick = () => restoreSeed(r.id);
+        li.appendChild(b); ul.appendChild(li);
+      });
+      d.appendChild(ul);
+      return d;
     }
 
     function renderWarframe() {
@@ -937,13 +1051,7 @@
       p.appendChild(card);
 
       const wrap = el('div', 'wfcard');
-      const head = el('div', 'cardhead');
-      head.appendChild(el('h2', null, 'Grind goals'));
-      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button'; add.id = 'g-add';
-      if (!S.owner) add.setAttribute('aria-disabled', 'true');
-      add.onclick = () => openGenDialog(null);
-      head.appendChild(add);
-      wrap.appendChild(head);
+      wrap.appendChild(goalHead('Grind goals'));
       const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Filter goals');
       GOAL_FILTERS.forEach((fl) => {
         const b = el('button', null, fl[1]); b.type = 'button';
@@ -952,7 +1060,7 @@
         seg.appendChild(b);
       });
       wrap.appendChild(seg);
-      const everything = wfTree();
+      const built = wfBuild(), everything = built.tree;
       const visible = everything.filter((t) => ui.goalFilter === 'all' || (t.tags || []).includes(ui.goalFilter));
       const open = visible.filter((t) => !goalDone(t)).length;
       wrap.appendChild(el('p', 'muted', visible.length + ' goals shown, ' + open + ' still open.' + ((TAGS.find((x) => x.id === ui.goalFilter) || {}).explain ? ' ' + TAGS.find((x) => x.id === ui.goalFilter).explain : '')));
@@ -963,6 +1071,7 @@
         items.forEach((t) => wrap.appendChild(genRowEl(t)));
       });
       if (!visible.length) wrap.appendChild(el('p', 'muted', 'Nothing matches that filter.'));
+      const rm = removedEl(built.removed); if (rm) wrap.appendChild(rm);
       p.appendChild(wrap);
     }
 
@@ -1014,9 +1123,10 @@
       meta.appendChild(el('span', 'chev'));
       sm.appendChild(meta);
       d.appendChild(sm);
-      const flat = t.parts.every((x) => !hasParts(x) && !x.note && !x.listed);
+      const own = (x) => x.listed || (x.seed && editOn());   // rows that carry an Edit button
+      const flat = t.parts.every((x) => !hasParts(x) && !x.note && !own(x));
       const list = el('div', 'parts' + (flat ? ' flat' : ''));
-      t.parts.forEach((x) => list.appendChild(x.listed && CTX.row ? CTX.row(x) : goalEl(x)));
+      t.parts.forEach((x) => list.appendChild(own(x) && CTX.row ? CTX.row(x) : goalEl(x)));
       d.appendChild(list);
       return d;
     }
@@ -1212,13 +1322,27 @@
     /* Every game on the picker: the ones in goals-data.json, then the ones added with the Add game button
        (a gameGoals doc with a name). Warframe is always first and is the only one with extras (the Mother Tokens
        card, tags and resource goals), because its data lives in warframe-data.json. */
+    /* A game from goals-data.json can be renamed and removed too: custom.gamemeta = { name?, hidden? } in its gameGoals doc. */
+    function gameMeta(id) {
+      const d = GS.docs[id], v = d && d.custom && d.custom[GAMEMETA];
+      return v && typeof v === 'object' && !Array.isArray(v) ? { name: cleanText(v.name, 40), hidden: v.hidden === true } : { name: '', hidden: false };
+    }
     function gameList() {
       const seen = new Set(), out = [];
-      GS.seeds.forEach((g) => { seen.add(g.id); out.push({ id: g.id, name: g.name, kind: g.id === WF ? 'warframe' : 'seed', seed: g }); });
+      GS.seeds.forEach((g) => {
+        seen.add(g.id);
+        const m = g.id === WF ? { name: '', hidden: false } : gameMeta(g.id);   // Warframe is always there
+        if (m.hidden) return;
+        out.push({ id: g.id, name: m.name || g.name, kind: g.id === WF ? 'warframe' : 'seed', seed: g });
+      });
       Object.keys(GS.docs).filter((id) => !seen.has(id) && GS.docs[id].name)
         .sort((a, b) => (GS.docs[a].at - GS.docs[b].at) || (a < b ? -1 : 1))
         .forEach((id) => out.push({ id, name: GS.docs[id].name, kind: 'custom', seed: null }));
       return out;
+    }
+    /* The games from goals-data.json that were removed. Add game lists them so they can be brought back. */
+    function removedGames() {
+      return GS.seeds.filter((g) => g.id !== WF && gameMeta(g.id).hidden).map((g) => ({ id: g.id, name: gameMeta(g.id).name || g.name, seed: g }));
     }
     function curGame() {
       const list = gameList();
@@ -1259,7 +1383,7 @@
       });
       const add = el('button', 'addgame', '+ Add game'); add.type = 'button'; add.id = 'g-addgame';
       if (!S.owner) add.setAttribute('aria-disabled', 'true');
-      add.onclick = openGameDialog;
+      add.onclick = () => openGameDialog();
       box.appendChild(add);
     }
     function renderPanel() {
@@ -1287,10 +1411,11 @@
     /* The goals of one game: the ones in goals-data.json, then the ones added with the Add goal button (saved as
        custom.<id> = { text, group, note?, parts?: [{ id, text }], list?, at }; see addedGoals and graftListed). A repeated
        id or name is dropped (cleanGoals). */
-    function genData(g) {
+    function genData(g, custom) {
       const game = gameList().find((x) => x.id === g);
-      const seedTasks = game && game.seed && Array.isArray(game.seed.tasks) ? game.seed.tasks : [];
-      const added = addedGoals((GS.docs[g] && GS.docs[g].custom) || {}, false);
+      const cu = custom || (GS.docs[g] && GS.docs[g].custom) || {}, removed = [];
+      const seedTasks = game && game.seed && Array.isArray(game.seed.tasks) ? applyEdits(game.seed.tasks, editsOf(cu), false, [], removed) : [];
+      const added = addedGoals(cu, false);
       const ids = new Set(), names = new Set();
       const base = cleanGoals(seedTasks.concat(added.filter((t) => !t.list)), ids, names);
       const listed = [].concat(...added.filter((t) => t.list).map((c) => cleanGoals([c], ids, names)));
@@ -1298,7 +1423,7 @@
       const tasks = grafted.tree.concat(grafted.orphans);
       const groups = ((game && game.seed && game.seed.groupOrder) || []).slice();
       tasks.forEach((t) => { if (!groups.includes(t.group)) groups.push(t.group); });
-      return { tasks, groups, index: indexInto(tasks, {}) };
+      return { tasks, groups, removed, index: indexInto(tasks, {}) };
     }
 
     function renderGeneric(game) {
@@ -1306,13 +1431,7 @@
       const g = game.id, d = genData(g);
       CTX = { isDone: (id) => isDoneIn(docFor(g).done, d.index, id), toggle: (id) => toggleGeneric(g, id), row: genRowEl };
       const wrap = el('div', 'wfcard');
-      const head = el('div', 'cardhead');
-      head.appendChild(el('h2', null, game.name + ' goals'));
-      const add = el('button', 'btn-sm primary', '+ Add goal'); add.type = 'button'; add.id = 'g-add';
-      if (!S.owner) add.setAttribute('aria-disabled', 'true');
-      add.onclick = () => openGenDialog(null);
-      head.appendChild(add);
-      wrap.appendChild(head);
+      wrap.appendChild(goalHead(game.name + ' goals'));
       if (game.seed && game.seed.blurb) wrap.appendChild(el('p', 'muted', game.seed.blurb));
       const open = d.tasks.filter((t) => !goalDone(t)).length;
       const sum = el('p', 'muted', d.tasks.length ? d.tasks.length + ' goals, ' + open + ' still open.' : 'No goals yet. Tap + Add goal to start the list.');
@@ -1324,20 +1443,24 @@
         wrap.appendChild(el('p', 'group-label', grp));
         items.forEach((t) => wrap.appendChild(genRowEl(t)));
       });
+      const rm = removedEl(d.removed); if (rm) wrap.appendChild(rm);
       if (GS.listen === 'denied') wrap.appendChild(el('p', 'muted warn', 'The gameGoals Firestore rule is not published yet, so ticks and added goals for this game cannot be saved.'));
       p.appendChild(wrap);
-      if (game.kind === 'custom') {
-        const foot = el('div', 'gamefoot');
-        const drop = el('button', 'btn-sm danger', dropArmed === g ? 'Tap again to remove' : 'Remove this game'); drop.type = 'button'; drop.id = 'g-dropgame';
-        if (!S.owner) drop.setAttribute('aria-disabled', 'true');
-        drop.onclick = () => dropGame(g);
-        foot.appendChild(drop);
-        p.appendChild(foot);
-      }
+      const foot = el('div', 'gamefoot');
+      const ren = el('button', 'btn-sm', 'Rename game'); ren.type = 'button'; ren.id = 'g-renamegame';
+      if (!S.owner) ren.setAttribute('aria-disabled', 'true');
+      ren.onclick = () => openGameDialog(game);
+      foot.appendChild(ren);
+      const drop = el('button', 'btn-sm danger', dropArmed === g ? 'Tap again to remove' : 'Remove this game'); drop.type = 'button'; drop.id = 'g-dropgame';
+      if (!S.owner) drop.setAttribute('aria-disabled', 'true');
+      drop.onclick = () => dropGame(g);
+      foot.appendChild(drop);
+      p.appendChild(foot);
     }
-    /* A goal you added gets an Edit button; a goal from goals-data.json does not (it is changed in the file). */
+    /* A goal you added always has an Edit button. A goal that comes from a data file gets one while Edit goals is on. */
+    const editOn = () => editMode && S.owner;
     function genRowEl(t) {
-      if (!t.custom) return goalEl(t);
+      if (!(t.custom || (t.seed && editOn()))) return goalEl(t);
       const ed = el('button', 'btn-sm edit', 'Edit'); ed.type = 'button'; ed.setAttribute('aria-label', 'Edit ' + t.text);
       if (!S.owner) ed.setAttribute('aria-disabled', 'true');
       ed.onclick = () => openGenDialog(t);
@@ -1374,13 +1497,15 @@
       const dlg = $(id);
       if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
     }
-    function resetGenDelete() { clearTimeout(genDelTimer); $('g-del').textContent = 'Delete'; $('g-del').dataset.armed = ''; }
+    const isSeedGoal = () => !!(genEditing && genEditing.seed);
+    function resetGenDelete() { clearTimeout(genDelTimer); $('g-del').textContent = isSeedGoal() ? 'Remove' : 'Delete'; $('g-del').dataset.armed = ''; }
     function syncGroupNew() { $('g-group-new-wrap').hidden = $('g-list-on').checked || $('g-group').value !== '__new'; }
     function openGenDialog(t) {
       const game = curGame(); if (!game) return;
       const st = storeOf(game);
       if (!st.ready()) return st.nope();
       genEditing = t || null;
+      const seeded = isSeedGoal();
       $('g-dlg-title').textContent = t ? 'Edit goal' : 'Add a goal to ' + game.name;
       $('g-save').textContent = t ? 'Save changes' : 'Save goal';
       $('g-del').hidden = !t; resetGenDelete();
@@ -1391,12 +1516,22 @@
       $('g-text').placeholder = st.wf ? 'For example Farm Nitain Extract' : 'For example Unlock the next weapon';
       $('g-text').value = t ? t.text : '';
       $('g-note').value = t ? (t.note || '') : '';
-      $('g-parts').value = ownSteps(t).map((x) => x.text).join('\n');
+      $('g-parts').value = t && t.seed ? '' : ownSteps(t).map((x) => x.text).join('\n');
       $('g-group-new').value = '';
       sel.value = t && groups.includes(t.group) ? t.group : (st.wf ? CUSTOM_GROUP : (groups[0] || GEN_GROUP));
       $('g-tags-wrap').dataset.wf = st.wf ? '1' : '';
       setTagButtons(t ? t.tags : []);
       setListUi(listChoices(st.tree(), t ? t.id : ''), t && t.list);
+      // A goal that comes from a data file: its name, note, group and tags can change and it can be removed, but it is not a list
+      // you build here (its steps are edited one by one) and it cannot be put inside another list.
+      $('g-list-toggle').hidden = seeded; $('g-parts-wrap').hidden = seeded; $('g-seedhint').hidden = !seeded; $('g-dlg-blurb').hidden = seeded;
+      $('g-reset').hidden = !(seeded && t.edit);
+      if (seeded) {
+        $('g-seedhint').textContent = 'This goal comes with the game\'s data file. What you change here is saved on top of it, and Back to original undoes it.'
+          + (hasParts(t) ? ' Its steps have their own Edit buttons while Edit goals is on.' : '');
+        $('g-group-wrap').hidden = !t.seed.top; $('g-group-new-wrap').hidden = true;
+        $('g-tags-wrap').hidden = !(t.seed.top && st.wf);
+      }
       openDlg('g-dlg');
     }
     /* Every name in the list (goals and their steps) except one goal and its steps, lowercased. */
@@ -1420,6 +1555,8 @@
       const text = cleanText($('g-text').value, 80);
       if (!text) return err('Type the goal.');
       if ($('g-text').value.trim().replace(/\s+/g, ' ').length > 80) return err('That goal is too long (80 characters at most).');
+      if (isSeedGoal()) return saveSeedEdit(st, text, err);
+      if (!d.custom[genEditing ? genEditing.id : ''] && Object.keys(d.custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.');
       let group, list = '';
       if ($('g-list-on').checked) {
         list = $('g-list').value;
@@ -1468,7 +1605,79 @@
         renderLive(); writeFailed(e, st.doc);
       }
     }
+    /* Save one entry of `custom` for a goal from a data file (entry null = delete it), optimistically, rolling back if refused. */
+    async function writeEdit(st, id, entry, okMsg) {
+      const custom = st.custom(), had = Object.prototype.hasOwnProperty.call(custom, id), was = custom[id];
+      if (entry) custom[id] = entry; else delete custom[id];
+      renderLive();
+      try {
+        await st.write({ ['custom.' + id]: entry || st.del() });
+        if (okMsg) flash(okMsg);
+        return true;
+      } catch (e) {
+        if (had) custom[id] = was; else delete custom[id];
+        renderLive(); writeFailed(e, st.doc);
+        return false;
+      }
+    }
+    const sameList = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+    /* Edit on a goal from a data file: only what differs from the file is saved. Nothing differing = back to original. */
+    async function saveSeedEdit(st, text, err) {
+      const t = genEditing, s = t.seed, id = t.id, custom = st.custom();
+      const note = cleanText($('g-note').value, 200);
+      let group = s.group;
+      if (s.top) {
+        group = $('g-group').value;
+        if (group === '__new') group = cleanText($('g-group-new').value, 30);
+        if (!group) return err('Type the name of the group.');
+      }
+      const tags = st.wf && s.top ? pickedTags() : s.tags;
+      const others = namesExcept(st.tree(), id);
+      (t.parts || []).filter((x) => !x.listed).forEach((x) => (function add(n) { others.add(n.text.replace(/\s+/g, ' ').trim().toLowerCase()); (n.parts || []).forEach(add); })(x));   // its own steps count too
+      if (others.has(text.toLowerCase())) return err('That name is already used by another goal or step.');
+      const raw = custom[id], e = { kind: EDIT_KIND };
+      if (text !== s.text) e.text = text;
+      if (note !== s.note) e.note = note;
+      if (s.top && group !== s.group) e.group = group;
+      if (st.wf && s.top && !sameList(tags, s.tags)) e.tags = tags;
+      const empty = Object.keys(e).length === 1;
+      if (empty && !(raw && raw.kind === EDIT_KIND)) { closeDlg('g-dlg'); return; }   // nothing changed from the file
+      if (!empty && !raw && Object.keys(custom).length >= CUSTOM_MAX) return err('This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.');
+      closeDlg('g-dlg');
+      await writeEdit(st, id, empty ? null : e, empty ? 'Back to the original.' : 'Goal updated.');
+    }
+    async function resetSeedGoal() {
+      const game = curGame(); if (!game || !isSeedGoal()) return;
+      const st = storeOf(game); if (!st.ready()) return;
+      const id = genEditing.id; closeDlg('g-dlg');
+      await writeEdit(st, id, null, 'Back to the original.');
+    }
+    /* Remove a goal from a data file: hide it (nothing is deleted, its tick stays). It can be restored from Removed by you. */
+    async function removeSeedGoal() {
+      const game = curGame(); if (!game || !isSeedGoal()) return;
+      const st = storeOf(game); if (!st.ready()) return;
+      const id = genEditing.id, custom = st.custom(), raw = custom[id];
+      if (!raw && Object.keys(custom).length >= CUSTOM_MAX) { $('g-err').textContent = 'This game is full (' + CUSTOM_MAX + ' saved goals and edits at most). Delete something first.'; return; }
+      const e = Object.assign({}, raw && raw.kind === EDIT_KIND ? raw : {}, { kind: EDIT_KIND, hidden: true });
+      closeDlg('g-dlg');
+      await writeEdit(st, id, e, 'Goal removed. Restore it from Removed by you at the bottom of the list.');
+    }
+    async function restoreSeed(id) {
+      const game = curGame(); if (!game) return;
+      const st = storeOf(game);
+      if (!st.ready()) return st.nope();
+      const custom = st.custom(), raw = custom[id];
+      if (!raw || raw.kind !== EDIT_KIND) return;
+      const keep = Object.assign({}, raw); delete keep.hidden;
+      const next = Object.keys(keep).some((k) => k !== 'kind') ? keep : null;
+      // A goal added since can share its name with this one, and then the page would drop one of the two. Check first.
+      const sim = Object.assign({}, custom); if (next) sim[id] = next; else delete sim[id];
+      const now = new Set(idsOf(st.tree())), after = new Set(idsOf(st.tree(sim)));
+      if (!after.has(id) || Array.from(now).some((x) => !after.has(x))) return flash('Cannot restore that: a goal or step with the same name is already on the list. Rename or delete that one first.');
+      await writeEdit(st, id, next, 'Restored.');
+    }
     async function removeGenGoal() {
+      if (isSeedGoal()) return removeSeedGoal();
       const game = curGame(); if (!game || !genEditing) return;
       const st = storeOf(game);
       if (!st.ready()) return;
@@ -1489,9 +1698,10 @@
       $('g-list-on').addEventListener('change', syncListUi);
       $('g-cancel').addEventListener('click', () => closeDlg('g-dlg'));
       $('g-goalform').addEventListener('submit', saveGenGoal);
+      $('g-reset').addEventListener('click', resetSeedGoal);
       $('g-del').addEventListener('click', () => {
-        if ($('g-del').dataset.armed) { resetGenDelete(); removeGenGoal(); return; }
-        $('g-del').dataset.armed = '1'; $('g-del').textContent = 'Tap again to delete';
+        if ($('g-del').dataset.armed) { const go = removeGenGoal; resetGenDelete(); go(); return; }
+        $('g-del').dataset.armed = '1'; $('g-del').textContent = isSeedGoal() ? 'Tap again to remove' : 'Tap again to delete';
         genDelTimer = setTimeout(resetGenDelete, 4000);
       });
       $('g-gamecancel').addEventListener('click', () => closeDlg('g-gamedlg'));
@@ -1500,11 +1710,61 @@
 
     /* ---------- add / remove a game ---------- */
     const slugOf = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '');
-    function openGameDialog() {
+    let gameRenaming = null;   // the game being renamed in the Add game window (null = adding a game)
+    function openGameDialog(game) {
       if (!S.owner || !GS.sync) return needOwner(GS.sync);
-      $('g-gname').value = ''; $('g-gerr').textContent = '';
+      gameRenaming = game && game.id ? game : null;
+      const ren = !!gameRenaming;
+      $('g-gamedlg-title').textContent = ren ? 'Rename ' + game.name : 'Add a game';
+      $('g-gamedlg-blurb').textContent = ren ? 'Type the new name. Its goals and ticks stay as they are.' : 'Type the game\'s name. It shows up on the picker on every device, and you can add its goals straight after.';
+      $('g-gamesave').textContent = ren ? 'Save name' : 'Add game';
+      $('g-gname').value = ren ? game.name : ''; $('g-gerr').textContent = '';
+      const rg = ren ? [] : removedGames(), ul = $('g-removedgames-list'); ul.textContent = '';
+      rg.forEach((r) => {
+        const li = el('li'); li.dataset.game = r.id;
+        li.appendChild(el('span', null, r.name));
+        const b = el('button', 'btn-sm', 'Restore'); b.type = 'button'; b.setAttribute('aria-label', 'Restore ' + r.name);
+        b.onclick = () => restoreGame(r);
+        li.appendChild(b); ul.appendChild(li);
+      });
+      $('g-removedgames').hidden = !rg.length;
       openDlg('g-gamedlg');
       $('g-gname').focus();
+    }
+    /* Save custom.gamemeta of a game from goals-data.json (meta null = delete it), optimistically, rolling back if refused. */
+    async function writeGameMeta(g, meta, okMsg) {
+      const d = docFor(g), had = Object.prototype.hasOwnProperty.call(d.custom, GAMEMETA), was = d.custom[GAMEMETA];
+      if (meta) d.custom[GAMEMETA] = meta; else delete d.custom[GAMEMETA];
+      renderLive();
+      try {
+        await GS.sync.write(g, { ['custom.' + GAMEMETA]: meta || GS.sync.del() }, { done: d.done, custom: d.custom });
+        if (okMsg) flash(okMsg);
+        return true;
+      } catch (e) {
+        if (had) d.custom[GAMEMETA] = was; else delete d.custom[GAMEMETA];
+        renderLive(); writeFailed(e, 'gameGoals');
+        return false;
+      }
+    }
+    async function restoreGame(r) {
+      if (!S.owner || !GS.sync) return needOwner(GS.sync);
+      const m = gameMeta(r.id);
+      closeDlg('g-gamedlg');
+      if (await writeGameMeta(r.id, m.name ? { name: m.name } : null, r.name + ' is back.')) showGame(r.id);
+    }
+    async function saveRename(name, err) {
+      const g = gameRenaming;
+      if (gameList().concat(removedGames()).some((x) => x.id !== g.id && x.name.toLowerCase() === name.toLowerCase())) return err('That game is already on the list.');
+      closeDlg('g-gamedlg');
+      if (name === g.name) return;
+      if (g.kind === 'custom') {
+        const d = docFor(g.id), was = d.name; d.name = name; renderLive();
+        try { await GS.sync.write(g.id, { name }, { name, at: d.at, done: d.done, custom: d.custom }); flash('Renamed.'); }
+        catch (e) { d.name = was; renderLive(); writeFailed(e, 'gameGoals'); }
+      } else {
+        // a game from goals-data.json keeps its title in custom.gamemeta; its own title there means no rename at all
+        await writeGameMeta(g.id, name === g.seed.name ? null : { name }, 'Renamed.');
+      }
     }
     async function saveGame(ev) {
       ev.preventDefault();
@@ -1513,9 +1773,11 @@
       const name = cleanText($('g-gname').value, 40);
       if (!name) return err('Type the name of the game.');
       if ($('g-gname').value.trim().replace(/\s+/g, ' ').length > 40) return err('That name is too long (40 characters at most).');
+      if (gameRenaming) return saveRename(name, err);
       const id = slugOf(name);
       if (!GAME_ID_RE.test(id)) return err('Use letters or numbers in the name.');
       if (TABS.includes(id)) return err('That name is kept for the Warframe tabs. Use a different one.');   // #goals, #mods and #builds in the address mean those tabs
+      if (removedGames().some((x) => x.id === id || x.name.toLowerCase() === name.toLowerCase())) return err('That game was removed. Restore it from the list below.');
       if (gameList().some((x) => x.id === id || x.name.toLowerCase() === name.toLowerCase())) return err('That game is already on the list.');
       const prevGame = ui.game, at = Date.now();
       GS.docs[id] = { name, at, done: {}, custom: {} };
@@ -1527,7 +1789,8 @@
         delete GS.docs[id]; ui.game = prevGame; saveUi(); renderLive(); writeFailed(e, 'gameGoals');
       }
     }
-    /* Remove a game you added (two taps). The games in goals-data.json cannot be removed here. */
+    /* Remove a game (two taps). A game you added is deleted with its goals. A game from goals-data.json is only hidden (its ticks
+       and goals stay), and Add game lists it so it can be brought back. Warframe has no remove button. */
     function dropGame(g) {
       if (!S.owner || !GS.sync) return needOwner(GS.sync);
       if (dropArmed !== g) {
@@ -1536,7 +1799,15 @@
         return;
       }
       clearTimeout(dropTimer); dropArmed = null;
-      const was = GS.docs[g], prevGame = ui.game;
+      const game = gameList().find((x) => x.id === g), prevGame = ui.game;
+      if (game && game.kind === 'seed') {
+        ui.game = WF; saveUi();
+        try { history.replaceState(null, '', '#' + WF); } catch (e) {}
+        const m = gameMeta(g), meta = { hidden: true }; if (m.name) meta.name = m.name;
+        writeGameMeta(g, meta, game.name + ' removed. Add game brings it back.').then((ok) => { if (!ok) { ui.game = prevGame; saveUi(); renderLive(); } });
+        return;
+      }
+      const was = GS.docs[g];
       delete GS.docs[g]; ui.game = WF; saveUi();
       try { history.replaceState(null, '', '#' + WF); } catch (e) {}
       renderLive();
@@ -1597,8 +1868,9 @@
        inside it is named exactly like its mod (the Primed, Archon, Umbral and Necramech collections).
        The Mods tab then shows a ticked mod under Owned and takes it off Missing. Untick the goal and it goes back. */
     function tickedMods() {
-      const out = new Set();
+      const out = new Set(), edits = editsOf(S.custom);
       const walk = (list, inherit) => (list || []).forEach((t) => {
+        if (edits[t.id] && edits[t.id].hidden) return;   // a goal you removed no longer makes its mod owned
         const all = inherit || t.ownsMods === true;
         if (hasParts(t)) return walk(t.parts, all);
         const name = typeof t.mod === 'string' ? t.mod : (all ? t.text : '');

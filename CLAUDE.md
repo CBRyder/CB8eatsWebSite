@@ -714,7 +714,7 @@ you tap open (`#wf-about`).
     r10, Fast Deflection r5, Transient Fortitude r8, Archon Continuity r10, Adaptation r6, Blind Rage r5; the
     Exilus slot is locked; capacity 1 of 74 left).
 - **Sync:** Firestore doc `warframe/progress` = `{ done: {goalId: bool}, runs: int (the Mother Tokens counted, see above),
-  theme: {...}, custom: {goalId: {text, group, note?, parts?, list?, tags?, at} (older resource goals: {name, qty, plat, at}), tokenlog: {e: {key: {n, at}}} (the token history), tokencard: {name?, note?, target?} (the Mother Tokens card's own title, description and goal), buildId: {kind: 'build', ...}} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
+  theme: {...}, custom: {goalId: {text, group, note?, parts?, list?, tags?, at} (older resource goals: {name, qty, plat, at}), tokenlog: {e: {key: {n, at}}} (the token history), tokencard: {name?, note?, target?} (the Mother Tokens card's own title, description and goal), buildId: {kind: 'build', ...}, seedGoalId: {kind: 'edit', text?, note?, group?, tags?, hidden?} (what CB changed or removed on a goal from `warframe-data.json`, see "Edit and remove what Claude seeds")} }`. Public read, owner-only write (`cbleo73@gmail.com`, email/password
   sign-in is the shared header button, `js/dev-auth.js`). Writes use `updateDoc` with dotted paths; `setDoc` is only
   the fallback when the doc does not exist yet. If Firebase fails to load, the page
   still renders from the JSON. Rule needed (add alongside the others, **do not replace
@@ -816,11 +816,53 @@ Warframe page was removed 2026-10-13, see the Warframe section).** CB chose
   `goals-data.json` and push (that is how ARC Raiders was added). **To add one as CB:** the owner-only
   `+ Add game` and `+ Add goal` buttons on the page. A game CB adds is the doc
   `gameGoals/<slug>` = `{ name, at, done: {}, custom: {} }` (slug = the name in lowercase letters,
-  digits and `-`, at most 30; a repeated slug is refused; a two-tap Remove game deletes the doc,
-  and seeded games have no remove button). A goal CB adds is `custom.<id>` =
+  digits and `-`, at most 30; a repeated slug is refused; a two-tap Remove game deletes the doc;
+  a seeded game can be renamed and removed too, see "Edit and remove what Claude seeds" below). A goal CB adds is `custom.<id>` =
   `{ text, group, note?, parts?: [{ id, text }], list?, at }` (id `g` + time + random; text 80, note 200, group 30,
   steps one per line, at most 30 of 60 characters). Added goals have an Edit button (rename, move group, change steps,
-  two-tap Delete that also clears the ticks); seeded goals do not, change those in the JSON.
+  two-tap Delete that also clears the ticks). Seeded goals get theirs while **Edit goals** is on, see the next bullet
+  (changing the JSON still works too).
+- **Edit and remove what Claude seeds (2026-10-13).** CB: "Make it backwards compatible so every thing u add I can edit or
+  even remove". Anything Claude puts in `warframe-data.json` `farm.tasks` or `goals-data.json` (goals, the steps inside a
+  list, and whole games) can be edited and removed on the page, with no Firestore rule change and no change to the data
+  files, ids or saved ticks. The mods list and the Mods tab chips are NOT part of this (they are rescanned data).
+  - **Edit goals** toggle (`#g-editmode`, beside + Add goal, owner only, not remembered across reloads): while it is on, every
+    goal from a data file, and every step of a seeded list, gets an Edit button (`genRowEl` / `goalEl` / `editOn()`); goals
+    you added always have theirs. The seeded list's compact grid (`.parts.flat`) is not used while it is on.
+  - **Storage:** one entry per changed goal in the same `custom` map, keyed by the goal's own id:
+    `custom.<goal id> = { kind: 'edit', text?, note?, group?, tags?, hidden? }`. Only keys that differ from the data file
+    are saved (`note: ''` means "no note", `tags: []` means "no tags"); nothing differing = the entry is deleted. `editsOf(custom)`
+    reads and cleans them, `applyEdits(list, edits, wf, path, removed)` lays them over a copy of the seed (copies carry
+    `seed` = what the file says and `edit` = the saved changes, so the form can offer Back to original) and
+    `addedGoals()` skips `kind: 'edit'` entries. `wfBuild(custom?)` (Warframe) and `genData(g, custom?)` (others) return the
+    tree plus `removed`; the optional `custom` is a what-if map used by the restore check. Group applies to top-level goals
+    only, tags to Warframe's top-level goals only, steps can change name and note only.
+  - **The form for a seeded goal** is the Add goal dialog with the List toggle, Steps and the intro text hidden, a hint line,
+    **Remove** (two taps; labelled Remove, not Delete, because nothing is deleted) and **Back to original** (shown when the
+    goal has edits). Renaming checks the name against every visible goal and the goal's own steps (the page drops a later
+    duplicate name silently, so it must never be allowed to happen).
+  - **Remove hides, it never deletes:** it saves `hidden: true` on the entry (keeping any edits), the goal's tick stays in
+    `done`, and the goal appears under **Removed by you (N)** at the bottom of the list (`removedEl`), with its path
+    ("List › Step") and a **Restore** button. Removing every step of a list takes the list with it (the steps are what is
+    listed as removed; restoring one brings the list back). **Restore** first simulates the restore (`st.tree(sim)`) and
+    refuses with a message if any goal that shows now would vanish (a goal added since can share the removed goal's name).
+    Goals added inside a removed list are not lost: they show under their group and go back inside when it is restored.
+    `tickedMods()` skips removed goals, so a removed goal no longer makes its mod owned; a rename does not break the link
+    (it reads the original seed's `mod` / `ownsMods` names).
+  - **Games from `goals-data.json`:** a **Rename game** button and a two-tap **Remove this game** under every game except
+    Warframe (which is always there). Both save `custom.gamemeta = { name?, hidden? }` in that game's `gameGoals` doc
+    (`gameMeta(id)`, `gameList()`, `removedGames()`, `writeGameMeta()`); removing only hides it (goals and ticks stay) and
+    **+ Add game** lists removed games with a Restore button (adding a game with a removed one's name points there).
+    Typing the original name again deletes the rename. A game CB added has Rename too (`name` in its own doc, the slug
+    stays) and its Remove still deletes the doc. `addedGoals()` skips `gamemeta`. The game dialog (`#g-gamedlg`) is shared
+    by Add and Rename (`gameRenaming`).
+  - **Limits:** the rule allows 200 entries in `custom`, shared with added goals, builds and these edits, so the form refuses
+    a new entry at 200 with "This game is full". Writes are optimistic with a full rollback and the usual "server refused"
+    message. An older cached copy of the page reads an edit entry as an added goal with the seed's id, which the duplicate-id
+    check drops, so it is harmless.
+  - **Tests:** `edittest.js` style checks (111): visitor and owner flows, edit / merge / back to original, note clearing, group
+    and new group, name clashes, steps, removing and restoring steps / lists / games, restore conflict, refused-write
+    rollback, the 200 limit, Warframe tags and mod linking, 360/390/430 layouts. Write them again rather than trusting this list.
 - **Add goal form and the List toggle (2026-10-13).** CB: "group is like a column and a list is a dropdownable column
   that has more checkboxes in it", and "all the games follow the same structure ... use the same ones". One form for every
   game, Warframe included (`#g-dlg`; `openGenDialog`, `saveGenGoal`, `removeGenGoal`). `storeOf(game)` is the small adapter that

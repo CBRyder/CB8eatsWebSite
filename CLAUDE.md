@@ -555,8 +555,19 @@ you tap open (`#wf-about`).
   The text has a header line, then per game: Warframe (the Mother Tokens count, every top-level goal as `- [x]`, `- [~]` or
   `- [ ]` with its id in brackets, and for a list `have:` and `open:` lines, the open names only up to 15; the mods ticked on
   the Mods tab; the Missing-list mods that count as owned only because their goal is ticked; a pointer to the scanned Owned
-  list in `warframe-data.json`; "Goals I removed or deleted (see History)") and every other game the same way from its own doc. It reads the page's
-  current state, so renames and removals CB made are applied. **Ways for Claude to read it, in order:** (1) the text CB pastes
+  list in `warframe-data.json`; **the Builds tab (2026-10-18): `Builds on my Builds tab (N):`, the builds that ship with
+  the page and the ones added with + Add build, each as `- name (kind, item, config) [id]` with indented Aura or Stance, Exilus,
+  Mods (with ranks), Arcanes and Notes lines; a deleted build is left out**; "Goals I removed or deleted (see History)") and
+  every other game the same way from its own doc. **Notes CB wrote** are in it too: a goal he added shows `| my note: ...` on its
+  line, and the Mother Tokens card's description shows as `My note on that card: ...` (seed goals' own notes are not repeated).
+  It reads the page's current state, so renames and removals CB made are applied.
+  **Rule (CB, 2026-10-18: "I added things that didn't get added to the copy button, I need them to update automatically"):
+  nothing CB saves may be missing from the copy.** The first version had no builds at all, so a build he added never showed.
+  `leftover()` inside `exportText()` closes that gap for good: every entry in a `custom` map (Warframe's and each game's) that
+  is not a goal, a build, an edit, a deleted thing or one of `tokenlog` / `tokencard` / `gamemeta` is printed raw (cut to 160
+  characters) on an `Other things I saved that this list does not know how to show yet (N): ...` line. **When you add a new kind
+  of saved thing, give it a proper section in `exportText()` in the same PR** (and then it stops being a leftover); if the
+  line shows up in a copy, that is the sign a section is missing. **Ways for Claude to read it, in order:** (1) the text CB pastes
   from Copy my list; (2) `window.cb8Export()` in his built-in browser on `https://www.dev.cb8eats.com/goals` when linked;
   (3) the public REST read of `warframe/progress` and `gameGoals` from a tab on his site (see Reading them as Claude above).
   The sandbox itself cannot read Firestore, so without one of those Claude does not know what is ticked. A scanned
@@ -564,6 +575,13 @@ you tap open (`#wf-about`).
   - **Tests:** `owntest.js` style checks (82): ids over the whole Missing list, visitor and owner flows, tick / untick /
     from Owned, refused-write rollback, ticks saved on another device, both-ways ownership, the export (goals, mods, edits,
     removed goals, another game), Copy with and without a clipboard, 360/390/430 layouts. Write them again rather than trusting this.
+  - **Export tests (2026-10-18, 38 checks, not kept in the repo):** a Node static server plus Playwright with the three
+    `firebasejs/10.7.1` imports replaced by read-only in-memory stand-ins (`onSnapshot` on the doc and on the `gameGoals`
+    collection, `deleteField`, `collection`; writes throw `permission-denied`). The fixture holds a build, a hidden build, an
+    added goal with a note, a deleted goal, the token card with a note, an unknown kind in Warframe and in another game. It checks
+    each line of the text, that a `custom` change shows in `cb8Export()` without a reload (the page's `onSnapshot` fires again),
+    the Copy button with and without clipboard permission, and no sideways scroll at 360/390/430. It must fail on the old code
+    (it times out waiting for the build). Rewrite it rather than trusting this list.
 - **Mother Token counter (changed 2026-10-10, again later that day; CB: "remove the red and make the top
   red section the typing section, the green be the add button and below those is a history Date and
   Time"):** the Warframe goals list's top card (on the Game goals page) counts **tokens**, not runs. It is a number box (`#tok-in`, a minus

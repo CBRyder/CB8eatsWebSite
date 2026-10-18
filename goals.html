@@ -3113,20 +3113,41 @@
     }
 
 
-    /* ---------- Copy my list: everything ticked, as text ---------- */
-    /* One text that says what CB has ticked in every game and on the Mods tab. A ticked goal means he owns it or has done it.
-       The Copy my list button copies it, and window.cb8Export() returns it, so Claude can read the same text from the open page
-       in the built-in browser. Goal ids are in brackets so a line can be matched to warframe-data.json / goals-data.json. */
+    /* ---------- Copy my list: everything ticked and everything added, as text ---------- */
+    /* One text that says what CB has ticked and added in every game, on the Mods tab and on the Builds tab. A ticked goal means he
+       owns it or has done it. The Copy my list button copies it, and window.cb8Export() returns it, so Claude can read the same text
+       from the open page in the built-in browser. Goal ids are in brackets so a line can be matched to warframe-data.json /
+       goals-data.json. It is built from the page's live state on every call, never from a stored copy. **Nothing CB saves may drop
+       out of it unseen**: the sections below cover goals (with the notes on goals he added), the Mother Tokens card, builds and
+       removed goals, and `leftover()` lists anything saved in a `custom` map that none of them knows how to show, so a new kind of
+       saved thing appears in the copy (in a rough form) the day it ships, before anyone writes a proper section for it. */
+    const oneLine = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
     function exportText() {
       const L = [];
       const when = new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       L.push('CB8eats goals export, ' + when + '. A ticked goal means I own it or I have done it. Goal ids are in brackets.');
       const leaves = (t) => (hasParts(t) ? t.parts.flatMap(leaves) : [t]);
+      /* Anything saved in a `custom` map that is not a goal, a build, an edit or one of the known settings, shown raw (cut to 160
+         characters), so a new kind of saved thing is never silently missing from the copy. */
+      const leftover = (custom) => {
+        const special = new Set([TOKLOG, TOKCARD, GAMEMETA]), out = [];
+        Object.keys(custom || {}).forEach((id) => {
+          const v = custom[id];
+          if (special.has(id)) return;
+          if (v && typeof v === 'object' && !Array.isArray(v)) {
+            if (v.kind === 'build' || v.kind === EDIT_KIND || v.deleted === true) return;   // shown elsewhere, or deleted (History has it)
+            if (typeof v.text === 'string' || typeof v.name === 'string') return;            // a goal: addedGoals() decides whether it shows
+          }
+          out.push(id + ': ' + oneLine(JSON.stringify(v)).slice(0, 160));
+        });
+        if (out.length) L.push('Other things I saved that this list does not know how to show yet (' + out.length + '): ' + out.join('; '));
+      };
       const goals = (tasks, done) => {
         tasks.forEach((t) => {
           const ls = leaves(t), have = ls.filter((x) => done(x.id)), open = ls.filter((x) => !done(x.id));
-          if (!hasParts(t)) { L.push('- [' + (have.length ? 'x' : ' ') + '] ' + t.text + ' (' + t.id + ')'); return; }
-          L.push('- [' + (!open.length ? 'x' : have.length ? '~' : ' ') + '] ' + t.text + ': ' + have.length + ' of ' + ls.length + ' (' + t.id + ')');
+          const note = t.custom && oneLine(t.note) ? ' | my note: ' + oneLine(t.note) : '';   // his own words on a goal he added
+          if (!hasParts(t)) { L.push('- [' + (have.length ? 'x' : ' ') + '] ' + t.text + ' (' + t.id + ')' + note); return; }
+          L.push('- [' + (!open.length ? 'x' : have.length ? '~' : ' ') + '] ' + t.text + ': ' + have.length + ' of ' + ls.length + ' (' + t.id + ')' + note);
           if (have.length) L.push('    have: ' + have.map((x) => x.text).join(', '));
           if (open.length) L.push('    open: ' + (open.length <= 15 ? open.map((x) => x.text).join(', ') : open.length + ' more'));
         });
@@ -3136,6 +3157,7 @@
         if (game.kind === 'warframe') {
           if (!S.data) { L.push('(the Warframe data did not load)'); return; }
           L.push(tokName() + ': ' + S.tokens + ' of ' + tokTarget());
+          if (oneLine(tokCard().note)) L.push('My note on that card: ' + oneLine(tokCard().note));
           const b = wfBuild();
           goals(b.tree, (id) => isDoneIn(S.done, S.index, id));
           const src = tickedModSources(), names = (m) => Array.from(m.values()).sort((a, c) => a.localeCompare(c));
@@ -3144,12 +3166,28 @@
           S.data.mods.owned.forEach((g) => g.items.forEach((it) => viaGoal.delete(parseChip(it).name.toLowerCase())));   // already on the scanned Owned list
           L.push('Mods from my Missing list that count as owned because their goal is ticked (' + viaGoal.size + '): ' + (viaGoal.size ? names(viaGoal).join(', ') : 'none'));
           L.push('The scanned Owned list is in warframe-data.json (scanned ' + S.data.meta.scannedLabel + ').');
+          /* The Builds tab: the builds that come with the page, then the ones added with + Add build (a deleted one is left out). */
+          const bl = seedBuilds().concat(userBuilds());
+          L.push('Builds on my Builds tab (' + bl.length + '):' + (bl.length ? '' : ' none'));
+          bl.forEach((x) => {
+            const rk = (n, r) => n + (r != null ? ' r' + r : '');
+            L.push('- ' + x.name + ' (' + [catOf(x.cat).label, x.item, x.config].filter(Boolean).join(', ') + ') [' + x.id + ']');
+            if (x.aura) L.push('    ' + (x.cat === 'melee' ? 'Stance' : 'Aura') + ': ' + rk(x.aura, x.auraRank));
+            if (x.exilus) L.push('    Exilus: ' + rk(x.exilus, x.exilusRank));
+            const ms = x.mods.map((n, i) => (n ? rk(n, x.ranks[i]) : '')).filter(Boolean);
+            if (ms.length) L.push('    Mods: ' + ms.join(', '));
+            const ar = [[x.arcane, x.arcaneRank], [x.arcane2, x.arcane2Rank]].filter((a) => a[0]).map((a) => rk(a[0], a[1]));
+            if (ar.length) L.push('    Arcanes: ' + ar.join(', '));
+            if (oneLine(x.notes)) L.push('    Notes: ' + oneLine(x.notes));
+          });
           if (b.removed.length) L.push('Goals I removed or deleted (see History): ' + b.removed.map((r) => r.label).join('; '));
+          leftover(S.custom);
         } else {
           const d = genData(game.id), dn = docFor(game.id).done;
           goals(d.tasks, (id) => isDoneIn(dn, d.index, id));
           if (!d.tasks.length) L.push('(no goals yet)');
           if (d.removed.length) L.push('Goals I removed or deleted (see History): ' + d.removed.map((r) => r.label).join('; '));
+          leftover(docFor(game.id).custom);
         }
       });
       return L.join('\n');

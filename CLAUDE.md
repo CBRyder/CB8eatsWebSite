@@ -518,6 +518,31 @@ you tap open (`#wf-about`).
     `warframe-mod-stats.json` so they are tappable. Commit all three files.
   - It is a dev-only data file like the others: in `DEV_DATA` in `worker.js` and in
     `wrangler.jsonc`'s `run_worker_first`; the worker 404s it on every host except the dev one.
+- **Community builds you found and added (2026-10-19; CB: "I want to be able to add a community build, I'll make the group for my
+  found builds"; he chose "a new button next to Warframes, Primary...").** On the Community builds view an owner-only
+  **+ Add community build** button (`#bv-addcomm`, greyed for a visitor or until the mod list loads) opens the same form as + Add
+  build (`#wf-bdlg`, `openBuildDialog(null, null, true)`) with the Config box hidden and three more fields: **Group** (`#wf-bgroup`:
+  the groups that exist, then "New group…" which shows `#wf-bgroup-new`, up to 30 characters), **Author** (optional, 40) and **Link**
+  (optional, only `http://` or `https://`, 300). Save puts the view on the group it landed in. A group is a **button on the
+  Community builds row, after the shipped categories, with its count**; it exists while it holds a build (no separate group record), and
+  its id is `g-` + a slug of the name (`groupId()`), so `ui.bcat` (saved in localStorage) accepts `[a-z0-9-]{1,40}` now. A new group
+  name that matches an existing one in other letters reuses the existing name; one equal to "All" or to a shipped category label
+  (Warframes, Primary, ...) or with no letters or digits is refused.
+  - **Storage, no rule change:** the same `warframe/progress.custom.<id>` map and shape as any build (`kind: 'build'`), plus
+    `group`, `by`, `link` (and `config: ''`). `cleanBuild()` returns `group`/`by`/`link` (the link goes through `safeLink()`, so a saved
+    `javascript:` value is dropped when shown). `userBuilds()` (My builds, `buildGroups()`, the config tabs) now skips builds that have a
+    `group`; `foundBuilds()` and `foundGroups()` are the other side. Found builds are drawn by `ownBuildCard()` (a `.found` class, a group
+    pill, a "by ..." line, "Open the link" with `rel="noopener noreferrer"`, Edit, Stats, mod chips opening the View mod screen), resolved
+    by mod **name** (`MS.byName`), so `warframe-mod-stats.json` needs no regeneration for them. Edit and a two-tap Delete work as for any build;
+    deleting the last build of a group makes its button disappear. An older cached copy of the page shows them on My builds until it reloads.
+  - **Copy my list / `window.cb8Export()`:** a `Community builds I found and added (N):` section after the Builds tab one, each build with
+    `group <name>`, `by <author>`, and `Link:` lines, so the copy still carries everything he saves. `leftover()` still skips `kind: 'build'`.
+  - **Tests (a `commtest.js` style suite, 55 checks, Firebase faked with working `updateDoc`/`setDoc`/`onSnapshot`):** the add form (fields,
+    New group default, empty name, group name refused for empty / "Melee" / "all" / symbols), bad links (`javascript:`, `ftp:`, no scheme, a
+    space), the single dotted write, the view jumping to the group, not on My builds, second add defaulting to the open group, the same group in other letters,
+    edit moving to a new group, Stats and mod chip, the export, two-tap delete and the fall back to All, a refused write rolling back, plain
+    Add build unchanged, a visitor (disabled add, hostile saved link dropped), 360/390/430 with a 30-letter group and a long author and link.
+    Write them again rather than trusting this list.
 - **The `plat` tag** means "tradable according to the warframe-items database
   (about March 2025)", not a live price. Items missing from that database are untagged.
 - **A ticked goal makes its mod owned (added 2026-10-10; CB: "i checked narrow minded off on the website ... let

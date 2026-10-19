@@ -82,7 +82,7 @@
     .cardhead.tokcardhead { flex-wrap: nowrap; align-items: flex-start; }
     .tokcardhead h2 { min-width: 0; overflow-wrap: anywhere; }
     .tokcardhead .btn-sm { flex: none; }
-    .bdlg .field select, .bdlg .field input[type="text"], .bdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
+    .bdlg .field select, .bdlg .field input[type="text"], .bdlg .field input[type="url"], .bdlg .field textarea { width: 100%; box-sizing: border-box; min-width: 0; }
     #wf-tokdlg textarea, .bdlg textarea { font: inherit; font-size: 1rem; min-height: 72px; padding: 0.5rem 0.8rem; resize: vertical; color: var(--text); background: var(--bg-alt);
       border: 1px solid var(--border); border-radius: 10px; color-scheme: dark; }
     .slotgrid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.8rem; }
@@ -94,6 +94,7 @@
     .bdlg .field.pick > select.rk { grid-column: 2; grid-row: 1; width: 8.4rem; min-height: 34px; padding-top: 0.1rem; padding-bottom: 0.1rem; font-size: 0.88rem; }
     @media (min-width: 540px) { .slotgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
     .addrow { margin: 0.2rem 0 0.9rem; }
+    #wf-bcomm[hidden], #wf-bconfig-wrap[hidden], #wf-bgroup-new-wrap[hidden] { display: none; }
     .build.mine .cardhead { align-items: flex-start; }
     .build.mine .slotline { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.6rem 0 0; }
     .build.mine .slotline b { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; margin-right: 0.2rem; }
@@ -546,8 +547,24 @@
         <label class="field"><span>Which one</span>
           <select id="wf-bitem" required></select>
         </label>
-        <label class="field"><span>Config (optional)</span>
+        <label class="field" id="wf-bconfig-wrap"><span>Config (optional)</span>
           <select id="wf-bconfig"></select>
+        </label>
+      </div>
+      <div id="wf-bcomm" hidden>
+        <div class="slotgrid">
+          <label class="field"><span>Group</span>
+            <select id="wf-bgroup"></select>
+          </label>
+          <label class="field"><span>Author (optional)</span>
+            <input type="text" id="wf-bauthor" maxlength="40" autocomplete="off" placeholder="Who made it">
+          </label>
+        </div>
+        <label class="field" id="wf-bgroup-new-wrap" hidden><span>Name of the new group</span>
+          <input type="text" id="wf-bgroup-new" maxlength="30" autocomplete="off" placeholder="For example Found builds">
+        </label>
+        <label class="field"><span>Link (optional)</span>
+          <input type="url" id="wf-blink" maxlength="300" autocomplete="off" inputmode="url" placeholder="https://">
         </label>
       </div>
       <label class="field" id="wf-bitem-other-wrap" hidden><span>Name of the item</span>
@@ -654,7 +671,7 @@
       if (p.modFilter === 'all' || p.modFilter === 'plat') ui.modFilter = p.modFilter;
       if (p.community === true) ui.community = true;
       if (p.builds === 'community') ui.builds = 'community';
-      if (typeof p.bcat === 'string' && /^[a-z-]{1,30}$/.test(p.bcat)) ui.bcat = p.bcat;
+      if (typeof p.bcat === 'string' && /^[a-z0-9-]{1,40}$/.test(p.bcat)) ui.bcat = p.bcat;
       if (p.btab && typeof p.btab === 'object') Object.keys(p.btab).slice(0, 100).forEach((k) => { if (typeof p.btab[k] === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(p.btab[k])) ui.btab[k.slice(0, 80)] = p.btab[k]; });
     }
     try {
@@ -2329,10 +2346,20 @@
       { id: 'necramech', label: 'Necramech', types: ['Necramech Mod'] },
     ];
     const catOf = (id) => BUILD_CATS.find((c) => c.id === id) || null;
-    let bEditing = null, bDelTimer = null;
+    let bEditing = null, bDelTimer = null, bComm = false;
     const CONFIGS = ['Config A', 'Config B', 'Config C'];
     const ARC_MAX = 5;                       // most arcanes rank 0 to 5 (a few stop lower), so the arcane rank picker offers 0 to 5
     const NOTES_MAX = 500;
+    /* Community builds you found (added 2026-10-19): a saved build with a `group` (the name of the button it sits under on Community
+       builds), an optional `by` (who made it) and an optional `link`. They live in the same custom map as every build, so no rule change. */
+    const GROUP_MAX = 30, AUTHOR_MAX = 40, LINK_MAX = 300, NEW_GROUP = '__newgroup';
+    const groupId = (name) => 'g-' + String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '');
+    /* A link is only ever shown when it is a plain web address (http or https), so a saved value can never become a javascript: link. */
+    function safeLink(v) {
+      const t = String(v == null ? '' : v).trim();
+      if (!t || t.length > LINK_MAX || /\s/.test(t) || !/^https?:\/\//i.test(t)) return '';
+      try { const u = new URL(t); return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : ''; } catch (e) { return ''; }
+    }
     const rankOf = (v) => (Number.isInteger(v) && v >= 0 && v <= 99 ? v : null);
     /* The highest rank a mod can have, from the stats file; null when the mod is not in it or has no ranks. */
     function modMax(name) {
@@ -2445,11 +2472,12 @@
       box.appendChild(grid);
     }
     function resetBuildDelete() { clearTimeout(bDelTimer); $('wf-bdel').textContent = 'Delete'; $('wf-bdel').dataset.armed = ''; }
-    function openBuildDialog(b, preset) {
+    function openBuildDialog(b, preset, comm) {
       if (!S.owner || !S.sync) return needOwner();
       if (!MS.data) return flash('The mod list has not loaded yet. Try again in a moment.');
       bEditing = b || null;
-      $('wf-bdlg-title').textContent = b ? 'Edit build' : 'Add a build';
+      bComm = b ? !!b.group : !!comm;                       // a build you found for the Community builds view
+      $('wf-bdlg-title').textContent = bComm ? (b ? 'Edit community build' : 'Add a community build') : b ? 'Edit build' : 'Add a build';
       $('wf-bsave').textContent = b ? 'Save changes' : 'Save build';
       $('wf-bdel').hidden = !b; resetBuildDelete();
       $('wf-berr').textContent = '';
@@ -2464,6 +2492,8 @@
       CONFIGS.concat(cv && !CONFIGS.includes(cv) ? [cv] : []).forEach((x) => cf.appendChild(new Option(x, x)));
       cf.value = cv;
       $('wf-bnotes').value = b ? b.notes : '';
+      $('wf-bcomm').hidden = !bComm; $('wf-bconfig-wrap').hidden = bComm;
+      if (bComm) fillGroupForm(b);
       drawSlots(b || { aura: '', exilus: '', arcane: '', arcane2: '', mods: [], ranks: [] }, true);
       const dlg = $('wf-bdlg');
       if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
@@ -2471,6 +2501,43 @@
     function closeBuildDialog() {
       const dlg = $('wf-bdlg');
       if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+    /* The Group dropdown: the groups that exist, then "New group…" (which shows a box for its name). Adding starts on the group whose
+       button is open, else the first group, else New group. */
+    function fillGroupForm(b) {
+      const sel = $('wf-bgroup'), groups = foundGroups();
+      sel.textContent = '';
+      groups.forEach((g) => sel.appendChild(new Option(g.name, g.id)));
+      sel.appendChild(new Option('New group…', NEW_GROUP));
+      const open = groups.find((g) => g.id === ui.bcat);
+      sel.value = b ? groupId(b.group) : open ? open.id : groups.length ? groups[0].id : NEW_GROUP;
+      $('wf-bgroup-new').value = '';
+      $('wf-bauthor').value = b ? b.by : '';
+      $('wf-blink').value = b ? b.link : '';
+      syncFoundGroupNew();
+    }
+    function syncFoundGroupNew() { $('wf-bgroup-new-wrap').hidden = $('wf-bgroup').value !== NEW_GROUP; }
+    /* Read and check the community fields; returns { error } or { group, by, link }. */
+    function readCommunityForm() {
+      let group;
+      if ($('wf-bgroup').value === NEW_GROUP) {
+        group = cleanText($('wf-bgroup-new').value, GROUP_MAX);
+        if (!group) return { error: 'Type a name for the new group.' };
+        const id = groupId(group);
+        if (id === 'g' || id === 'g-') return { error: 'Use letters or numbers in the group name.' };
+        const taken = foundGroups().find((g) => g.id === id);
+        if (taken) group = taken.name;                                   // the same name again: use the group that exists
+        else if (group.toLowerCase() === 'all' || (CM.data && CM.data.cats.some((c) => c[1].toLowerCase() === group.toLowerCase())))
+          return { error: 'That name is already one of the buttons. Pick another.' };
+      } else {
+        const g = foundGroups().find((x) => x.id === $('wf-bgroup').value);
+        group = g ? g.name : '';
+        if (!group && bEditing && bEditing.group) group = bEditing.group;
+        if (!group) return { error: 'Pick a group.' };
+      }
+      const raw = String($('wf-blink').value || '').trim(), link = safeLink(raw);
+      if (raw && !link) return { error: 'The link has to be a web address that starts with http:// or https://' };
+      return { group, by: cleanText($('wf-bauthor').value, AUTHOR_MAX), link };
     }
     function newBuildId() { return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
     async function saveBuild(ev) {
@@ -2492,17 +2559,21 @@
         seen[low] = slot;
       }
       if (f.arcane && f.arcane.toLowerCase() === f.arcane2.toLowerCase()) return err('Arcane 1 and Arcane 2 are the same arcane. A build cannot use one arcane twice.');
+      const comm = bComm ? readCommunityForm() : null;
+      if (comm && comm.error) return err(comm.error);
       const id = bEditing ? bEditing.id : newBuildId();
       const was = S.custom[id];
-      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, config: f.config, aura: f.aura, auraRank: f.auraRank, exilus: f.exilus, exilusRank: f.exilusRank,
+      const val = { kind: 'build', name: f.name, cat: f.cat, item: f.item, config: comm ? '' : f.config, aura: f.aura, auraRank: f.auraRank, exilus: f.exilus, exilusRank: f.exilusRank,
         arcane: f.arcane, arcaneRank: f.arcaneRank, arcane2: f.arcane2, arcane2Rank: f.arcane2Rank, mods: f.mods, ranks: f.ranks, notes: f.notes,
         at: (was && Number(was.at)) || Date.now() };
+      if (comm) { val.group = comm.group; val.by = comm.by; val.link = comm.link; }
       const wasEditing = !!bEditing;
-      if (val.item) { ui.btab[groupKey(val.cat, val.item)] = id; saveUi(); }       // show the tab you just saved
+      if (comm) { ui.builds = 'community'; ui.bcat = groupId(comm.group); saveUi(); }   // show the group it landed in
+      else if (val.item) { ui.btab[groupKey(val.cat, val.item)] = id; saveUi(); }       // show the tab you just saved
       S.custom[id] = val; renderBuilds(); closeBuildDialog();
       try {
         await S.sync.write({ ['custom.' + id]: val }, { done: S.done, runs: S.tokens, custom: S.custom });
-        flash(wasEditing ? 'Build updated.' : 'Build added.');
+        flash(wasEditing ? 'Build updated.' : comm ? 'Community build added.' : 'Build added.');
       } catch (e) {
         if (was) S.custom[id] = was; else delete S.custom[id];
         renderBuilds(); writeFailed(e);
@@ -2528,6 +2599,7 @@
         drawSlots(readBuildForm());
       });
       $('wf-bitem').addEventListener('change', syncItemOther);
+      $('wf-bgroup').addEventListener('change', syncFoundGroupNew);
       $('wf-bcancel').addEventListener('click', closeBuildDialog);
       $('wf-buildform').addEventListener('submit', saveBuild);
       $('wf-bdel').addEventListener('click', () => {
@@ -2548,14 +2620,32 @@
       return { id, name, cat: c.id, item: cleanText(v.item, 60), config: cleanText(v.config, 20),
         aura, auraRank: aura ? rankOf(v.auraRank) : null, exilus, exilusRank: exilus ? rankOf(v.exilusRank) : null,
         arcane, arcaneRank: arcane ? rankOf(v.arcaneRank) : null, arcane2, arcane2Rank: arcane2 ? rankOf(v.arcane2Rank) : null,
-        mods, ranks, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, NOTES_MAX), at: Number(v.at) || 0 };
+        mods, ranks, notes: String(v.notes == null ? '' : v.notes).trim().slice(0, NOTES_MAX), at: Number(v.at) || 0,
+        group: cleanText(v.group, GROUP_MAX), by: cleanText(v.by, AUTHOR_MAX), link: safeLink(v.link) };
     }
     const fileBuilds = () => (S.data && Array.isArray(S.data.builds) ? S.data.builds : []);
     /* The builds you added, oldest first, cleaned up for display. */
     function userBuilds() {
       const skip = new Set(fileBuilds().map((s) => s.id)), out = [];
-      Object.keys(S.custom).forEach((id) => { if (skip.has(id)) return; const b = cleanBuild(id, S.custom[id]); if (b) out.push(b); });
+      Object.keys(S.custom).forEach((id) => { if (skip.has(id)) return; const b = cleanBuild(id, S.custom[id]); if (b && !b.group) out.push(b); });
       out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+    /* The community builds you found and added (a saved build that has a group), oldest first. */
+    function foundBuilds() {
+      const skip = new Set(fileBuilds().map((s) => s.id)), out = [];
+      Object.keys(S.custom).forEach((id) => { if (skip.has(id)) return; const b = cleanBuild(id, S.custom[id]); if (b && b.group) out.push(b); });
+      out.sort((a, b) => a.at - b.at);
+      return out;
+    }
+    /* The groups those builds sit in, in the order they were first used: { id, name, count }. A group exists while it holds a build. */
+    function foundGroups() {
+      const out = [], by = {};
+      foundBuilds().forEach((b) => {
+        const id = groupId(b.group);
+        if (!by[id]) { by[id] = { id, name: b.group, count: 0 }; out.push(by[id]); }
+        by[id].count++;
+      });
       return out;
     }
     /* The builds that come with the page (warframe-data.json `builds`, each with a `form` in the same shape as a saved build, plus
@@ -2594,7 +2684,9 @@
       const c = el('div', 'wfcard build mine'); c.dataset.build = b.id; c.dataset.name = b.name;
       if (group) { c.dataset.group = group.key; c.dataset.builds = group.builds.map((x) => x.id).join(' '); }
       const s = b.seed;
+      if (b.group) c.classList.add('found');
       c.appendChild(el('span', 'pill', catOf(b.cat).label));
+      if (b.group) c.appendChild(el('span', 'pill', b.group));
       if (s && s.status) c.appendChild(el('span', 'pill', s.status));
       const head = el('div', 'cardhead');
       head.appendChild(el('h2', null, group ? group.item : b.name));
@@ -2630,6 +2722,7 @@
         const meta = [b.item, b.config].filter(Boolean).join(' · ');
         if (meta) c.appendChild(el('p', 'meta', meta));
       }
+      if (b.group && b.by) c.appendChild(el('p', 'meta', 'by ' + b.by));
       if (s && s.goal) c.appendChild(el('p', 'meta', s.goal));
       /* A mod chip: tap it for the View mod screen, opened at the rank the build uses. */
       const chip = (name, rank) => {
@@ -2666,6 +2759,10 @@
         c.appendChild(el('p', 'muted', 'On your lists: ' + own + ' owned, ' + miss + ' missing' + (names.length - own - miss ? ', ' + (names.length - own - miss) + ' on neither.' : '.')));
       }
       if (b.notes) { c.appendChild(el('p', 'label', 'Notes')); c.appendChild(el('p', 'muted notetext', b.notes)); }
+      if (b.group && b.link) {
+        const a = el('a', 'mv-link', 'Open the link'); a.href = b.link; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        c.appendChild(a);
+      }
       if (s) {                                                   // what a saved build cannot hold: kept in warframe-data.json
         if (s.stats) {
           c.appendChild(el('p', 'label', 'Stats'));
@@ -3063,10 +3160,16 @@
       return c;
     }
     function renderCommunity(p, cm) {
-      if (ui.bcat !== 'all' && !cm.cats.some((x) => x[0] === ui.bcat)) ui.bcat = 'all';
+      const found = foundBuilds(), groups = foundGroups(), cats = cm ? cm.cats : [], shipped = cm ? cm.builds : [];
+      if (ui.bcat !== 'all' && !cats.some((x) => x[0] === ui.bcat) && !groups.some((g) => g.id === ui.bcat)) ui.bcat = 'all';
+      const addRow = el('div', 'addrow');
+      const addBtn = el('button', 'btn-sm primary', '+ Add community build'); addBtn.type = 'button'; addBtn.id = 'bv-addcomm';
+      if (!S.owner || !MS.data) addBtn.setAttribute('aria-disabled', 'true');
+      if (!MS.data) addBtn.title = 'The mod list has not loaded';
+      addBtn.onclick = () => openBuildDialog(null, null, true);
+      addRow.appendChild(addBtn); p.appendChild(addRow);
       const pills = el('div', 'pills'); pills.setAttribute('role', 'group'); pills.setAttribute('aria-label', 'Category');
-      [['all', 'All']].concat(cm.cats).forEach(([id, label]) => {
-        const n = id === 'all' ? cm.builds.length : cm.builds.filter((b) => b.cat === id).length;
+      [['all', 'All', shipped.length + found.length]].concat(cats.map((c) => [c[0], c[1], shipped.filter((b) => b.cat === c[0]).length]), groups.map((g) => [g.id, g.name, g.count])).forEach(([id, label, n]) => {
         if (!n) return;
         const b = el('button', null, label + ' ' + n); b.type = 'button'; b.dataset.cat = id;
         b.setAttribute('aria-pressed', ui.bcat === id ? 'true' : 'false');
@@ -3074,19 +3177,25 @@
         pills.appendChild(b);
       });
       p.appendChild(pills);
-      p.appendChild(el('p', 'legend', 'The highest-rated builds on ' + cm.source + ' in each category, one per item, read ' + cm.built + '. They are other players\' builds and they change, so use the link for the latest.' + (MS.data ? ' Tap a mod to see its stats at the rank used. A dashed mod is on your Missing list.' : '')));
+      const inGroup = groups.some((g) => g.id === ui.bcat);
+      if (cm && !inGroup) {
+        p.appendChild(el('p', 'legend', 'The highest-rated builds on ' + cm.source + ' in each category, one per item, read ' + cm.built + '. They are other players\' builds and they change, so use the link for the latest.' + (MS.data ? ' Tap a mod to see its stats at the rank used. A dashed mod is on your Missing list.' : '')));
+      } else if (inGroup || (!cm && found.length)) {
+        p.appendChild(el('p', 'legend', 'Builds you found and added. Tap a mod to see its stats at the rank used. A dashed mod is on your Missing list.'));
+      }
       const have = MS.data ? { own: listKeys('owned'), miss: listKeys('missing') } : null;
-      cm.builds.filter((b) => ui.bcat === 'all' || b.cat === ui.bcat).forEach((b) => p.appendChild(communityCard(b, cm, have)));
+      if (cm) shipped.filter((b) => ui.bcat === 'all' || b.cat === ui.bcat).forEach((b) => p.appendChild(communityCard(b, cm, have)));
+      found.filter((b) => ui.bcat === 'all' || groupId(b.group) === ui.bcat).forEach((b) => p.appendChild(ownBuildCard(b, have)));
     }
     function renderBuilds() {
       const p = $('p-builds'); p.textContent = '';
-      const cm = CM.data, community = ui.builds === 'community' && !!cm;
+      const cm = CM.data, anyComm = !!cm || foundBuilds().length > 0, community = ui.builds === 'community' && anyComm;
       const tools = el('div', 'tools');
       const seg = el('div', 'seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Which builds');
       [['mine', 'My builds'], ['community', 'Community builds']].forEach(([id, label]) => {
         const b = el('button', null, label); b.type = 'button'; b.id = 'bv-' + id;
         b.setAttribute('aria-pressed', (id === 'community') === community ? 'true' : 'false');
-        if (id === 'community' && !cm) { b.disabled = true; b.title = 'The community builds have not loaded'; }
+        if (id === 'community' && !anyComm) { b.disabled = true; b.title = 'The community builds have not loaded'; }
         b.addEventListener('click', () => { ui.builds = id; saveUi(); renderBuilds(); });
         seg.appendChild(b);
       });
@@ -3168,18 +3277,24 @@
           L.push('The scanned Owned list is in warframe-data.json (scanned ' + S.data.meta.scannedLabel + ').');
           /* The Builds tab: the builds that come with the page, then the ones added with + Add build (a deleted one is left out). */
           const bl = seedBuilds().concat(userBuilds());
-          L.push('Builds on my Builds tab (' + bl.length + '):' + (bl.length ? '' : ' none'));
-          bl.forEach((x) => {
-            const rk = (n, r) => n + (r != null ? ' r' + r : '');
-            L.push('- ' + x.name + ' (' + [catOf(x.cat).label, x.item, x.config].filter(Boolean).join(', ') + ') [' + x.id + ']');
+          const rk = (n, r) => n + (r != null ? ' r' + r : '');
+          const pushBuild = (x, head) => {
+            L.push('- ' + x.name + ' (' + head.filter(Boolean).join(', ') + ') [' + x.id + ']');
             if (x.aura) L.push('    ' + (x.cat === 'melee' ? 'Stance' : 'Aura') + ': ' + rk(x.aura, x.auraRank));
             if (x.exilus) L.push('    Exilus: ' + rk(x.exilus, x.exilusRank));
             const ms = x.mods.map((n, i) => (n ? rk(n, x.ranks[i]) : '')).filter(Boolean);
             if (ms.length) L.push('    Mods: ' + ms.join(', '));
             const ar = [[x.arcane, x.arcaneRank], [x.arcane2, x.arcane2Rank]].filter((a) => a[0]).map((a) => rk(a[0], a[1]));
             if (ar.length) L.push('    Arcanes: ' + ar.join(', '));
+            if (x.link) L.push('    Link: ' + x.link);
             if (oneLine(x.notes)) L.push('    Notes: ' + oneLine(x.notes));
-          });
+          };
+          L.push('Builds on my Builds tab (' + bl.length + '):' + (bl.length ? '' : ' none'));
+          bl.forEach((x) => pushBuild(x, [catOf(x.cat).label, x.item, x.config]));
+          /* The community builds I found and added (Community builds tab, each under the group I put it in). */
+          const fb = foundBuilds();
+          L.push('Community builds I found and added (' + fb.length + '):' + (fb.length ? '' : ' none'));
+          fb.forEach((x) => pushBuild(x, ['group ' + x.group, catOf(x.cat).label, x.item, x.by ? 'by ' + x.by : '']));
           if (b.removed.length) L.push('Goals I removed or deleted (see History): ' + b.removed.map((r) => r.label).join('; '));
           leftover(S.custom);
         } else {

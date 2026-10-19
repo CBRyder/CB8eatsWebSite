@@ -1,7 +1,7 @@
 {
- "updated": "2026-10-10",
- "updatedLabel": "10 Oct 2026",
- "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. The same day CB's Cyte-09 Config A showed Narrow Minded owned at max (moved from Missing to Owned) and an Energy Nexus at rank 2 (noted on the Energy Nexus line). Builds and the farm list are kept by hand.",
+ "updated": "2026-10-19",
+ "updatedLabel": "19 Oct 2026",
+ "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. The same day CB's Cyte-09 Config A showed Narrow Minded owned at max (moved from Missing to Owned) and an Energy Nexus at rank 2 (noted on the Energy Nexus line). Builds and the farm list are kept by hand. On 19 Oct 2026 CB asked for the 60/60 status mods (+60% element damage and +60% status chance) for guns and melee: the 12 he is missing now show their element and where to get them on the Missing list, the 4 he owns are marked, and Vigor (seen equipped at rank 10 on Dagath) moved from Missing to Owned.",
  "caveat": "Mod categories come from a database current to about March 2025, so newer mods may be filed loosely. A dot means at least one max-rank copy, judged from the drain number, so it is approximate.",
  "meta": {
   "types": 394,
@@ -1263,6 +1263,7 @@
      "Master Thief*",
      "Quick Thinking*",
      "Rush* x6",
+     "Vigor*",
      "Fast Deflection* x8",
      "Sure Footed*",
      "Aero Vantage*",
@@ -1372,7 +1373,7 @@
      "Melee Prowess* x8",
      "Life Strike*",
      "Jagged Edge*",
-     "Volcanic Edge*",
+     "Volcanic Edge* (60/60 Heat)",
      "Carnis Mandible* x6",
      "Sacrificial Steel (r7/10)",
      "Sacrificial Pressure (r7/10)",
@@ -1389,7 +1390,7 @@
      "Energy Channel",
      "Dispatch Overdrive x3",
      "Mentor's Legacy",
-     "Vicious Frost",
+     "Vicious Frost (60/60 Cold - not maxed)",
      "True Punishment",
      "Static Discharge x9",
      "Toxic Blight"
@@ -1477,7 +1478,7 @@
      "Eagle Eye x5",
      "Argon Scope x2",
      "Internal Bleeding",
-     "Malignant Force",
+     "Malignant Force (60/60 Toxin - not maxed)",
      "Radiated Reload",
      "Continuous Misery x3",
      "Overview* x3",
@@ -1518,7 +1519,7 @@
      "Snap Shot",
      "Shell Compression",
      "Chilling Reload x2",
-     "Toxic Barrage"
+     "Toxic Barrage (60/60 Toxin - not maxed)"
     ]
    },
    {
@@ -1840,12 +1841,6 @@
      },
      {
       "t": "Streamlined Form (Nightmare mission rewards)",
-      "tags": [
-       "plat"
-      ]
-     },
-     {
-      "t": "Vigor (Thrax)",
       "tags": [
        "plat"
       ]
@@ -2271,7 +2266,7 @@
       ]
      },
      {
-      "t": "High Voltage",
+      "t": "High Voltage (60/60 Electricity - Baro 300 Ducats + 150,000 credits, Hive Sabotage caches)",
       "tags": [
        "plat"
       ]
@@ -2289,13 +2284,13 @@
       ]
      },
      {
-      "t": "Rime Rounds",
+      "t": "Rime Rounds (60/60 Cold - Spy vault rewards)",
       "tags": [
        "plat"
       ]
      },
      {
-      "t": "Thermite Rounds",
+      "t": "Thermite Rounds (60/60 Heat - Baro 300 Ducats + 150,000 credits, Spy vault rewards, Thermic Raknoid)",
       "tags": [
        "plat"
       ]
@@ -2458,7 +2453,7 @@
       ]
      },
      {
-      "t": "Blaze",
+      "t": "Blaze (+60% damage and +60% Heat only, not a 60/60)",
       "tags": [
        "plat"
       ]
@@ -2488,7 +2483,7 @@
       ]
      },
      {
-      "t": "Frigid Blast",
+      "t": "Frigid Blast (60/60 Cold - Spy vault rewards)",
       "tags": [
        "plat"
       ]
@@ -2500,7 +2495,7 @@
       ]
      },
      {
-      "t": "Scattering Inferno",
+      "t": "Scattering Inferno (60/60 Heat - Baro 300 Ducats + 150,000 credits, Spy vault rewards, Thermic Raknoid)",
       "tags": [
        "plat"
       ]
@@ -2512,7 +2507,7 @@
       ]
      },
      {
-      "t": "Shell Shock",
+      "t": "Shell Shock (60/60 Electricity - Baro 300 Ducats + 150,000 credits, Hive Sabotage caches)",
       "tags": [
        "plat"
       ]
@@ -2662,19 +2657,19 @@
       ]
      },
      {
-      "t": "Frostbite",
+      "t": "Frostbite (60/60 Cold - Spy vault rewards)",
       "tags": [
        "plat"
       ]
      },
      {
-      "t": "Jolt",
+      "t": "Jolt (60/60 Electricity - Baro 300 Ducats + 150,000 credits)",
       "tags": [
        "plat"
       ]
      },
      {
-      "t": "Scorch",
+      "t": "Scorch (60/60 Heat - Baro 300 Ducats + 150,000 credits, Spy vault rewards, Thermic Raknoid)",
       "tags": [
        "plat"
       ]
@@ -2722,7 +2717,7 @@
       ]
      },
      {
-      "t": "Pistol Pestilence",
+      "t": "Pistol Pestilence (60/60 Toxin - Corrupted Vor in level 40+ Void missions, 25% shared drop)",
       "tags": [
        "plat"
       ]
@@ -2842,13 +2837,13 @@
       ]
      },
      {
-      "t": "Virulent Scourge",
+      "t": "Virulent Scourge (60/60 Toxin - Corrupted Vor in level 40+ Void missions, 25% shared drop)",
       "tags": [
        "plat"
       ]
      },
      {
-      "t": "Voltaic Strike",
+      "t": "Voltaic Strike (60/60 Electricity - Baro 300 Ducats + 150,000 credits)",
       "tags": [
        "plat"
       ]

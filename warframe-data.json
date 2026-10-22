@@ -1,7 +1,7 @@
 {
- "updated": "2026-10-19",
- "updatedLabel": "19 Oct 2026",
- "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. The same day CB's Cyte-09 Config A showed Narrow Minded owned at max (moved from Missing to Owned) and an Energy Nexus at rank 2 (noted on the Energy Nexus line). Builds and the farm list are kept by hand. On 19 Oct 2026 CB asked for the 60/60 status mods (+60% element damage and +60% status chance) for guns and melee: the 12 he is missing now show their element and where to get them on the Missing list, the 4 he owns are marked, and Vigor (seen equipped at rank 10 on Dagath) moved from Missing to Owned.",
+ "updated": "2026-10-21",
+ "updatedLabel": "21 Oct 2026",
+ "source": "Mods scanned on 8 Oct 2026 from the in-game Inventory. On 10 Oct 2026 CB added the 29 community-popular mods that were on neither list to Missing. The same day CB's Cyte-09 Config A showed Narrow Minded owned at max (moved from Missing to Owned) and an Energy Nexus at rank 2 (noted on the Energy Nexus line). Builds and the farm list are kept by hand. On 19 Oct 2026 CB asked for the 60/60 status mods (+60% element damage and +60% status chance) for guns and melee: the 12 he is missing now show their element and where to get them on the Missing list, the 4 he owns are marked, and Vigor (seen equipped at rank 10 on Dagath) moved from Missing to Owned. On 21 Oct 2026 CB hit milestone 200 and was given a maxed Primed Shred: it moved from Missing to Owned and its Primed rifle goal is pre-ticked.",
  "caveat": "Mod categories come from a database current to about March 2025, so newer mods may be filed loosely. A dot means at least one max-rank copy, judged from the drain number, so it is approximate.",
  "meta": {
   "types": 394,
@@ -697,7 +697,8 @@
        },
        {
         "id": "rf-shred",
-        "text": "Primed Shred"
+        "text": "Primed Shred",
+        "doneDefault": true
        },
        {
         "id": "rf-stabilizer",
@@ -1485,6 +1486,7 @@
      "Hammer Shot* (r3/3)",
      "Spring-Loaded Chamber (r4/5)",
      "Sinister Reach* x5",
+     "Primed Shred*",
      "Thunderbolt* x4 (bow)",
      "Charged Chamber x2 (sniper)",
      "Sniper Ammo Mutation (sniper)"
@@ -2361,7 +2363,6 @@
        "plat"
       ]
      },
-     "Primed Shred",
      {
       "t": "Primed Stabilizer",
       "tags": [

@@ -402,6 +402,9 @@ you tap open (`#wf-about`).
   **Own all the Necramech mods** (`allnecra`, 28 from `Mods.json` where `compatName` is Necramech; the 9
   from the 8 Oct scan start ticked) and **Own all the Umbral mods** (`allumbral`, 3, all ticked). Keep the
   ticked ones in step with `/topics/warframe-mods.md` when the mod list is rescanned.
+  **Primed Shred** (`rf-shred`, inside `primed-rifle`) is the first Primed mod CB owns (a maxed one, given at
+  milestone 200 on 2026-10-21): it is `doneDefault: true`, sits in the Owned rifle group as `Primed Shred*`, and was
+  taken off the Missing rifle group. A new Primed mod he gets is done the same three ways.
   The Mods tab already has dropdowns per group (`details.grp`).
 - **View mod screen (added 2026-10-09):** tap any mod chip on the Mods tab, or a mod in a
   saved build, and a `<dialog id="wf-moddlg">` shows its stats: polarity, max rank, drain (or
